@@ -1,0 +1,6 @@
+# 用途：OpenAI/Codex 客户端的可选界面适配器；通用 Agent Skills 运行时可以忽略本文件。
+interface:
+  # display_name 为界面名称，short_description 为简要用途，default_prompt 为默认调用示例。
+  display_name: "知识入库审查助手"
+  short_description: "依据治理规则独立检查文档，合格后引导管理员完成受控入库"
+  default_prompt: "使用 $review-knowledge-admission 检查这个文件是否满足知识库准入规则并生成管理员操作清单。"

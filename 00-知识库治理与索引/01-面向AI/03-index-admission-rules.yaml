@@ -1,0 +1,51 @@
+# 用途：定义文档进入生产检索索引前必须满足的通用条件。
+# 核心原则：默认拒绝；只有明确满足全部准入条件的文档才可进入生产索引。
+schema_version: "1.0"
+# 当前仅验证治理结构、元数据、字典和准入规则，不执行真实生产索引。
+operating_mode: governance_validation # governance_validation 表示只做治理验证。
+production_index_enabled: false # false 表示生产索引全局关闭。
+# production_index_enabled=false 的优先级高于下方所有准入条件，任何文档均不得进入生产索引。
+default_action: deny # deny 表示默认拒绝准入。
+
+# 以下条件全部满足后，才继续执行安全等级规则。
+required_conditions:
+  metadata_schema_valid: true # 元数据必须通过 Schema 校验。
+  structure_path_valid: true # 空间ID和目录ID必须存在于机器蓝图中。
+  authority_status: formal # formal 表示已批准的正式文档。
+  effective_status: effective # effective 表示文档当前已经生效。
+  source_accessible: true # 权威源文档必须能够访问。
+  acl_ref_present: true # 必须提供源权限引用。
+  allow_index: true # 文档必须明确允许建立索引。
+  allow_answer_citation: true # 文档必须明确允许 Agent 回答引用。
+
+# 不同安全等级的附加处理方式。
+# confidential 需要专项安全审批；restricted 在通用索引中直接拒绝。
+security_rules:
+  public:
+    action: evaluate_required_conditions # 公开级仍需检查全部通用条件。
+  internal:
+    action: evaluate_required_conditions # 内部级仍需检查全部通用条件和用户权限。
+  confidential:
+    action: require_explicit_security_approval # 机密级必须取得专项安全审批。
+  restricted:
+    action: deny # 限制级禁止进入通用生产索引。
+
+# 任一条件命中即拒绝准入或停止继续使用已有索引。
+deny_when:
+  - source_document_missing # 权威源文档不存在。
+  - space_or_directory_not_registered # 空间或目录未在机器蓝图中登记。
+  - metadata_invalid # 元数据不合法或不完整。
+  - acl_missing # 缺少源权限引用。
+  - authority_status_not_formal # 文档不是正式状态。
+  - effective_status_not_effective # 文档尚未生效、已暂停或已过期。
+  - review_overdue_beyond_grace_period # 超过复审日期及允许宽限期。
+  - synchronization_state_unknown # 无法确认源文档与索引是否同步。
+  - source_permission_check_failed # 源权限校验失败。
+
+# 使用 ISO 8601 Duration 表示同步时限：PT1H 为 1 小时，P1D 为 1 天。
+sync_sla:
+  permission_restriction_or_sensitive_removal: PT1H # 权限收紧或敏感内容下架须在1小时内处理。
+  ordinary_update_or_deprecation: P1D # 普通更新或废弃须在1天内处理。
+
+# 所有准入、拒绝、更新和清理动作都必须保留审计记录。
+audit_required: true # true 表示所有动作必须保留审计记录。

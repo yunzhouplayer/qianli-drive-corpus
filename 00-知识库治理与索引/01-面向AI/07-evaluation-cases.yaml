@@ -1,0 +1,14 @@
+# 用途：保存检索与回答质量的标准评测用例。
+# 责任：问题、期望来源和禁止来源必须由业务、安全及知识治理责任人确认，不能由 AI 自行填充后直接生效。
+schema_version: "1.0"
+owner: null
+updated_at: null
+# cases 当前为空。每个用例应至少包含：
+# - case_id: 稳定用例标识
+# - question: 用户问题
+# - user_role: 执行评测时的权限角色
+# - expected_source_ids: 期望召回和引用的权威文档ID
+# - forbidden_source_ids: 不得召回或引用的文档ID
+# - expected_behavior: 回答、澄清或拒答要求
+# - risk_level: 用例风险等级
+cases: []

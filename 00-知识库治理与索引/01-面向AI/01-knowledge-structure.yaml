@@ -1,0 +1,1337 @@
+# 用途：为检索系统、AI Agent 和校验程序提供完整的知识空间与目录蓝图。
+# 权威边界：本文件是机器路径、稳定ID和目录级索引策略的权威来源；人员蓝图是可读视图。
+# 维护规则：新增目录使用未占用目录ID，不重排已有ID；管理员未任命时保持 null。
+# 人员标识：当前使用飞书通讯录姓名，实际成员与权限由飞书管理；出现同名人员时改用飞书用户ID。
+# kind：governance=治理目录，content=业务内容目录，archive=归档目录，project_template=项目模板。
+# access_policy：inherit=继承父级，restricted=按目录授权，strictly_restricted=严格授权。
+# index_policy：evaluate_document_rules=继续校验文档规则，require_explicit_approval=需专项审批，deny=禁止索引。
+# 顶层字段：schema_version=结构版本，updated_at=更新时间，source_human_blueprint=人员蓝图路径，spaces=知识空间列表。
+# 空间字段：space_id=稳定空间ID，name=显示名称，path=物理路径，purpose=定位，owners=主备管理员。
+# 空间策略：default_access=默认访问方式，security_default=默认安全等级，acl_inheritance=是否继承权限，default_index_policy=默认索引策略。
+# 目录字段：directory_id=稳定目录ID，parent_directory_id=父目录ID，active_knowledge_allowed=是否允许作为当前有效知识。
+# status：active=有效，planned=规划中，deprecated=已废弃。
+# owners.primary=主管理员，owners.backup=备用管理员；未任命时使用 null。
+schema_version: '1.0'
+updated_at: '2026-07-10'
+source_human_blueprint: 00-知识库治理与索引/00-面向人员/02-公司知识库空间与目录蓝图.md
+spaces:
+- space_id: SPACE-KNOWLEDGE-GOVERNANCE
+  name: 00-知识库治理与索引
+  path: 00-知识库治理与索引
+  purpose: 公司级知识治理规范、机器控制文件、索引与评测规则。
+  owners:
+    primary: 郎文
+    backup: 朱方明
+  default_access: governance_team_managed
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-00-001
+    name: 00-面向人员
+    path: 00-知识库治理与索引/00-面向人员
+    parent_directory_id: null
+    kind: governance
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-002
+    name: 模板
+    path: 00-知识库治理与索引/00-面向人员/模板
+    parent_directory_id: DIR-00-001
+    kind: governance
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-003
+    name: 01-面向AI
+    path: 00-知识库治理与索引/01-面向AI
+    parent_directory_id: null
+    kind: governance
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-004
+    name: schemas
+    path: 00-知识库治理与索引/01-面向AI/schemas
+    parent_directory_id: DIR-00-003
+    kind: governance
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-005
+    name: vocabularies
+    path: 00-知识库治理与索引/01-面向AI/vocabularies
+    parent_directory_id: DIR-00-003
+    kind: governance
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-006
+    name: 02-Skills
+    path: 00-知识库治理与索引/02-Skills
+    parent_directory_id: null
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+    notes: 开放 Agent Skills 权威源码目录，不进入公司生产知识索引；客户端适配文件不是治理规则来源。
+  - directory_id: DIR-00-007
+    name: prepare-knowledge-document
+    path: 00-知识库治理与索引/02-Skills/prepare-knowledge-document
+    parent_directory_id: DIR-00-006
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-008
+    name: agents
+    path: 00-知识库治理与索引/02-Skills/prepare-knowledge-document/agents
+    parent_directory_id: DIR-00-007
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-009
+    name: references
+    path: 00-知识库治理与索引/02-Skills/prepare-knowledge-document/references
+    parent_directory_id: DIR-00-007
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-010
+    name: review-knowledge-admission
+    path: 00-知识库治理与索引/02-Skills/review-knowledge-admission
+    parent_directory_id: DIR-00-006
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-011
+    name: agents
+    path: 00-知识库治理与索引/02-Skills/review-knowledge-admission/agents
+    parent_directory_id: DIR-00-010
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-012
+    name: references
+    path: 00-知识库治理与索引/02-Skills/review-knowledge-admission/references
+    parent_directory_id: DIR-00-010
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-00-013
+    name: scripts
+    path: 00-知识库治理与索引/02-Skills/review-knowledge-admission/scripts
+    parent_directory_id: DIR-00-010
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+- space_id: SPACE-COMPANY-PUBLIC
+  name: 01-公司公共知识库
+  path: 01-公司公共知识库
+  purpose: 公司级公共信息。
+  owners:
+    primary: 唐庆
+    backup: 曾娟
+  default_access: public_read_with_restricted_exceptions
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-01-007
+    name: 00-公司公告与制度
+    path: 01-公司公共知识库/00-公司公告与制度
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-008
+    name: 公司公告
+    path: 01-公司公共知识库/00-公司公告与制度/公司公告
+    parent_directory_id: DIR-01-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-009
+    name: 规章制度
+    path: 01-公司公共知识库/00-公司公告与制度/规章制度
+    parent_directory_id: DIR-01-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-010
+    name: 管理办法
+    path: 01-公司公共知识库/00-公司公告与制度/管理办法
+    parent_directory_id: DIR-01-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-011
+    name: 01-公司战略与目标（按目录授权）
+    path: 01-公司公共知识库/01-公司战略与目标（按目录授权）
+    parent_directory_id: null
+    kind: content
+    access_policy: restricted
+    index_policy: require_explicit_approval
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-012
+    name: 年度战略规划
+    path: 01-公司公共知识库/01-公司战略与目标（按目录授权）/年度战略规划
+    parent_directory_id: DIR-01-011
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-013
+    name: 年度OKR
+    path: 01-公司公共知识库/01-公司战略与目标（按目录授权）/年度OKR
+    parent_directory_id: DIR-01-011
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-014
+    name: 战略解码文档
+    path: 01-公司公共知识库/01-公司战略与目标（按目录授权）/战略解码文档
+    parent_directory_id: DIR-01-011
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-015
+    name: 02-组织架构与职责
+    path: 01-公司公共知识库/02-组织架构与职责
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-016
+    name: 组织架构图
+    path: 01-公司公共知识库/02-组织架构与职责/组织架构图
+    parent_directory_id: DIR-01-015
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-017
+    name: 部门职责说明
+    path: 01-公司公共知识库/02-组织架构与职责/部门职责说明
+    parent_directory_id: DIR-01-015
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-018
+    name: 岗位职责矩阵
+    path: 01-公司公共知识库/02-组织架构与职责/岗位职责矩阵
+    parent_directory_id: DIR-01-015
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-019
+    name: 03-公司级会议纪要（按目录授权）
+    path: 01-公司公共知识库/03-公司级会议纪要（按目录授权）
+    parent_directory_id: null
+    kind: content
+    access_policy: restricted
+    index_policy: require_explicit_approval
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-020
+    name: 月度经营会
+    path: 01-公司公共知识库/03-公司级会议纪要（按目录授权）/月度经营会
+    parent_directory_id: DIR-01-019
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-021
+    name: 季度复盘会
+    path: 01-公司公共知识库/03-公司级会议纪要（按目录授权）/季度复盘会
+    parent_directory_id: DIR-01-019
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-022
+    name: 年度总结会
+    path: 01-公司公共知识库/03-公司级会议纪要（按目录授权）/年度总结会
+    parent_directory_id: DIR-01-019
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-023
+    name: 04-新员工入职指南
+    path: 01-公司公共知识库/04-新员工入职指南
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-024
+    name: 05-公司文化与价值观
+    path: 01-公司公共知识库/05-公司文化与价值观
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-01-025
+    name: 归档
+    path: 01-公司公共知识库/归档
+    parent_directory_id: null
+    kind: archive
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 仅用于历史追溯，不作为当前有效知识来源。
+- space_id: SPACE-PRODUCT-TECH
+  name: 02-产品与技术管理中心知识库
+  path: 02-产品与技术管理中心知识库
+  purpose: 产品、研发、架构、接口和技术方案知识。
+  owners:
+    primary: 邱辰
+    backup: 秦国华
+  default_access: center_read_comment
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-02-001
+    name: 00-中心公共
+    path: 02-产品与技术管理中心知识库/00-中心公共
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-002
+    name: 中心周报与月报
+    path: 02-产品与技术管理中心知识库/00-中心公共/中心周报与月报
+    parent_directory_id: DIR-02-001
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-003
+    name: 中心会议纪要
+    path: 02-产品与技术管理中心知识库/00-中心公共/中心会议纪要
+    parent_directory_id: DIR-02-001
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-004
+    name: 中心流程规范
+    path: 02-产品与技术管理中心知识库/00-中心公共/中心流程规范
+    parent_directory_id: DIR-02-001
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-005
+    name: 01-产品部
+    path: 02-产品与技术管理中心知识库/01-产品部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-006
+    name: 产品规划与路线图
+    path: 02-产品与技术管理中心知识库/01-产品部/产品规划与路线图
+    parent_directory_id: DIR-02-005
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-007
+    name: 产品需求文档
+    path: 02-产品与技术管理中心知识库/01-产品部/产品需求文档
+    parent_directory_id: DIR-02-005
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-008
+    name: 产品评审记录
+    path: 02-产品与技术管理中心知识库/01-产品部/产品评审记录
+    parent_directory_id: DIR-02-005
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-009
+    name: 用户研究与反馈
+    path: 02-产品与技术管理中心知识库/01-产品部/用户研究与反馈
+    parent_directory_id: DIR-02-005
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-010
+    name: 02-研发部
+    path: 02-产品与技术管理中心知识库/02-研发部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-011
+    name: 技术架构设计
+    path: 02-产品与技术管理中心知识库/02-研发部/技术架构设计
+    parent_directory_id: DIR-02-010
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-012
+    name: 接口文档
+    path: 02-产品与技术管理中心知识库/02-研发部/接口文档
+    parent_directory_id: DIR-02-010
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-013
+    name: 编码规范
+    path: 02-产品与技术管理中心知识库/02-研发部/编码规范
+    parent_directory_id: DIR-02-010
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-014
+    name: CI-CD与发布流程
+    path: 02-产品与技术管理中心知识库/02-研发部/CI-CD与发布流程
+    parent_directory_id: DIR-02-010
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-015
+    name: 公共组件与SDK文档
+    path: 02-产品与技术管理中心知识库/02-研发部/公共组件与SDK文档
+    parent_directory_id: DIR-02-010
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-016
+    name: 技术分享与培训
+    path: 02-产品与技术管理中心知识库/02-研发部/技术分享与培训
+    parent_directory_id: DIR-02-010
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-017
+    name: 03-架构部
+    path: 02-产品与技术管理中心知识库/03-架构部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-018
+    name: 系统架构设计
+    path: 02-产品与技术管理中心知识库/03-架构部/系统架构设计
+    parent_directory_id: DIR-02-017
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-019
+    name: 技术选型与评估
+    path: 02-产品与技术管理中心知识库/03-架构部/技术选型与评估
+    parent_directory_id: DIR-02-017
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-020
+    name: 架构评审记录
+    path: 02-产品与技术管理中心知识库/03-架构部/架构评审记录
+    parent_directory_id: DIR-02-017
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-021
+    name: 技术规范与标准
+    path: 02-产品与技术管理中心知识库/03-架构部/技术规范与标准
+    parent_directory_id: DIR-02-017
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-022
+    name: 04-研发公共资源
+    path: 02-产品与技术管理中心知识库/04-研发公共资源
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-02-023
+    name: 归档
+    path: 02-产品与技术管理中心知识库/归档
+    parent_directory_id: null
+    kind: archive
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 仅用于历史追溯，不作为当前有效知识来源。
+- space_id: SPACE-OPERATIONS
+  name: 03-运营管理中心知识库
+  path: 03-运营管理中心知识库
+  purpose: 运营策略、资产、调度、安全流程和用户运营知识。
+  owners:
+    primary: 胡峡凡
+    backup: null
+  default_access: center_read_comment
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-03-001
+    name: 00-中心公共
+    path: 03-运营管理中心知识库/00-中心公共
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-002
+    name: 01-资产管理部
+    path: 03-运营管理中心知识库/01-资产管理部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-003
+    name: 车辆资产管理
+    path: 03-运营管理中心知识库/01-资产管理部/车辆资产管理
+    parent_directory_id: DIR-03-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-004
+    name: 场站管理
+    path: 03-运营管理中心知识库/01-资产管理部/场站管理
+    parent_directory_id: DIR-03-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-005
+    name: 资源调度文档
+    path: 03-运营管理中心知识库/01-资产管理部/资源调度文档
+    parent_directory_id: DIR-03-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-006
+    name: 资产盘点报告
+    path: 03-运营管理中心知识库/01-资产管理部/资产盘点报告
+    parent_directory_id: DIR-03-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-007
+    name: 02-运营策划与筹备部
+    path: 03-运营管理中心知识库/02-运营策划与筹备部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-008
+    name: 03-运营调度部
+    path: 03-运营管理中心知识库/03-运营调度部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-009
+    name: 调度策略与规则
+    path: 03-运营管理中心知识库/03-运营调度部/调度策略与规则
+    parent_directory_id: DIR-03-008
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-010
+    name: 运力管理
+    path: 03-运营管理中心知识库/03-运营调度部/运力管理
+    parent_directory_id: DIR-03-008
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-011
+    name: 调度日志口径与脱敏分析
+    path: 03-运营管理中心知识库/03-运营调度部/调度日志口径与脱敏分析
+    parent_directory_id: DIR-03-008
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-012
+    name: 调度系统操作手册
+    path: 03-运营管理中心知识库/03-运营调度部/调度系统操作手册
+    parent_directory_id: DIR-03-008
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-013
+    name: 04-安全与流程运营部
+    path: 03-运营管理中心知识库/04-安全与流程运营部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-014
+    name: 安全管理制度
+    path: 03-运营管理中心知识库/04-安全与流程运营部/安全管理制度
+    parent_directory_id: DIR-03-013
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-015
+    name: 合规要求与标准
+    path: 03-运营管理中心知识库/04-安全与流程运营部/合规要求与标准
+    parent_directory_id: DIR-03-013
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-016
+    name: 流程规范与SOP
+    path: 03-运营管理中心知识库/04-安全与流程运营部/流程规范与SOP
+    parent_directory_id: DIR-03-013
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-017
+    name: 安全事件记录
+    path: 03-运营管理中心知识库/04-安全与流程运营部/安全事件记录
+    parent_directory_id: DIR-03-013
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-018
+    name: 应急预案
+    path: 03-运营管理中心知识库/04-安全与流程运营部/应急预案
+    parent_directory_id: DIR-03-013
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-019
+    name: 05-用户运营部
+    path: 03-运营管理中心知识库/05-用户运营部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-020
+    name: 用户增长策略
+    path: 03-运营管理中心知识库/05-用户运营部/用户增长策略
+    parent_directory_id: DIR-03-019
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-021
+    name: 用户画像方法与脱敏分群分析
+    path: 03-运营管理中心知识库/05-用户运营部/用户画像方法与脱敏分群分析
+    parent_directory_id: DIR-03-019
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-022
+    name: 活动运营文档
+    path: 03-运营管理中心知识库/05-用户运营部/活动运营文档
+    parent_directory_id: DIR-03-019
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-023
+    name: 用户反馈与调研
+    path: 03-运营管理中心知识库/05-用户运营部/用户反馈与调研
+    parent_directory_id: DIR-03-019
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-024
+    name: 06-重庆运营部
+    path: 03-运营管理中心知识库/06-重庆运营部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-03-025
+    name: 归档
+    path: 03-运营管理中心知识库/归档
+    parent_directory_id: null
+    kind: archive
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 仅用于历史追溯，不作为当前有效知识来源。
+- space_id: SPACE-GOVERNMENT-ENTERPRISE
+  name: 04-政企合作中心知识库
+  path: 04-政企合作中心知识库
+  purpose: 准入、法规、政企合作和申报材料知识。
+  owners:
+    primary: 徐涛
+    backup: null
+  default_access: center_read_comment
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-04-001
+    name: 00-中心公共
+    path: 04-政企合作中心知识库/00-中心公共
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-002
+    name: 01-行业准入部
+    path: 04-政企合作中心知识库/01-行业准入部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-003
+    name: 行业准入标准与要求
+    path: 04-政企合作中心知识库/01-行业准入部/行业准入标准与要求
+    parent_directory_id: DIR-04-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-004
+    name: 资质牌照管理
+    path: 04-政企合作中心知识库/01-行业准入部/资质牌照管理
+    parent_directory_id: DIR-04-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-005
+    name: 准入申请文档
+    path: 04-政企合作中心知识库/01-行业准入部/准入申请文档
+    parent_directory_id: DIR-04-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-006
+    name: 法规合规跟踪
+    path: 04-政企合作中心知识库/01-行业准入部/法规合规跟踪
+    parent_directory_id: DIR-04-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-007
+    name: 02-政企外联部
+    path: 04-政企合作中心知识库/02-政企外联部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-008
+    name: 政府关系管理
+    path: 04-政企合作中心知识库/02-政企外联部/政府关系管理
+    parent_directory_id: DIR-04-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-009
+    name: 企业合作对接
+    path: 04-政企合作中心知识库/02-政企外联部/企业合作对接
+    parent_directory_id: DIR-04-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-010
+    name: 外联活动记录
+    path: 04-政企合作中心知识库/02-政企外联部/外联活动记录
+    parent_directory_id: DIR-04-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-011
+    name: 申报项目文档
+    path: 04-政企合作中心知识库/02-政企外联部/申报项目文档
+    parent_directory_id: DIR-04-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-04-012
+    name: 归档
+    path: 04-政企合作中心知识库/归档
+    parent_directory_id: null
+    kind: archive
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 仅用于历史追溯，不作为当前有效知识来源。
+- space_id: SPACE-CORPORATE-FUNCTIONS
+  name: 05-职能部门知识库
+  path: 05-职能部门知识库
+  purpose: 财务、人力、总办等职能知识。
+  owners:
+    primary: 刘金涛
+    backup: null
+  default_access: department_read_comment
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-05-001
+    name: 00-职能公共
+    path: 05-职能部门知识库/00-职能公共
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-002
+    name: 01-财务部
+    path: 05-职能部门知识库/01-财务部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-003
+    name: 财务制度与流程
+    path: 05-职能部门知识库/01-财务部/财务制度与流程
+    parent_directory_id: DIR-05-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-004
+    name: 预算管理
+    path: 05-职能部门知识库/01-财务部/预算管理
+    parent_directory_id: DIR-05-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-005
+    name: 报销指南
+    path: 05-职能部门知识库/01-财务部/报销指南
+    parent_directory_id: DIR-05-002
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-006
+    name: 财务分析与披露材料（按目录授权）
+    path: 05-职能部门知识库/01-财务部/财务分析与披露材料（按目录授权）
+    parent_directory_id: DIR-05-002
+    kind: content
+    access_policy: restricted
+    index_policy: require_explicit_approval
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-007
+    name: 02-人力资源部
+    path: 05-职能部门知识库/02-人力资源部
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-008
+    name: HR政策与制度
+    path: 05-职能部门知识库/02-人力资源部/HR政策与制度
+    parent_directory_id: DIR-05-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-009
+    name: 招聘管理
+    path: 05-职能部门知识库/02-人力资源部/招聘管理
+    parent_directory_id: DIR-05-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-010
+    name: 培训与发展
+    path: 05-职能部门知识库/02-人力资源部/培训与发展
+    parent_directory_id: DIR-05-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-011
+    name: 绩效管理（按目录授权）
+    path: 05-职能部门知识库/02-人力资源部/绩效管理（按目录授权）
+    parent_directory_id: DIR-05-007
+    kind: content
+    access_policy: restricted
+    index_policy: require_explicit_approval
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-012
+    name: 员工关系
+    path: 05-职能部门知识库/02-人力资源部/员工关系
+    parent_directory_id: DIR-05-007
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-013
+    name: 03-总办
+    path: 05-职能部门知识库/03-总办
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-014
+    name: 公司级会议纪要
+    path: 05-职能部门知识库/03-总办/公司级会议纪要
+    parent_directory_id: DIR-05-013
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-015
+    name: 董事会决议（严格授权）
+    path: 05-职能部门知识库/03-总办/董事会决议（严格授权）
+    parent_directory_id: DIR-05-013
+    kind: content
+    access_policy: strictly_restricted
+    index_policy: require_explicit_approval
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-016
+    name: 重要文件存档（按目录授权）
+    path: 05-职能部门知识库/03-总办/重要文件存档（按目录授权）
+    parent_directory_id: DIR-05-013
+    kind: content
+    access_policy: restricted
+    index_policy: require_explicit_approval
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-05-017
+    name: 归档
+    path: 05-职能部门知识库/归档
+    parent_directory_id: null
+    kind: archive
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 仅用于历史追溯，不作为当前有效知识来源。
+- space_id: SPACE-INDUSTRY-DEVELOPMENT
+  name: 06-产业发展部知识库
+  path: 06-产业发展部知识库
+  purpose: 产业研究、合作、业务拓展和生态建设知识。
+  owners:
+    primary: Terry
+    backup: null
+  default_access: department_read_comment
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-06-001
+    name: 00-部门公共
+    path: 06-产业发展部知识库/00-部门公共
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-06-002
+    name: 01-产业研究
+    path: 06-产业发展部知识库/01-产业研究
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-06-003
+    name: 02-战略合作
+    path: 06-产业发展部知识库/02-战略合作
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-06-004
+    name: 03-业务拓展
+    path: 06-产业发展部知识库/03-业务拓展
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-06-005
+    name: 04-生态建设
+    path: 06-产业发展部知识库/04-生态建设
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-06-006
+    name: 归档
+    path: 06-产业发展部知识库/归档
+    parent_directory_id: null
+    kind: archive
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 仅用于历史追溯，不作为当前有效知识来源。
+- space_id: SPACE-EXPERIENCE-RESEARCH
+  name: 07-体验与研究中心知识库
+  path: 07-体验与研究中心知识库
+  purpose: 用户研究、设计、前瞻研究和测试评估知识。
+  owners:
+    primary: 颢祯
+    backup: null
+  default_access: center_read_comment
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-07-001
+    name: 00-中心公共
+    path: 07-体验与研究中心知识库/00-中心公共
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-07-002
+    name: 01-用户体验研究
+    path: 07-体验与研究中心知识库/01-用户体验研究
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-07-003
+    name: 02-交互设计
+    path: 07-体验与研究中心知识库/02-交互设计
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-07-004
+    name: 03-前瞻研究
+    path: 07-体验与研究中心知识库/03-前瞻研究
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-07-005
+    name: 04-测试与评估
+    path: 07-体验与研究中心知识库/04-测试与评估
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-07-006
+    name: 归档
+    path: 07-体验与研究中心知识库/归档
+    parent_directory_id: null
+    kind: archive
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 仅用于历史追溯，不作为当前有效知识来源。
+- space_id: SPACE-CROSS-FUNCTION
+  name: 08-跨部门协作空间
+  path: 08-跨部门协作空间
+  purpose: 专项项目、联席会议和公司级协作过程资料。
+  owners:
+    primary: 凌棋峰
+    backup: null
+  default_access: project_members_only
+  security_default: null
+  acl_inheritance: true
+  default_index_policy: evaluate_document_rules
+  status: active
+  directories:
+  - directory_id: DIR-08-001
+    name: 00-专项项目
+    path: 08-跨部门协作空间/00-专项项目
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-08-002
+    name: '[项目名称]'
+    path: 08-跨部门协作空间/00-专项项目/[项目名称]
+    parent_directory_id: DIR-08-001
+    kind: project_template
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 目录模板，不作为实际业务知识来源。
+  - directory_id: DIR-08-003
+    name: 项目章程
+    path: 08-跨部门协作空间/00-专项项目/[项目名称]/项目章程
+    parent_directory_id: DIR-08-002
+    kind: project_template
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 目录模板，不作为实际业务知识来源。
+  - directory_id: DIR-08-004
+    name: 项目计划
+    path: 08-跨部门协作空间/00-专项项目/[项目名称]/项目计划
+    parent_directory_id: DIR-08-002
+    kind: project_template
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 目录模板，不作为实际业务知识来源。
+  - directory_id: DIR-08-005
+    name: 会议纪要
+    path: 08-跨部门协作空间/00-专项项目/[项目名称]/会议纪要
+    parent_directory_id: DIR-08-002
+    kind: project_template
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 目录模板，不作为实际业务知识来源。
+  - directory_id: DIR-08-006
+    name: 交付物
+    path: 08-跨部门协作空间/00-专项项目/[项目名称]/交付物
+    parent_directory_id: DIR-08-002
+    kind: project_template
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 目录模板，不作为实际业务知识来源。
+  - directory_id: DIR-08-007
+    name: 项目复盘
+    path: 08-跨部门协作空间/00-专项项目/[项目名称]/项目复盘
+    parent_directory_id: DIR-08-002
+    kind: project_template
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 目录模板，不作为实际业务知识来源。
+  - directory_id: DIR-08-008
+    name: 01-联席会议纪要
+    path: 08-跨部门协作空间/01-联席会议纪要
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-08-009
+    name: 02-公司级流程
+    path: 08-跨部门协作空间/02-公司级流程
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-08-010
+    name: 03-知识分享
+    path: 08-跨部门协作空间/03-知识分享
+    parent_directory_id: null
+    kind: content
+    access_policy: inherit
+    index_policy: evaluate_document_rules
+    active_knowledge_allowed: true
+    status: active
+  - directory_id: DIR-08-011
+    name: 归档
+    path: 08-跨部门协作空间/归档
+    parent_directory_id: null
+    kind: archive
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: false
+    status: active
+    notes: 仅用于历史追溯，不作为当前有效知识来源。

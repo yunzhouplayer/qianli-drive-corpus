@@ -1,0 +1,13 @@
+# 用途：定义权威源文档产生、维护和授权所在的平台。
+# 边界：本文件登记知识来源，不登记文档正文涉及的业务系统。
+schema_version: "1.0"
+owner: 郎文
+updated_at: '2026-07-10'
+values:
+  - code: feishu_knowledge_base
+    name: 飞书知识库
+    definition: 公司知识文档创建、维护和权限管理所在的飞书知识库。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'

@@ -1,0 +1,53 @@
+# 用途：定义知识文档安全等级及对应的 AI 权限安全默认值。
+# 安全原则：默认值全部为 false；业务审批只能显式放开所需权限，不能整体跳过权限判断。
+schema_version: "1.0"
+# 正式启用前由安全责任人确认 owner 和更新时间。
+owner: 郎文
+updated_at: '2026-07-10'
+values:
+  - code: public
+    name: 公开级
+    definition: 已经批准可对外公开的信息。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+    default_ai_permissions:
+      # 可公开不等于自动进入索引或模型训练，仍需单独审批。
+      allow_index: false
+      allow_answer_citation: false
+      allow_model_training: false
+  - code: internal
+    name: 内部级
+    definition: 仅限公司员工访问的普通内部信息。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+    default_ai_permissions:
+      allow_index: false
+      allow_answer_citation: false
+      allow_model_training: false
+  - code: confidential
+    name: 机密级
+    definition: 商业秘密、核心策略、敏感合作和重要经营信息。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+    default_ai_permissions:
+      allow_index: false
+      allow_answer_citation: false
+      allow_model_training: false
+  - code: restricted
+    name: 限制级
+    definition: 隐私、轨迹、财务核心、密钥证书、核心算法及其他高敏感内容。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+    default_ai_permissions:
+      # 限制级内容原则上不进入通用 AI 流程。
+      allow_index: false
+      allow_answer_citation: false
+      allow_model_training: false

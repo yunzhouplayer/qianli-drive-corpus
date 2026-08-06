@@ -1,0 +1,107 @@
+# 用途：定义文档类型的稳定机器编码和中文显示名称。
+# 维护规则：code 一经使用不得直接改名；废弃类型应改为 deprecated 并指向替代类型。
+schema_version: "1.0"
+# owner 和 updated_at 在正式启用前由知识库总管理员填写。
+owner: 郎文
+updated_at: '2026-07-10'
+# values 仅包含通用文档类型，不在此文件定义业务域或系统模块。
+values:
+  - code: requirement
+    name: 需求文档
+    definition: 记录产品或业务需求、目标、范围和验收条件的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: technical_design
+    name: 技术方案
+    definition: 记录技术设计、架构实现或技术选型方案的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: api_specification
+    name: 接口文档
+    definition: 记录接口定义、字段、协议和调用约束的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: test_plan
+    name: 测试方案
+    definition: 记录测试范围、策略、环境、资源和执行计划的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: test_report
+    name: 测试报告
+    definition: 记录测试执行结果、质量结论和风险的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: meeting_minutes
+    name: 会议纪要
+    definition: 记录会议议题、结论、决策和行动项的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: process_sop
+    name: 流程规范或SOP
+    definition: 记录标准流程、操作步骤、责任和控制要求的文档。
+    aliases:
+      - SOP
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: retrospective
+    name: 复盘总结
+    definition: 记录事件或项目结果、原因、经验和改进措施的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: training_material
+    name: 培训材料
+    definition: 用于人员培训、学习和知识传递的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: operations_manual
+    name: 运维手册
+    definition: 记录系统运维、故障处理、巡检和应急操作的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: policy
+    name: 管理制度
+    definition: 记录公司或组织正式管理要求、办法和规定的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: research_report
+    name: 研究报告
+    definition: 记录研究问题、方法、分析、证据和结论的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: project_plan
+    name: 项目计划
+    definition: 记录项目目标、范围、里程碑、资源和交付安排的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
+  - code: announcement
+    name: 通知公告
+    definition: 面向指定范围发布通知、公告或通报的文档。
+    aliases: []
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'

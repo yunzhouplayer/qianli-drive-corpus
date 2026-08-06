@@ -1,0 +1,108 @@
+# 用途：校验受控字典文件及字典值的通用结构。
+# 边界：本 Schema 校验结构，不判断具体业务值是否正确；业务正确性仍由责任人确认。
+# 兼容标准：JSON Schema Draft 2020-12；YAML 仅作为便于维护的承载格式。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:controlled-vocabulary:v1
+title: 千里智行知识库受控字典
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - owner
+  - updated_at
+  - values
+properties:
+  schema_version:
+    type: string
+    description: 受控字典文件的结构版本。
+  owner:
+    type: string
+    minLength: 1
+    description: 对整个字典负责的维护人标识。
+  updated_at:
+    type: string
+    format: date
+    description: 字典最后更新时间，使用 YYYY-MM-DD。
+  values:
+    type: array
+    description: 字典值列表；治理验证阶段允许尚未确认的业务字典为空。
+    items:
+      $ref: '#/$defs/vocabulary_value'
+$defs:
+  vocabulary_value:
+    type: object
+    additionalProperties: false
+    required:
+      - code
+      - name
+      - definition
+      - aliases
+      - status
+      - owner
+      - effective_at
+    properties:
+      code:
+        type: string
+        pattern: '^[a-z][a-z0-9_]*$'
+        description: 稳定机器编码，一经使用不得直接改名或重复分配。
+      name:
+        type: string
+        minLength: 1
+        description: 供人员阅读的中文显示名称。
+      definition:
+        type: string
+        minLength: 1
+        description: 字典值的中文定义、适用范围和边界。
+      aliases:
+        type: array
+        uniqueItems: true
+        description: 检索时可识别的别名列表；没有别名时使用空列表。
+        items:
+          type: string
+          minLength: 1
+      status:
+        type: string
+        description: 字典值状态；active=有效，deprecated=已废弃。
+        enum:
+          - active
+          - deprecated
+      owner:
+        type: string
+        minLength: 1
+        description: 对该字典值定义负责的维护人标识。
+      effective_at:
+        type: string
+        format: date
+        description: 字典值开始生效的日期。
+      replacement_code:
+        type: string
+        pattern: '^[a-z][a-z0-9_]*$'
+        description: 字典值废弃后应使用的替代编码。
+      default_ai_permissions:
+        type: object
+        additionalProperties: false
+        description: 该安全等级对应的 AI 权限安全默认值，仍可被更严格的文档权限覆盖。
+        required:
+          - allow_index
+          - allow_answer_citation
+          - allow_model_training
+        properties:
+          allow_index:
+            type: boolean
+            description: 默认是否允许建立索引。
+          allow_answer_citation:
+            type: boolean
+            description: 默认是否允许 Agent 回答引用。
+          allow_model_training:
+            type: boolean
+            description: 默认是否允许用于模型训练。
+    allOf:
+      - if:
+          properties:
+            status:
+              const: deprecated
+          required:
+            - status
+        then:
+          required:
+            - replacement_code

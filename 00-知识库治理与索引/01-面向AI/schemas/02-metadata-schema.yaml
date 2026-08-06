@@ -1,0 +1,269 @@
+# 用途：校验公司知识库文档的结构化元数据。
+# 说明：本文件只定义通用字段和状态约束，不定义具体业务域、系统平台或保留期限。
+# 兼容标准：JSON Schema Draft 2020-12；YAML 只是便于人员维护的承载格式。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:metadata:v1
+title: 千里智行知识文档元数据
+description: 公司知识库正式文档的机器校验规则，不包含业务域或系统平台的具体取值。
+type: object
+additionalProperties: false
+
+# 以下字段是所有知识文档的基础必填项。
+# 正式文档、废弃文档和允许索引的文档还有条件必填项，见文件末尾 allOf。
+required:
+  - document_id
+  - title
+  - document_type
+  - space_id
+  - directory_id
+  - business_domains
+  - summary
+  - applies_to
+  - not_applies_to
+  - owner
+  - maintaining_team
+  - authority_status
+  - effective_status
+  - document_version
+  - source_url
+  - source_system
+  - created_at
+  - updated_at
+  - retention_policy
+  - security_level
+  - ai_permissions
+
+# 字段定义按“标识与归属、内容边界、责任与状态、来源与时间、安全与 AI、文档关系”分组。
+properties:
+  # 标识与归属
+  document_id:
+    type: string
+    minLength: 1
+    description: 全局唯一且创建后不可变的文档标识，优先由平台生成。
+  topic_id:
+    type: string
+    minLength: 1
+    description: 正式权威文档关联的主题标识，取值来自权威来源注册表。
+  title:
+    type: string
+    minLength: 1
+    description: 稳定标题，不包含分类前缀或文档修订版本。
+  document_type:
+    type: string
+    minLength: 1
+    description: 文档类型编码，取值来自文档类型受控字典。
+    x-controlled-vocabulary: document-types
+  space_id:
+    type: string
+    minLength: 1
+    description: 使用 01-knowledge-structure.yaml 中登记的空间ID，不直接填写显示名称。
+    x-knowledge-structure-reference: ../01-knowledge-structure.yaml#spaces.space_id
+  directory_id:
+    type: string
+    minLength: 1
+    description: 使用 01-knowledge-structure.yaml 中登记的目录ID，不直接填写物理路径。
+    x-knowledge-structure-reference: ../01-knowledge-structure.yaml#spaces.directories.directory_id
+  business_domains:
+    type: array
+    minItems: 1
+    maxItems: 5
+    uniqueItems: true
+    description: 文档涉及的业务或专业领域编码，至少1个、最多5个。
+    items:
+      type: string
+      minLength: 1
+    x-controlled-vocabulary: business-domains
+  systems_platforms:
+    type: array
+    uniqueItems: true
+    description: 文档涉及的业务系统、客户端或技术平台编码；不涉及具体系统时可不填写。
+    items:
+      type: string
+      minLength: 1
+    x-controlled-vocabulary: systems-platforms
+
+  # 内容摘要与适用边界
+  summary:
+    type: string
+    minLength: 20
+    maxLength: 500
+    description: 说明主题、核心结论和用途，不复制标题。
+  applies_to:
+    type: string
+    minLength: 1
+    description: 适用的角色、区域、系统版本、环境或其他边界。
+  not_applies_to:
+    type: string
+    minLength: 1
+    description: 明确排除范围；无排除项时填写“无”。
+
+  # 内容责任人与治理状态
+  owner:
+    type: string
+    minLength: 1
+    description: 内容准确性和时效责任人的人员标识。
+  maintaining_team:
+    type: string
+    minLength: 1
+    description: 长期负责维护该文档的组织或团队标识。
+  approver:
+    type: string
+    minLength: 1
+    description: 批准正式发布的人员标识。
+  authority_status:
+    type: string
+    description: 权威状态；draft=草稿，in_review=评审中，formal=正式，deprecated=废弃。
+    enum:
+      - draft
+      - in_review
+      - formal
+      - deprecated
+  effective_status:
+    type: string
+    description: 有效状态；not_effective=未生效，effective=有效，expired=已过期，suspended=已暂停。
+    enum:
+      - not_effective
+      - effective
+      - expired
+      - suspended
+
+  # 版本、来源和时间
+  document_version:
+    type: string
+    minLength: 1
+    description: 文档自身的修订版本，不等同于适用系统版本。
+  applicable_system_versions:
+    type: array
+    uniqueItems: true
+    description: 本文档适用的系统版本范围；不涉及具体版本时可不填写。
+    items:
+      type: string
+      minLength: 1
+  source_url:
+    type: string
+    format: uri
+    description: 指向权威源文档，不指向索引副本。
+  source_system:
+    type: string
+    minLength: 1
+    description: 权威源文档所在平台的编码，例如飞书知识库。
+    x-controlled-vocabulary: source-systems
+  created_at:
+    type: string
+    format: date-time
+    description: 权威源文档首次创建时间，使用带时区的 ISO 8601 日期时间。
+  updated_at:
+    type: string
+    format: date-time
+    description: 权威源文档最后修改时间，使用带时区的 ISO 8601 日期时间。
+  effective_at:
+    type: string
+    format: date-time
+    description: 正式文档开始生效的时间。
+  review_due:
+    type: string
+    format: date
+    description: 下一次内容复审日期，使用 YYYY-MM-DD。
+
+  # 保留期限、安全等级和源权限引用
+  retention_policy:
+    type: string
+    minLength: 1
+    description: 保留期限和清理规则编码，取值来自保留期限受控字典。
+    x-controlled-vocabulary: retention-policies
+  security_level:
+    type: string
+    description: 安全等级；public=公开级，internal=内部级，confidential=机密级，restricted=限制级。
+    enum:
+      - public
+      - internal
+      - confidential
+      - restricted
+  acl_ref:
+    type: string
+    minLength: 1
+    description: 可供索引服务读取的源权限引用，不在元数据中复制成员明细。
+
+  # 三个 AI 权限相互独立，默认均为 false。
+  # allow_index=true 不代表允许回答引用，更不代表允许训练模型。
+  ai_permissions:
+    type: object
+    additionalProperties: false
+    description: 文档在索引、回答引用和模型训练三个场景中的独立 AI 权限。
+    required:
+      - allow_index
+      - allow_answer_citation
+      - allow_model_training
+    properties:
+      allow_index:
+        type: boolean
+        default: false
+        description: 是否允许在当前权限域内建立检索索引。
+      allow_answer_citation:
+        type: boolean
+        default: false
+        description: 是否允许 Agent 在回答中使用并引用本文档。
+      allow_model_training:
+        type: boolean
+        default: false
+        description: 是否允许将本文档用于模型微调或持续训练。
+
+  # 文档关系。废弃文档至少需要替代文档或废弃原因之一。
+  related_document_ids:
+    type: array
+    uniqueItems: true
+    description: 与本文档有关联的其他文档ID列表，当前不区分关系类型。
+    items:
+      type: string
+      minLength: 1
+  replacement_document_id:
+    type: string
+    minLength: 1
+    description: 废弃文档的替代文档ID。
+  deprecation_reason:
+    type: string
+    minLength: 1
+    description: 文档废弃且没有替代文档时填写的废弃原因。
+
+# 条件约束：开发人员新增状态或权限字段时，必须同步检查这些规则。
+allOf:
+  # 正式文档必须能够定位业务主题、审批人、生效时间和复审日期。
+  - if:
+      properties:
+        authority_status:
+          const: formal
+      required:
+        - authority_status
+    then:
+      required:
+        - topic_id
+        - approver
+        - effective_at
+        - review_due
+  # 废弃文档必须说明后续去向，避免形成无解释的知识断链。
+  - if:
+      properties:
+        authority_status:
+          const: deprecated
+      required:
+        - authority_status
+    then:
+      anyOf:
+        - required:
+            - replacement_document_id
+        - required:
+            - deprecation_reason
+  # 允许建立索引时必须提供源 ACL 引用，防止索引服务扩大原始权限。
+  - if:
+      properties:
+        ai_permissions:
+          properties:
+            allow_index:
+              const: true
+          required:
+            - allow_index
+      required:
+        - ai_permissions
+    then:
+      required:
+        - acl_ref

@@ -1,0 +1,203 @@
+# 用途：校验 01-knowledge-structure.yaml 中的空间、目录和目录级治理策略。
+# 说明：Schema 约束字段结构；空间ID、目录ID唯一性和父子路径一致性仍需由额外校验程序检查。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:structure:v1
+title: 千里智行公司知识库机器蓝图
+description: 公司知识空间、目录层级、访问策略和索引策略的机器可读结构。
+type: object
+additionalProperties: false
+
+required:
+  - schema_version
+  - updated_at
+  - source_human_blueprint
+  - spaces
+
+properties:
+  schema_version:
+    type: string
+    const: "1.0"
+    description: 机器蓝图结构版本；结构不兼容调整时升级版本。
+  updated_at:
+    type: string
+    format: date
+    description: 机器蓝图最后更新时间，使用 YYYY-MM-DD。
+  source_human_blueprint:
+    type: string
+    minLength: 1
+    description: 人员可读目录蓝图的项目内相对路径。
+  spaces:
+    type: array
+    minItems: 1
+    description: 公司知识空间列表，每个空间具有稳定ID、责任人和目录集合。
+    items:
+      $ref: "#/$defs/space"
+
+$defs:
+  nullable_person:
+    description: 尚未任命时为 null，任命后填写稳定人员标识。
+    oneOf:
+      - type: string
+        minLength: 1
+      - type: "null"
+
+  owners:
+    type: object
+    additionalProperties: false
+    description: 空间主管理员和备用管理员。
+    required:
+      - primary
+      - backup
+    properties:
+      primary:
+        $ref: "#/$defs/nullable_person"
+        description: 空间主管理员；当前以飞书通讯录姓名标识。
+      backup:
+        $ref: "#/$defs/nullable_person"
+        description: 空间备用管理员；未任命时为 null。
+
+  space:
+    type: object
+    additionalProperties: false
+    required:
+      - space_id
+      - name
+      - path
+      - purpose
+      - owners
+      - default_access
+      - security_default
+      - acl_inheritance
+      - default_index_policy
+      - status
+      - directories
+    properties:
+      space_id:
+        type: string
+        pattern: "^SPACE-[A-Z0-9-]+$"
+        description: 不随显示名称变化的稳定空间标识。
+      name:
+        type: string
+        minLength: 1
+        description: 供人员阅读的空间显示名称。
+      path:
+        type: string
+        minLength: 1
+        description: 相对于项目根目录的物理路径。
+      purpose:
+        type: string
+        minLength: 1
+        description: 空间承载的知识范围和治理定位。
+      owners:
+        $ref: "#/$defs/owners"
+        description: 空间的主备管理员。
+      default_access:
+        type: string
+        description: 默认访问方式；依次表示治理团队管理、公共可读但允许受限例外、中心可读评论、部门可读评论、仅项目成员可访问。
+        enum:
+          - governance_team_managed
+          - public_read_with_restricted_exceptions
+          - center_read_comment
+          - department_read_comment
+          - project_members_only
+      security_default:
+        description: 未确认空间默认安全等级时保持 null；文档安全等级仍必须单独填写。
+        oneOf:
+          - type: string
+            enum:
+              - public
+              - internal
+              - confidential
+              - restricted
+          - type: "null"
+      acl_inheritance:
+        type: boolean
+        description: true 表示子目录默认继承父级访问控制列表。
+      default_index_policy:
+        type: string
+        description: 空间默认索引策略；校验文档规则、需要专项审批或直接禁止。
+        enum:
+          - evaluate_document_rules
+          - require_explicit_approval
+          - deny
+      status:
+        type: string
+        description: 空间状态；active=有效，planned=规划中，deprecated=已废弃。
+        enum:
+          - active
+          - planned
+          - deprecated
+      directories:
+        type: array
+        description: 空间内登记的目录列表。
+        items:
+          $ref: "#/$defs/directory"
+
+  directory:
+    type: object
+    additionalProperties: false
+    required:
+      - directory_id
+      - name
+      - path
+      - parent_directory_id
+      - kind
+      - access_policy
+      - index_policy
+      - active_knowledge_allowed
+      - status
+    properties:
+      directory_id:
+        type: string
+        pattern: "^DIR-[0-9]{2}-[0-9]{3}$"
+        description: 空间内稳定目录标识；新增目录使用未占用编号，不重排已有编号。
+      name:
+        type: string
+        minLength: 1
+        description: 供人员阅读的目录显示名称。
+      path:
+        type: string
+        minLength: 1
+        description: 相对于项目根目录的完整物理路径。
+      parent_directory_id:
+        description: 直属于空间根目录时为 null，否则填写父目录ID。
+        oneOf:
+          - type: string
+            pattern: "^DIR-[0-9]{2}-[0-9]{3}$"
+          - type: "null"
+      kind:
+        type: string
+        description: 目录类型；governance=治理，content=业务内容，archive=归档，project_template=项目模板。
+        enum:
+          - governance
+          - content
+          - archive
+          - project_template
+      access_policy:
+        type: string
+        description: 目录访问策略；inherit=继承父级，restricted=按目录授权，strictly_restricted=严格限制授权。
+        enum:
+          - inherit
+          - restricted
+          - strictly_restricted
+      index_policy:
+        type: string
+        description: 目录索引策略；校验文档规则、需要专项审批或禁止索引。
+        enum:
+          - evaluate_document_rules
+          - require_explicit_approval
+          - deny
+      active_knowledge_allowed:
+        type: boolean
+        description: false 表示不得作为当前有效知识来源，例如归档或项目模板目录。
+      status:
+        type: string
+        description: 目录状态；active=有效，planned=规划中，deprecated=已废弃。
+        enum:
+          - active
+          - planned
+          - deprecated
+      notes:
+        type: string
+        minLength: 1
+        description: 对目录边界、例外或使用限制的补充说明。

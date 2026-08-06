@@ -1,0 +1,214 @@
+# 用途：定义知识入库准备技能向其他 Agent 或人员交接时的稳定输出格式。
+# 兼容标准：JSON Schema Draft 2020-12；YAML 只是便于人员阅读的承载格式。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:skill:knowledge-preparation-result:v1
+title: 知识入库准备结果
+description: 与 Agent 产品无关的知识文档准备结果和审查交接契约。
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - workflow
+  - status
+  - source
+  - governance
+  - target
+  - metadata_candidate
+  - field_evidence
+  - findings
+  - changes
+  - handoff
+properties:
+  schema_version:
+    type: string
+    const: "1.0"
+    description: 本交接结构的版本。
+  workflow:
+    type: string
+    const: prepare-knowledge-document
+    description: 生成结果的标准工作流名称。
+  status:
+    type: string
+    enum:
+      - needs_input
+      - ready_for_review
+      - not_eligible
+    description: 准备状态；依次表示需要补充、可提交审查和不适合入库。
+  source:
+    type: object
+    additionalProperties: false
+    required:
+      - locator
+    description: 被处理源文件或内容的定位信息。
+    properties:
+      locator:
+        type: string
+        minLength: 1
+        description: 文件路径、文档链接或其他可重复定位的来源。
+      format:
+        type: string
+        description: 源文件格式，例如 markdown、docx、pdf 或 feishu-document。
+      content_hash:
+        type: string
+        description: 可选内容摘要，用于确认后续审查针对同一版本。
+  governance:
+    type: object
+    additionalProperties: false
+    required:
+      - root
+      - operating_mode
+      - production_index_enabled
+    description: 本次使用的治理规则位置和运行状态。
+    properties:
+      root:
+        type: string
+        minLength: 1
+        description: 当前知识库治理项目或治理目录定位。
+      operating_mode:
+        type: string
+        minLength: 1
+        description: 准备时读取到的治理运行模式。
+      production_index_enabled:
+        type: boolean
+        description: 准备时读取到的生产索引全局开关。
+  target:
+    type: object
+    additionalProperties: false
+    required:
+      - space_id
+      - directory_id
+    description: 候选知识空间和目录；未确认时使用 null。
+    properties:
+      space_id:
+        oneOf:
+          - type: string
+          - type: "null"
+        description: 机器蓝图中的候选空间ID。
+      directory_id:
+        oneOf:
+          - type: string
+          - type: "null"
+        description: 机器蓝图中的候选目录ID。
+  metadata_candidate:
+    type: object
+    description: 按当前元数据 Schema 形成的候选字段和值，不代表已经批准。
+  field_evidence:
+    type: array
+    description: 每个候选元数据字段的确认状态和依据。
+    items:
+      $ref: '#/$defs/field_evidence'
+  findings:
+    type: array
+    description: 内容、安全和治理缺口列表。
+    items:
+      $ref: '#/$defs/finding'
+  changes:
+    type: array
+    description: 对源文件提出或实际实施的修改。
+    items:
+      $ref: '#/$defs/change'
+  handoff:
+    type: object
+    additionalProperties: false
+    required:
+      - ready
+      - next_workflow
+      - artifacts
+    description: 提交独立审查所需的交接信息。
+    properties:
+      ready:
+        type: boolean
+        description: 是否具备提交独立审查的最低条件。
+      next_workflow:
+        type: string
+        const: review-knowledge-admission
+        description: 推荐的下一标准工作流。
+      artifacts:
+        type: array
+        description: 需要移交的源文件、候选元数据和准备结果定位。
+        items:
+          type: string
+          minLength: 1
+$defs:
+  field_evidence:
+    type: object
+    additionalProperties: false
+    required:
+      - field
+      - state
+      - evidence
+    properties:
+      field:
+        type: string
+        minLength: 1
+        description: 元数据字段名。
+      state:
+        type: string
+        enum:
+          - confirmed
+          - candidate
+          - pending
+          - not_applicable
+          - platform_generated
+        description: 字段状态；依次表示已确认、候选、待确认、不适用和平台生成。
+      value:
+        description: 当前字段值；待确认或平台生成时可以为空。
+      evidence:
+        type: array
+        description: 支持该状态或候选值的来源定位。
+        items:
+          type: string
+  finding:
+    type: object
+    additionalProperties: false
+    required:
+      - id
+      - severity
+      - message
+    properties:
+      id:
+        type: string
+        minLength: 1
+        description: 稳定问题标识。
+      severity:
+        type: string
+        enum:
+          - blocker
+          - required
+          - suggestion
+        description: 问题级别；依次表示阻塞、必须修改和建议优化。
+      rule_source:
+        type: string
+        description: 对应治理规则的文件和章节定位。
+      message:
+        type: string
+        minLength: 1
+        description: 中文问题说明和处理要求。
+      evidence:
+        type: array
+        description: 源文件中的证据定位。
+        items:
+          type: string
+  change:
+    type: object
+    additionalProperties: false
+    required:
+      - action
+      - target
+      - summary
+    properties:
+      action:
+        type: string
+        enum:
+          - none
+          - proposed
+          - applied
+        description: 修改状态；依次表示未修改、拟修改和已实施。
+      target:
+        type: string
+        minLength: 1
+        description: 修改涉及的文件或章节定位。
+      summary:
+        type: string
+        minLength: 1
+        description: 修改内容的中文摘要。

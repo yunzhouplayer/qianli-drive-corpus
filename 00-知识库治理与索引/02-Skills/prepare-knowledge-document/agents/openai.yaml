@@ -1,0 +1,6 @@
+# 用途：OpenAI/Codex 客户端的可选界面适配器；通用 Agent Skills 运行时可以忽略本文件。
+interface:
+  # display_name 为界面名称，short_description 为简要用途，default_prompt 为默认调用示例。
+  display_name: "知识入库准备助手"
+  short_description: "引导文档负责人补齐元数据、内容结构、安全边界和入库前缺口"
+  default_prompt: "使用 $prepare-knowledge-document 引导我整理这个待入库文件并补齐必要信息。"

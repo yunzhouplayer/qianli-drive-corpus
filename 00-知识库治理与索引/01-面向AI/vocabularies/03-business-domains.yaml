@@ -1,0 +1,15 @@
+# 用途：定义知识文档所属业务或专业领域的稳定编码。
+# 当前范围：仅登记已确认的产研中心首批试点范围，不预填订单、调度等未确认业务域。
+schema_version: "1.0"
+owner: 郎文
+updated_at: '2026-07-10'
+values:
+  - code: testing_quality
+    name: 测试与质量
+    definition: 产研中心内与测试策略、测试方案、测试用例、测试执行、质量评估、测试工具和测试效能相关的知识。
+    aliases:
+      - 测试
+      - 测试相关
+    status: active
+    owner: 郎文
+    effective_at: '2026-07-10'
