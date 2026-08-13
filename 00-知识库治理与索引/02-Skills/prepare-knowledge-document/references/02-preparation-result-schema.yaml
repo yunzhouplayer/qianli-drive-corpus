@@ -12,6 +12,7 @@ required:
   - status
   - source
   - governance
+  - admission_context
   - target
   - metadata_candidate
   - field_evidence
@@ -71,6 +72,9 @@ properties:
       production_index_enabled:
         type: boolean
         description: 准备时读取到的生产索引全局开关。
+  admission_context:
+    $ref: '#/$defs/admission_context'
+    description: 区分首次创建前和已有权威源，避免伪造平台生成字段。
   target:
     type: object
     additionalProperties: false
@@ -130,6 +134,30 @@ properties:
           type: string
           minLength: 1
 $defs:
+  admission_context:
+    type: object
+    additionalProperties: false
+    required:
+      - stage
+      - platform_generated_fields
+    properties:
+      stage:
+        type: string
+        enum:
+          - pre_create
+          - existing_source
+        description: pre_create 表示飞书权威源尚未创建；existing_source 表示已有可读取的真实源。
+      platform_generated_fields:
+        type: array
+        uniqueItems: true
+        description: 预创建阶段允许暂缺、创建后必须回填的字段。
+        items:
+          type: string
+          enum:
+            - document_id
+            - source_url
+            - created_at
+            - updated_at
   field_evidence:
     type: object
     additionalProperties: false

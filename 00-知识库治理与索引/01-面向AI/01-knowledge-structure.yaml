@@ -12,7 +12,7 @@
 # status：active=有效，planned=规划中，deprecated=已废弃。
 # owners.primary=主管理员，owners.backup=备用管理员；未任命时使用 null。
 schema_version: '1.0'
-updated_at: '2026-07-10'
+updated_at: '2026-08-13'
 source_human_blueprint: 00-知识库治理与索引/00-面向人员/02-公司知识库空间与目录蓝图.md
 spaces:
 - space_id: SPACE-KNOWLEDGE-GOVERNANCE
@@ -146,6 +146,26 @@ spaces:
     index_policy: deny
     active_knowledge_allowed: true
     status: active
+  - directory_id: DIR-00-014
+    name: 10-验证记录
+    path: 00-知识库治理与索引/00-面向人员/10-验证记录
+    parent_directory_id: DIR-00-001
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+    notes: 保存脱敏的平台接入和治理验证证据，不作为生产运行日志或业务权威正文，不进入生产索引。
+  - directory_id: DIR-00-015
+    name: scripts
+    path: 00-知识库治理与索引/01-面向AI/scripts
+    parent_directory_id: DIR-00-003
+    kind: governance
+    access_policy: inherit
+    index_policy: deny
+    active_knowledge_allowed: true
+    status: active
+    notes: 保存经测试的治理自动化脚本；脚本可操作平台但不是业务知识，不进入生产索引。
 - space_id: SPACE-COMPANY-PUBLIC
   name: 01-公司公共知识库
   path: 01-公司公共知识库
@@ -322,8 +342,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-01-025
-    name: 归档
-    path: 01-公司公共知识库/归档
+    name: 99-归档
+    path: 01-公司公共知识库/99-归档
     parent_directory_id: null
     kind: archive
     access_policy: inherit
@@ -543,8 +563,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-02-023
-    name: 归档
-    path: 02-产品与技术管理中心知识库/归档
+    name: 99-归档
+    path: 02-产品与技术管理中心知识库/99-归档
     parent_directory_id: null
     kind: archive
     access_policy: inherit
@@ -782,8 +802,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-03-025
-    name: 归档
-    path: 03-运营管理中心知识库/归档
+    name: 99-归档
+    path: 03-运营管理中心知识库/99-归档
     parent_directory_id: null
     kind: archive
     access_policy: inherit
@@ -904,8 +924,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-04-012
-    name: 归档
-    path: 04-政企合作中心知识库/归档
+    name: 99-归档
+    path: 04-政企合作中心知识库/99-归档
     parent_directory_id: null
     kind: archive
     access_policy: inherit
@@ -1071,8 +1091,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-05-017
-    name: 归档
-    path: 05-职能部门知识库/归档
+    name: 99-归档
+    path: 05-职能部门知识库/99-归档
     parent_directory_id: null
     kind: archive
     access_policy: inherit
@@ -1139,8 +1159,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-06-006
-    name: 归档
-    path: 06-产业发展部知识库/归档
+    name: 99-归档
+    path: 06-产业发展部知识库/99-归档
     parent_directory_id: null
     kind: archive
     access_policy: inherit
@@ -1207,8 +1227,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-07-006
-    name: 归档
-    path: 07-体验与研究中心知识库/归档
+    name: 99-归档
+    path: 07-体验与研究中心知识库/99-归档
     parent_directory_id: null
     kind: archive
     access_policy: inherit
@@ -1326,8 +1346,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-08-011
-    name: 归档
-    path: 08-跨部门协作空间/归档
+    name: 99-归档
+    path: 08-跨部门协作空间/99-归档
     parent_directory_id: null
     kind: archive
     access_policy: inherit

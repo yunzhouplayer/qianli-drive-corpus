@@ -1,0 +1,170 @@
+schema_version: "1.0"
+workflow: prepare-knowledge-document
+status: needs_input
+source:
+  locator: 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md
+  format: markdown
+  content_hash: sha256:7f8581de1c61d9996f108dcebeefd899f8d2c92651210ac11b7da49c39895a5b
+governance:
+  root: 00-知识库治理与索引
+  operating_mode: governance_validation
+  production_index_enabled: false
+admission_context:
+  stage: pre_create
+  platform_generated_fields:
+    - document_id
+    - source_url
+    - created_at
+    - updated_at
+target:
+  space_id: SPACE-KNOWLEDGE-GOVERNANCE
+  directory_id: DIR-00-014
+metadata_candidate:
+  title: 2026-08-13 飞书知识库单节点只读与权限变更验证报告
+  document_type: test_report
+  space_id: SPACE-KNOWLEDGE-GOVERNANCE
+  directory_id: DIR-00-014
+  business_domains:
+    - testing_quality
+  summary: 记录飞书企业自建应用对单个知识库节点的认证、只读访问、未授权拒绝、撤权和恢复授权验证事实及能力边界。
+  applies_to: 千里智行知识库治理验证阶段的飞书应用身份、单节点只读接入和资源权限验证。
+  not_applies_to: 不适用于用户身份权限、生产索引、批量同步、完整变更审计或 Agent 知识回答能力证明。
+  owner: 郎文
+  authority_status: draft
+  effective_status: not_effective
+  document_version: "1.0"
+  source_system: feishu_knowledge_base
+  security_level: internal
+  ai_permissions:
+    allow_index: false
+    allow_answer_citation: false
+    allow_model_training: false
+field_evidence:
+  - field: title
+    state: candidate
+    value: 2026-08-13 飞书知识库单节点只读与权限变更验证报告
+    evidence:
+      - 源文件标题
+  - field: document_type
+    state: candidate
+    value: test_report
+    evidence:
+      - 源文件包含验证范围、执行结果、限制和门禁判定
+      - 01-document-types.yaml 中 test_report 为有效值
+  - field: space_id
+    state: candidate
+    value: SPACE-KNOWLEDGE-GOVERNANCE
+    evidence:
+      - 源文件属于公司级治理验证记录
+      - 01-knowledge-structure.yaml 中该空间承载治理规范和验证记录
+  - field: directory_id
+    state: confirmed
+    value: DIR-00-014
+    evidence:
+      - 实际目录为 00-面向人员/10-验证记录
+      - 01-knowledge-structure.yaml 已登记 DIR-00-014
+  - field: business_domains
+    state: candidate
+    value:
+      - testing_quality
+    evidence:
+      - 验证对象为知识库接入与权限测试
+      - 03-business-domains.yaml 中 testing_quality 为当前唯一有效试点值
+  - field: systems_platforms
+    state: pending
+    value: null
+    evidence:
+      - 04-systems-platforms.yaml 当前无有效值
+  - field: owner
+    state: confirmed
+    value: 郎文
+    evidence:
+      - 用户提供的知识治理负责人和飞书验证执行责任
+  - field: maintaining_team
+    state: pending
+    value: null
+    evidence:
+      - 尚无稳定团队标识或确认记录
+  - field: document_id
+    state: platform_generated
+    value: null
+    evidence:
+      - 待飞书权威源创建后读取平台文档标识
+  - field: source_url
+    state: platform_generated
+    value: null
+    evidence:
+      - 当前是首次创建前候选，待飞书创建后读取真实源链接
+  - field: source_system
+    state: candidate
+    value: feishu_knowledge_base
+    evidence:
+      - admission_context.stage=pre_create，本候选的受控创建目标平台为飞书知识库
+      - 05-source-systems.yaml 中该值有效
+  - field: created_at
+    state: platform_generated
+    value: null
+    evidence:
+      - 待飞书权威源创建后读取平台时间
+  - field: updated_at
+    state: platform_generated
+    value: null
+    evidence:
+      - 待飞书权威源创建后读取平台时间
+  - field: retention_policy
+    state: pending
+    value: null
+    evidence:
+      - 06-retention-policies.yaml 当前无有效值
+  - field: security_level
+    state: candidate
+    value: internal
+    evidence:
+      - 报告包含内部应用能力、治理边界和脱敏资源引用，不适合公开发布
+  - field: ai_permissions
+    state: confirmed
+    value:
+      allow_index: false
+      allow_answer_citation: false
+      allow_model_training: false
+    evidence:
+      - 当前 operating_mode=governance_validation
+      - 当前 production_index_enabled=false
+findings:
+  - id: PREP-VOCAB-001
+    severity: blocker
+    rule_source: 01-面向AI/vocabularies/06-retention-policies.yaml
+    message: 保留期限字典为空，无法填写必填 retention_policy。
+    evidence:
+      - values 为空列表
+  - id: PREP-SOURCE-001
+    severity: suggestion
+    rule_source: schemas/02-metadata-schema.yaml
+    message: 当前为预创建阶段，document_id、source_url、created_at 和 updated_at 按规则标记为平台待生成，不构成文档缺陷；创建后必须回填并终审。
+    evidence:
+      - admission_context.stage=pre_create
+  - id: PREP-OWNER-001
+    severity: required
+    rule_source: schemas/02-metadata-schema.yaml
+    message: 需要确认长期维护团队和内容审批人；当前不能由准备 Skill 推断。
+    evidence:
+      - maintaining_team 和 approver 无确认记录
+  - id: PREP-CONTENT-001
+    severity: suggestion
+    rule_source: 00-面向人员/09-AI友好内容写作规范.md
+    message: 后续可补充执行时间戳和调用主体版本，以便精确计算权限变更传播时延。
+    evidence:
+      - 源文件 6.3 未验证范围
+changes:
+  - action: none
+    target: 源报告正文
+    summary: 本轮只生成准备侧车结果，没有修改源报告。
+  - action: applied
+    target: 00-面向人员/02-公司知识库空间与目录蓝图.md 与 01-knowledge-structure.yaml
+    summary: 根据首轮准备发现补登记 10-验证记录及稳定目录 ID DIR-00-014。
+handoff:
+  ready: false
+  next_workflow: review-knowledge-admission
+  artifacts:
+    - 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md
+    - 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md.knowledge-preparation.yaml

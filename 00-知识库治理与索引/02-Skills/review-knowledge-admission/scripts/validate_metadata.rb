@@ -192,16 +192,51 @@ begin
   end
 
   loaded_metadata = load_yaml(metadata_path)
+  admission_context = loaded_metadata["admission_context"].is_a?(Hash) ? loaded_metadata["admission_context"] : {}
   metadata = loaded_metadata["metadata"].is_a?(Hash) ? loaded_metadata["metadata"] : loaded_metadata
   raise "候选元数据顶层必须是对象" unless metadata.is_a?(Hash)
 
   checks = []
+  admission_stage = admission_context["stage"] || "existing_source"
+  declared_platform_fields = Array(admission_context["platform_generated_fields"])
+  allowed_platform_fields = %w[document_id source_url created_at updated_at]
+
+  unless %w[pre_create existing_source].include?(admission_stage)
+    add_check(checks, "ADMISSION_STAGE", "fail", "admission_context.stage 只能是 pre_create 或 existing_source。", "admission_context.stage")
+  end
+
+  invalid_platform_fields = declared_platform_fields - allowed_platform_fields
+  unless invalid_platform_fields.empty?
+    add_check(
+      checks,
+      "PLATFORM_PENDING_INVALID",
+      "fail",
+      "存在不允许作为平台待生成字段的必填项：#{invalid_platform_fields.join(', ')}。",
+      "admission_context.platform_generated_fields"
+    )
+  end
+
+  if admission_stage == "existing_source" && !declared_platform_fields.empty?
+    add_check(
+      checks,
+      "PLATFORM_PENDING_INVALID",
+      "fail",
+      "已有权威源阶段不得声明平台待生成字段。",
+      "admission_context.platform_generated_fields"
+    )
+  end
+
   required = Array(metadata_schema["required"])
   missing = required.select { |field| !metadata.key?(field) || blank?(metadata[field]) }
+  platform_pending_missing = if admission_stage == "pre_create"
+                               missing & declared_platform_fields & allowed_platform_fields
+                             else
+                               []
+                             end
   governance_blocked_missing = missing.select do |field|
     vocabularies.key?(field) && active_codes(vocabularies[field]).empty?
   end
-  document_missing = missing - governance_blocked_missing
+  document_missing = missing - governance_blocked_missing - platform_pending_missing
 
   if document_missing.empty?
     message = if governance_blocked_missing.empty?
@@ -220,6 +255,16 @@ begin
       "VOCAB_EMPTY",
       "blocked",
       "受控字典尚无有效值，当前无法填写该必填字段；需先完成字典治理。",
+      field
+    )
+  end
+
+  platform_pending_missing.each do |field|
+    add_check(
+      checks,
+      "PLATFORM_PENDING",
+      "info",
+      "预创建阶段允许暂缺该平台生成字段；受控创建后必须回填并执行最终审查。",
       field
     )
   end
@@ -322,6 +367,7 @@ begin
   blocked = checks.count { |item| item["status"] == "blocked" }
   machine_checks_passed = failed.zero? && blocked.zero?
   production_index_candidate = machine_checks_passed &&
+                               admission_stage == "existing_source" &&
                                production_index_enabled &&
                                metadata["authority_status"] == "formal" &&
                                metadata["effective_status"] == "effective" &&
@@ -335,6 +381,7 @@ begin
     "governance_root" => governance_root,
     "operating_mode" => operating_mode,
     "production_index_enabled" => production_index_enabled,
+    "admission_stage" => admission_stage,
     "checks" => checks,
     "summary" => {
       "passed" => checks.count { |item| item["status"] == "pass" },
@@ -342,6 +389,8 @@ begin
       "blocked" => blocked,
       "information" => checks.count { |item| item["status"] == "info" },
       "machine_checks_passed" => machine_checks_passed,
+      "platform_fields_pending" => platform_pending_missing,
+      "pre_create_candidate" => machine_checks_passed && admission_stage == "pre_create",
       "production_index_candidate" => production_index_candidate,
       "human_review_required" => true
     }

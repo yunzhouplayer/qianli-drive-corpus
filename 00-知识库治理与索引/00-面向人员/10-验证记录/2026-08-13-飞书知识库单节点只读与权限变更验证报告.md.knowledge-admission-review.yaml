@@ -1,0 +1,134 @@
+schema_version: "1.0"
+workflow: review-knowledge-admission
+status: failed
+source:
+  locator: 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md
+  metadata_locator: 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md.metadata-candidate.yaml
+  content_hash: sha256:7f8581de1c61d9996f108dcebeefd899f8d2c92651210ac11b7da49c39895a5b
+governance:
+  root: 00-知识库治理与索引
+  operating_mode: governance_validation
+  production_index_enabled: false
+  validator: Ruby 标准库确定性校验器 validate_metadata.rb
+review_stage: pre_create
+machine_checks:
+  - id: ADM-001
+    status: pass
+    message: 源文件、候选元数据和准备结果均可读取且一一对应。
+    evidence:
+      - 源文件 SHA-256 与准备结果记录一致
+  - id: ADM-003
+    status: pass
+    message: 空间 ID 和验证记录目录 ID 已登记，目录属于治理空间且物理路径一致。
+    evidence:
+      - validate_metadata.rb STRUCTURE_SPACE=pass
+      - validate_metadata.rb STRUCTURE_DIRECTORY=pass
+      - 01-knowledge-structure.yaml DIR-00-014
+  - id: ADM-004
+    status: fail
+    message: 缺少非平台生成的基础必填字段 maintaining_team；文档负责人需要确认长期维护团队。
+    evidence:
+      - validate_metadata.rb META_REQUIRED=fail
+  - id: ADM-005
+    status: pass
+    message: 当前权威状态为 draft，不触发 formal 或 deprecated 的条件必填字段；三个 AI 权限均为 false。
+    evidence:
+      - 候选元数据 authority_status=draft
+      - validate_metadata.rb META_AI_PERMISSIONS=pass
+  - id: ADM-006
+    status: blocked
+    message: 文档类型、安全等级、业务域和来源系统均为有效受控值，但保留期限字典为空，无法形成 retention_policy。
+    evidence:
+      - validate_metadata.rb 各已填写受控字段 VOCAB_VALUE=pass
+      - validate_metadata.rb retention_policy VOCAB_EMPTY=blocked
+  - id: ADM-012
+    status: info
+    message: 当前只允许治理验证，不允许生产索引或登记实际语料。
+    evidence:
+      - operating_mode=governance_validation
+      - production_index_enabled=false
+  - id: ADM-013
+    status: info
+    message: 预创建阶段仅暂缺 document_id、source_url、created_at 和 updated_at；这些字段在飞书受控创建后必须回填并复审。
+    evidence:
+      - admission_context.stage=pre_create
+      - validate_metadata.rb PLATFORM_PENDING=info
+human_checks:
+  - id: ADM-002
+    status: pass
+    message: 权威来源登记表为空，未发现同主题重复权威文档；该结论仅代表当前治理仓库登记状态。
+    evidence:
+      - 05-authority-sources.yaml entries=[]
+  - id: ADM-007
+    status: pass
+    message: 源报告标题、日期、验证范围和候选版本状态一致。
+    evidence:
+      - 源文件标题及第 1、2、6 节
+      - 候选 authority_status=draft
+  - id: ADM-008
+    status: pass
+    message: 正文包含验证范围、执行结果、安全控制、事实判断、限制、门禁和下一步，可作为测试报告理解和复核。
+    evidence:
+      - 源文件第 2 至 8 节
+  - id: ADM-009
+    status: pass
+    message: 报告只保留脱敏短哈希和接口状态，未发现密钥、访问令牌、完整资源标识、人员明细或业务正文。
+    evidence:
+      - 源文件第 3、4、5 节
+      - 凭证与资源标识扫描无命中
+  - id: ADM-010
+    status: pass
+    message: 候选安全等级为 internal，三个 AI 权限均关闭，符合治理验证阶段的最小授权原则。
+    evidence:
+      - 候选 metadata security_level=internal
+      - 候选 ai_permissions 全部为 false
+  - id: ADM-011
+    status: blocked
+    message: owner 已有事实依据，但长期维护团队和内容审批人尚未确认。
+    evidence:
+      - 候选 owner=郎文
+      - maintaining_team 和 approver 缺失
+approvals:
+  - role: 文档负责人
+    actor: 郎文
+    status: confirmed
+    evidence: 用户提供的知识治理负责人身份及本次验证执行记录
+  - role: 内容审批人
+    status: pending
+  - role: 安全审核人
+    actor: 郎文
+    status: confirmed
+    evidence: 用户提供的安全审核人身份；本候选 AI 权限未放开
+  - role: 知识库管理员
+    actor: 郎文
+    status: confirmed
+    evidence: 用户提供的知识库总管理员身份；仅批准治理试点，不代表生产索引批准
+admin_actions:
+  - step: 1
+    instruction: 确认长期维护团队并由字典责任人确定保留期限取值，再重新运行准备和审查。
+    status: pending
+  - step: 2
+    instruction: 在飞书创建权威源后回填平台生成 ID、源链接和创建更新时间。
+    status: pending
+  - step: 3
+    instruction: 生产索引保持关闭，语料清单保持为空。
+    status: completed
+    evidence: 03-index-admission-rules.yaml 与 06-corpus-manifest.yaml
+control_updates:
+  - file: 01-knowledge-structure.yaml
+    allowed: true
+    status: updated
+    reason: 已将实际存在的治理验证记录目录补登记为稳定目录 ID。
+    evidence: 01-knowledge-structure.yaml DIR-00-014
+  - file: vocabularies/06-retention-policies.yaml
+    allowed: false
+    status: prohibited
+    reason: 保留期限属于独立治理决策，不能在单文档准入中顺带猜测新增。
+  - file: 05-authority-sources.yaml
+    allowed: false
+    status: prohibited
+    reason: 尚未形成正式权威源，也没有唯一权威主题批准。
+  - file: 06-corpus-manifest.yaml
+    allowed: false
+    status: prohibited
+    reason: 生产索引关闭且该文件只能由索引流程生成。

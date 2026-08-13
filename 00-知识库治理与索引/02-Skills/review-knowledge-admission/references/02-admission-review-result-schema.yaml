@@ -12,6 +12,7 @@ required:
   - status
   - source
   - governance
+  - review_stage
   - machine_checks
   - human_checks
   - approvals
@@ -76,6 +77,12 @@ properties:
       validator:
         type: string
         description: 使用的机器校验器名称和版本。
+  review_stage:
+    type: string
+    enum:
+      - pre_create
+      - final
+    description: pre_create 为首次创建前审查，final 为已有真实平台字段后的最终审查。
   machine_checks:
     type: array
     description: 元数据、目录、字典和模式的机器检查结果。

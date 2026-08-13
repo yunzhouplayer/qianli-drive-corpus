@@ -1,5 +1,5 @@
 # 用途：校验 01-knowledge-structure.yaml 中的空间、目录和目录级治理策略。
-# 说明：Schema 约束字段结构；空间ID、目录ID唯一性和父子路径一致性仍需由额外校验程序检查。
+# 说明：Schema 约束字段结构；空间ID、目录ID唯一性和父子路径一致性由 scripts/validate_knowledge_structure.rb 检查。
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: urn:qianli-drive:knowledge:structure:v1
 title: 千里智行公司知识库机器蓝图

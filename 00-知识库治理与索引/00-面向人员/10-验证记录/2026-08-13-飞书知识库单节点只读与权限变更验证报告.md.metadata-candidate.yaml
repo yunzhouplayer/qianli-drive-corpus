@@ -1,0 +1,27 @@
+admission_context:
+  stage: pre_create
+  platform_generated_fields:
+    - document_id
+    - source_url
+    - created_at
+    - updated_at
+metadata:
+  title: 2026-08-13 飞书知识库单节点只读与权限变更验证报告
+  document_type: test_report
+  space_id: SPACE-KNOWLEDGE-GOVERNANCE
+  directory_id: DIR-00-014
+  business_domains:
+    - testing_quality
+  summary: 记录飞书企业自建应用对单个知识库节点的认证、只读访问、未授权拒绝、撤权和恢复授权验证事实及能力边界。
+  applies_to: 千里智行知识库治理验证阶段的飞书应用身份、单节点只读接入和资源权限验证。
+  not_applies_to: 不适用于用户身份权限、生产索引、批量同步、完整变更审计或 Agent 知识回答能力证明。
+  owner: 郎文
+  authority_status: draft
+  effective_status: not_effective
+  document_version: "1.0"
+  source_system: feishu_knowledge_base
+  security_level: internal
+  ai_permissions:
+    allow_index: false
+    allow_answer_citation: false
+    allow_model_training: false
