@@ -4,10 +4,8 @@ $schema: ./schemas/12-index-admission-rules-schema.yaml
 schema_version: "1.0"
 policy_id: qianli-default-index-admission
 policy_version: "1.0"
-# 当前仅验证治理结构、元数据、字典和准入规则，不执行真实生产索引。
-operating_mode: governance_validation # governance_validation 表示只做治理验证。
-production_index_enabled: false # false 表示生产索引全局关闭。
-# production_index_enabled=false 的优先级高于下方所有准入条件，任何文档均不得进入生产索引。
+state_ref: 00-ai-control-manifest.yaml # 全局运行模式和生产开关只从启动清单读取。
+# 启动清单中的 production_index_enabled=false 优先于下方全部条件，任何文档均不得进入生产索引。
 default_action: deny # deny 表示默认拒绝准入。
 
 # 以下条件全部满足后，才继续执行安全等级规则。
@@ -53,19 +51,5 @@ sync_sla:
 # 所有准入、拒绝、更新和清理动作都必须保留审计记录。
 audit_required: true # true 表示所有动作必须保留审计记录。
 
-# 每次准入判断必须生成独立决定对象，不允许只写布尔结果或自由文本。
-decision_contract:
-  schema_ref: schemas/13-admission-decision-schema.yaml
-  allowed_outcomes:
-    - admit
-    - reject
-    - defer
-  required_fields:
-    - decision_id
-    - document_id
-    - outcome
-    - reason_codes
-    - evaluated_at
-    - control_plane_version
-    - policy_version
-    - evaluator_ref
+# 每次准入判断必须符合唯一决定 Schema，不允许另行复制字段清单或只写布尔结果。
+decision_schema_ref: schemas/13-admission-decision-schema.yaml

@@ -90,6 +90,7 @@ $defs:
       processing_result:
         type: object
         additionalProperties: false
+        description: 单篇文档索引处理的稳定结果码和脱敏说明。
         required: [code, message]
         properties:
           code: {type: string, minLength: 1, description: 稳定处理结果码。}

@@ -176,6 +176,15 @@ Dir.mktmpdir("qianli-metadata-validator-") do |tmpdir|
   assert(report.dig("summary", "pre_create_candidate") == false, "终审不得标记为预创建候选")
   cases << "existing_source_requires_complete_metadata"
 
+  index_rules_path = File.join(governance_copy, "01-面向AI", "03-index-admission-rules.yaml")
+  index_rules = YAML.safe_load(File.read(index_rules_path, encoding: "UTF-8"))
+  index_rules["state_ref"] = "missing-control-manifest.yaml"
+  write_yaml(index_rules_path, index_rules)
+  report, exit_code = run_validator(final_path, governance_copy)
+  assert(exit_code == 2, "失效的运行状态引用应阻断校验")
+  assert(report["error"].to_s.include?("state_ref"), "应报告失效的 state_ref")
+  cases << "state_ref_must_resolve_to_control_manifest"
+
   puts JSON.pretty_generate(
     "result" => "passed",
     "cases" => cases,

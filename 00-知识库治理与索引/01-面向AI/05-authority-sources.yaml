@@ -1,7 +1,7 @@
 # 用途：登记每个业务主题在特定适用范围内的唯一权威文档。
 # 责任：条目必须由对应业务负责人确认，不能由 AI 或知识库管理员猜测生成。
 $schema: ./schemas/04-authority-sources-schema.yaml
-schema_version: "1.0"
+schema_version: "2.0"
 owner: null
 updated_at: null
 # entries 当前为空。每个条目应包含：
@@ -9,8 +9,7 @@ updated_at: null
 # - topic_name: 供人员阅读的主题名称
 # - applies_to: 角色、区域、系统版本等适用范围
 # - authoritative_document_id: 权威文档ID
-# - source_url: 权威源文档地址
-# - owner: 业务负责人标识
-# - authority_status/effective_status: 权威状态与有效状态
-# - effective_at/review_due: 生效时间与复审日期
+# - mapping_owner: 对该映射负责的业务人员标识
+# - mapping_effective_at/mapping_review_due: 映射生效时间与复审日期
+# 文档标题、链接、负责人、正式/有效状态和页面版本必须从飞书实时读取，不在 Git 中复制。
 entries: []

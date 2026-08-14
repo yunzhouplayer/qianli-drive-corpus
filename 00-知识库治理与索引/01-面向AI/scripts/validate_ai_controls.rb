@@ -194,7 +194,7 @@ begin
   raise "项目根目录不存在：#{options[:project_root]}" unless File.directory?(options[:project_root])
 
   findings = []
-  manifest_path = File.join(options[:ai_root], "11-ai-control-manifest.yaml")
+  manifest_path = File.join(options[:ai_root], "00-ai-control-manifest.yaml")
   manifest_schema_path = File.join(options[:ai_root], "schemas/07-ai-control-manifest-schema.yaml")
   unless File.file?(manifest_path)
     add_finding(findings, "CONTROL_MANIFEST_MISSING", "AI 启动清单不存在。", manifest_path)
@@ -205,7 +205,7 @@ begin
     raise "无法继续：AI 启动清单 Schema 不存在"
   end
 
-  manifest = validate_file_against_schema(manifest_path, manifest_schema_path, findings, "11-ai-control-manifest.yaml") || {}
+  manifest = validate_file_against_schema(manifest_path, manifest_schema_path, findings, "00-ai-control-manifest.yaml") || {}
   controls = Array(manifest["load_sequence"])
 
   duplicate_values(controls.map { |item| item["control_id"] }).each do |value|
@@ -214,10 +214,6 @@ begin
   duplicate_values(controls.map { |item| item["path"] }).each do |value|
     add_finding(findings, "CONTROL_PATH_DUPLICATE", "控制文件路径重复：#{value}", value)
   end
-  duplicate_values(controls.map { |item| item["priority"] }).each do |value|
-    add_finding(findings, "CONTROL_PRIORITY_DUPLICATE", "加载优先级重复：#{value}", value.to_s)
-  end
-
   loaded = {}
   controls.each do |control|
     control_id = control["control_id"] || "unknown-control"
@@ -227,9 +223,17 @@ begin
       next
     end
 
-    instance_path = File.join(options[:ai_root], relative_path)
+    path_scope = control["path_scope"] || manifest.dig("path_policy", "default_scope") || "ai_root"
+    path_base = case path_scope
+                when "ai_root" then options[:ai_root]
+                when "governance_root" then File.dirname(options[:ai_root])
+                else
+                  add_finding(findings, "CONTROL_PATH_SCOPE_INVALID", "控制文件使用了未允许的路径作用域。", control_id)
+                  next
+                end
+    instance_path = File.join(path_base, relative_path)
     unless File.file?(instance_path)
-      add_finding(findings, "CONTROL_FILE_MISSING", "启动清单登记的控制文件不存在。", relative_path) if control["required"]
+      add_finding(findings, "CONTROL_FILE_MISSING", "启动清单登记的必需控制文件不存在。", relative_path)
       next
     end
 
@@ -262,51 +266,66 @@ begin
   end
 
   admission = loaded["index_admission"] || load_yaml(File.join(options[:ai_root], "03-index-admission-rules.yaml"))
-  mode_values = {
-    "control_manifest" => manifest["operating_mode"],
-    "index_admission" => admission["operating_mode"],
-    "retrieval_contract" => loaded.dig("retrieval_runtime_contract", "operating_mode"),
-    "indexing_policy" => loaded.dig("indexing_policy", "operating_mode")
+  expected_state_ref = File.basename(manifest_path)
+  state_refs = {
+    "index_admission" => admission["state_ref"],
+    "retrieval_contract" => loaded.dig("retrieval_runtime_contract", "state_ref"),
+    "indexing_policy" => loaded.dig("indexing_policy", "state_ref")
   }
-  if mode_values.values.compact.uniq.length > 1
-    add_finding(findings, "OPERATING_MODE_MISMATCH", "控制文件 operating_mode 不一致：#{mode_values}")
-  end
-  if manifest["operating_mode"] == "governance_validation"
-    if manifest["production_index_enabled"] != false || admission["production_index_enabled"] != false
-      add_finding(findings, "PRODUCTION_MODE_CONFLICT", "治理验证模式必须关闭全部生产索引开关。")
-    end
-    if loaded.dig("indexing_policy", "production_ready") != false
-      add_finding(findings, "PRODUCTION_READY_CONFLICT", "治理验证模式下索引策略不得标记为生产就绪。")
-    end
-    unless Array(loaded.dig("corpus_manifest", "documents")).empty?
-      add_finding(findings, "GOVERNANCE_CORPUS_NOT_EMPTY", "治理验证模式下生产语料清单必须为空。")
+  state_refs.each do |control_id, value|
+    unless value == expected_state_ref
+      add_finding(findings, "CONTROL_STATE_REF_INVALID", "下游控制文件必须引用唯一启动清单 #{expected_state_ref}。", control_id)
     end
   end
 
+  if manifest["operating_mode"] == "governance_validation"
+    add_finding(findings, "PRODUCTION_MODE_CONFLICT", "治理验证模式必须关闭生产索引全局开关。") unless manifest["production_index_enabled"] == false
+    unless Array(loaded.dig("corpus_manifest", "documents")).empty?
+      add_finding(findings, "GOVERNANCE_CORPUS_NOT_EMPTY", "治理验证模式下生产语料清单必须为空。")
+    end
+  elsif manifest["operating_mode"] == "production" && manifest["production_index_enabled"] != true
+    add_finding(findings, "PRODUCTION_MODE_CONFLICT", "生产模式必须显式开启生产索引全局开关。")
+  end
+
   indexing_policy = loaded["indexing_policy"] || {}
-  max_tokens = indexing_policy.dig("chunking", "max_tokens")
-  overlap_tokens = indexing_policy.dig("chunking", "overlap_tokens")
+  indexing_profile = loaded["indexing_profile"] || {}
+  unless indexing_policy["implementation_profile_ref"] == controls.find { |item| item["control_id"] == "indexing_profile" }&.dig("path")
+    add_finding(findings, "INDEXING_PROFILE_REF_INVALID", "索引策略没有引用启动清单登记的实现配置。")
+  end
+  unless indexing_policy["implementation_profile_schema_ref"] == "01-面向AI/schemas/17-indexing-profile-schema.yaml"
+    add_finding(findings, "INDEXING_PROFILE_SCHEMA_REF_INVALID", "索引策略没有引用受控实现配置 Schema。")
+  end
+  unless indexing_profile["intended_mode"] == manifest["operating_mode"]
+    add_finding(findings, "INDEXING_PROFILE_MODE_MISMATCH", "索引实现配置的 intended_mode 与启动清单不一致。")
+  end
+  if manifest["operating_mode"] == "governance_validation" && indexing_profile["validation_only"] != true
+    add_finding(findings, "INDEXING_PROFILE_VALIDATION_FLAG", "治理验证配置必须标记 validation_only=true。")
+  end
+
+  max_tokens = indexing_profile.dig("chunking", "max_tokens")
+  overlap_tokens = indexing_profile.dig("chunking", "overlap_tokens")
   if max_tokens.is_a?(Numeric) && overlap_tokens.is_a?(Numeric) && overlap_tokens >= max_tokens
     add_finding(findings, "CHUNK_OVERLAP_INVALID", "分块重叠 Token 必须小于单块最大 Token。")
   end
-  candidate_top_k = indexing_policy.dig("retrieval", "candidate_top_k")
-  final_top_k = indexing_policy.dig("retrieval", "final_top_k")
+  candidate_top_k = indexing_profile.dig("retrieval", "candidate_top_k")
+  final_top_k = indexing_profile.dig("retrieval", "final_top_k")
   if candidate_top_k.is_a?(Numeric) && final_top_k.is_a?(Numeric) && final_top_k > candidate_top_k
     add_finding(findings, "RETRIEVAL_TOP_K_INVALID", "最终结果数不能大于候选结果数。")
   end
-  keyword_weight = indexing_policy.dig("retrieval", "keyword", "weight")
-  vector_weight = indexing_policy.dig("retrieval", "vector", "weight")
+  keyword_weight = indexing_profile.dig("retrieval", "keyword_weight")
+  vector_weight = indexing_profile.dig("retrieval", "vector_weight")
   if keyword_weight.is_a?(Numeric) && vector_weight.is_a?(Numeric) && (keyword_weight + vector_weight - 1.0).abs > 0.000_001
     add_finding(findings, "RETRIEVAL_WEIGHT_INVALID", "关键词与向量融合权重之和必须为 1。")
   end
-  if indexing_policy["production_ready"] == true
+  if manifest["production_index_enabled"] == true
     production_requirements = {
-      "tokenizer_ref" => indexing_policy.dig("chunking", "tokenizer_ref"),
-      "embedding_model_ref" => indexing_policy.dig("retrieval", "vector", "embedding_model_ref"),
-      "minimum_score" => indexing_policy.dig("retrieval", "minimum_score")
+      "validation_only=false" => indexing_profile["validation_only"] == false,
+      "tokenizer_ref" => indexing_profile.dig("chunking", "tokenizer_ref"),
+      "embedding_model_ref" => indexing_profile.dig("retrieval", "embedding_model_ref"),
+      "minimum_score" => indexing_profile.dig("retrieval", "minimum_score")
     }
     production_requirements.each do |field, value|
-      add_finding(findings, "PRODUCTION_CONFIG_MISSING", "生产就绪缺少已验证配置：#{field}", field) if value.nil? || value == ""
+      add_finding(findings, "PRODUCTION_CONFIG_MISSING", "生产启用缺少已验证配置：#{field}", field) if value.nil? || value == "" || value == false
     end
   end
 

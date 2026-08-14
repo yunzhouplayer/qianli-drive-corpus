@@ -2,7 +2,7 @@
 name: prepare-knowledge-document
 description: 引导文档负责人将 Markdown、Word、PDF、飞书导出或其他可读取文件整理为公司知识库候选文档；补齐候选元数据、命名、正文结构、适用边界、安全信息和受控字典取值，并在用户明确要求时修改文件。用于用户提出“准备入库”“补元数据”“按知识库规范修改”“整理为可入库文档”等请求；不执行最终准入审批或管理员入库。
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   language: "zh-CN"
   format: "agent-skills"
   portability: "agent-agnostic"
@@ -33,7 +33,7 @@ metadata:
 1. 读取[治理文件定位说明](./references/01-governance-files.md)。
 2. 从当前工作区或目标文件向上定位项目根目录及 `00-知识库治理与索引`。
 3. 按定位说明读取最小必要规则，并只提取目标空间、目录和字典值；不要完整输出机器蓝图。
-4. 读取 `03-index-admission-rules.yaml`，记录当前 `operating_mode` 和 `production_index_enabled`。
+4. 读取 `00-ai-control-manifest.yaml`，以其作为 `operating_mode` 和 `production_index_enabled` 的唯一来源；同时确认 `03-index-admission-rules.yaml` 的 `state_ref` 指向该启动清单。
 5. 将候选文件的实际相对目录与机器蓝图中的目录 `path` 对照；物理目录存在但没有稳定 ID 时标记治理阻塞，不退回父目录伪装匹配。
 6. 无法定位治理文件时停止准备并向用户索取项目根目录，不使用通用经验替代公司规则。
 

@@ -14,6 +14,7 @@
 
 |文件|用途|当前状态|
 |---|---|---|
+|[00-ai-control-manifest.yaml](./00-ai-control-manifest.yaml)|本地 AI 加载知识控制面的唯一机器入口和全局运行状态源|治理验证模式；必需文件失效时默认拒绝启动|
 |[01-knowledge-structure.yaml](./01-knowledge-structure.yaml)|完整知识库机器蓝图|主管理员已登记；部分备用管理员待任命|
 |[02-AI-Agent使用契约.md](./02-AI-Agent使用契约.md)|来源、权限、引用和不确定性规则|已填写通用规则|
 |[03-index-admission-rules.yaml](./03-index-admission-rules.yaml)|生产索引准入与默认拒绝条件|治理验证模式；生产索引关闭|
@@ -24,9 +25,9 @@
 |[08-检索与回答评测规范.md](./08-检索与回答评测规范.md)|指标、评测集和纠错闭环|已填写通用规则|
 |[09-feishu-import-path-renames.json](./09-feishu-import-path-renames.json)|飞书受控知识树同父级路径改名清单|已登记归档目录编号修正|
 |[10-feishu-publication-manifest.json](./10-feishu-publication-manifest.json)|飞书公司知识正文和业务目录显式发布清单|默认拒绝；当前登记17个正文种子和8个业务目录根|
-|[11-ai-control-manifest.yaml](./11-ai-control-manifest.yaml)|本地 AI 加载知识控制面的唯一机器入口|治理验证模式；必需文件失效时默认拒绝启动|
-|[12-retrieval-runtime-contract.yaml](./12-retrieval-runtime-contract.yaml)|身份、ACL、查询、结果、引用和错误语义|仅冻结契约；尚未绑定 MCP 或 HTTP 实现|
-|[13-indexing-policy.yaml](./13-indexing-policy.yaml)|分块、写入、混合检索、生命周期和回滚策略|仅冻结契约；生产就绪为 false|
+|[09-retrieval-runtime-contract.yaml](./09-retrieval-runtime-contract.yaml)|身份、ACL、证据和回答安全不变量|仅冻结契约；请求、响应和错误字段以独立 Schema 为准|
+|[10-indexing-policy.yaml](./10-indexing-policy.yaml)|稳定分块、写入、生命周期、证据和回滚原则|仅冻结契约；可调参数迁入独立实现配置|
+|[治理验证索引配置](../03-平台运维/configs/governance-validation-indexing-profile.yaml)|治理验证使用的块大小、融合权重、数量和保留期限参数|`validation_only=true`；不得作为生产就绪证据|
 |[schemas/01-knowledge-structure-schema.yaml](./schemas/01-knowledge-structure-schema.yaml)|空间、目录和索引策略的结构约束|已填写通用规则|
 |[schemas/02-metadata-schema.yaml](./schemas/02-metadata-schema.yaml)|正式文档元数据字段与校验条件|已填写通用规则|
 |[schemas/03-controlled-vocabulary-schema.yaml](./schemas/03-controlled-vocabulary-schema.yaml)|受控字典及字典值结构约束|已填写通用规则|
@@ -43,6 +44,7 @@
 |[schemas/14-acl-decision-schema.yaml](./schemas/14-acl-decision-schema.yaml)|检索三阶段 ACL 判定载荷|未知或失效权限不得生成允许决定|
 |[schemas/15-retrieval-request-schema.yaml](./schemas/15-retrieval-request-schema.yaml)|本地 AI 的统一检索请求载荷|包含本人身份、群组和 ACL 快照|
 |[schemas/16-retrieval-response-schema.yaml](./schemas/16-retrieval-response-schema.yaml)|统一检索结果、引用和安全错误载荷|未授权结果不得暴露资源存在性|
+|[schemas/17-indexing-profile-schema.yaml](./schemas/17-indexing-profile-schema.yaml)|索引实现的可调参数配置结构|已用于校验治理验证索引配置|
 |[vocabularies/README.md](./vocabularies/README.md)|字典维护边界|部分试点值已登记；系统与保留期限待确认|
 |[vocabularies/01-document-types.yaml](./vocabularies/01-document-types.yaml)|通用文档类型编码|已填写通用值|
 |[vocabularies/02-security-levels.yaml](./vocabularies/02-security-levels.yaml)|安全等级及默认 AI 权限|已填写通用值|
@@ -57,7 +59,7 @@
 
 ## AI 启动入口与读取顺序
 
-本地 AI、检索服务或适配器必须从[11-ai-control-manifest.yaml](./11-ai-control-manifest.yaml)启动，不得自行扫描目录猜测配置。确定性加载顺序如下：
+本地 AI、检索服务或适配器必须从[00-ai-control-manifest.yaml](./00-ai-control-manifest.yaml)启动，不得自行扫描目录猜测配置。确定性加载顺序如下：
 
 1. 读取启动清单并核对运行模式、生产开关和失败策略。
 2. 加载目录结构、元数据 Schema 和全部受控字典。
@@ -138,6 +140,4 @@ node scripts/test_feishu_governance_retire.mjs
 
 ## 当前运行模式
 
-- `operating_mode=governance_validation`。
-- `production_index_enabled=false`。
-- 当前只验证目录、Schema、字典、模板和准入逻辑，不连接生产索引，不向 Agent 提供公司事实回答，也不用于模型训练。
+当前值只从[启动清单](./00-ai-control-manifest.yaml)的 `operating_mode` 和 `production_index_enabled` 读取。本 README 不复制状态值；启动清单未通过校验时，不得连接索引、回答公司事实或用于模型训练。

@@ -3,15 +3,16 @@
 $schema: ./schemas/09-indexing-policy-schema.yaml
 schema_version: "1.0"
 policy_id: qianli-default-indexing
-operating_mode: governance_validation
+state_ref: 00-ai-control-manifest.yaml # 全局运行模式和生产开关只从启动清单读取。
 implementation_status: contract_only
-production_ready: false
+# 配置路径相对于治理根目录解析，禁止使用绝对路径或 .. 穿越。
+implementation_profile_path_scope: governance_root
+implementation_profile_ref: 03-平台运维/configs/governance-validation-indexing-profile.yaml
+implementation_profile_schema_ref: 01-面向AI/schemas/17-indexing-profile-schema.yaml
+missing_implementation_profile_action: deny_production_enablement
 
 chunking:
   strategy: heading_aware
-  tokenizer_ref: null
-  max_tokens: 800
-  overlap_tokens: 120
   chunk_id_components:
     - document_id
     - source_version
@@ -24,7 +25,6 @@ chunking:
     - code_block
   unsupported_content_action: reject_with_reason
   images:
-    optical_character_recognition_enabled: false
     require_human_verified_description: true
   attachments:
     recursive_indexing_allowed: false
@@ -39,9 +39,7 @@ write_semantics:
     - policy_version
   event_deduplication_required: true
   source_cursor_required: true
-  max_retry_attempts: 3
   exhausted_retry_action: dead_letter_and_alert
-  dead_letter_retention: P30D
   partial_document_commit_allowed: false
 
 lifecycle:
@@ -49,26 +47,10 @@ lifecycle:
   permission_change_strategy: invalidate_then_rebuild
   deprecation_strategy: remove_from_active_retrieval
   deletion_strategy: tombstone_then_delete
-  tombstone_retention: P30D
   source_missing_action: deny_retrieval_and_alert
 
 retrieval:
   strategy: hybrid
-  keyword:
-    algorithm: bm25
-    weight: 0.4
-  vector:
-    weight: 0.6
-    embedding_model_ref: null
-    missing_model_action: deny_production_enablement
-  rerank:
-    enabled: true
-    model_ref: null
-    missing_model_action: use_fused_rank_with_recorded_degradation
-  candidate_top_k: 20
-  final_top_k: 5
-  minimum_score: null
-  missing_score_threshold_action: deny_production_enablement
   minimum_evidence_policy: at_least_one_accessible_authoritative_source
   below_threshold_action: return_no_evidence
 

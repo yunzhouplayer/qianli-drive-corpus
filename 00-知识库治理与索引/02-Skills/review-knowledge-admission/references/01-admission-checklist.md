@@ -11,8 +11,9 @@
 |`00-面向人员/05-文档命名规范.md`|标题和版本规则|
 |`00-面向人员/07-权限与安全规范.md`|安全等级、ACL和禁止原始入库|
 |`00-面向人员/09-AI友好内容写作规范.md`|正文质量和可检索性|
+|`01-面向AI/00-ai-control-manifest.yaml`|当前运行模式和生产索引全局开关的唯一来源|
 |`01-面向AI/01-knowledge-structure.yaml`|空间、目录、管理员和稳定ID|
-|`01-面向AI/03-index-admission-rules.yaml`|当前模式、准入条件和全局开关|
+|`01-面向AI/03-index-admission-rules.yaml`|准入条件及其启动清单状态引用|
 |`01-面向AI/05-authority-sources.yaml`|主题唯一权威来源和冲突|
 |`01-面向AI/06-corpus-manifest.yaml`|索引流程生成的实际语料清单|
 |`01-面向AI/schemas/02-metadata-schema.yaml`|元数据结构和条件约束|

@@ -177,7 +177,24 @@ begin
   ai_root = File.join(governance_root, "01-面向AI")
   metadata_schema = load_yaml(File.join(ai_root, "schemas", "02-metadata-schema.yaml"))
   structure = load_yaml(File.join(ai_root, "01-knowledge-structure.yaml"))
+  control_manifest = load_yaml(File.join(ai_root, "00-ai-control-manifest.yaml"))
   index_rules = load_yaml(File.join(ai_root, "03-index-admission-rules.yaml"))
+  expected_state_ref = "00-ai-control-manifest.yaml"
+  unless index_rules["state_ref"] == expected_state_ref
+    raise "索引准入规则 state_ref 必须指向 #{expected_state_ref}"
+  end
+
+  operating_mode = control_manifest["operating_mode"]
+  production_index_enabled = control_manifest["production_index_enabled"]
+  unless %w[governance_validation production].include?(operating_mode)
+    raise "AI 启动清单 operating_mode 无效或缺失"
+  end
+  unless production_index_enabled == true || production_index_enabled == false
+    raise "AI 启动清单 production_index_enabled 必须是布尔值"
+  end
+  if operating_mode == "governance_validation" && production_index_enabled
+    raise "治理验证模式不得开启生产索引"
+  end
 
   vocabulary_paths = {
     "document_type" => "01-document-types.yaml",
@@ -350,8 +367,6 @@ begin
   validate_vocabulary(checks, "source_system", metadata["source_system"], vocabularies["source_system"])
   validate_vocabulary(checks, "retention_policy", metadata["retention_policy"], vocabularies["retention_policy"])
 
-  operating_mode = index_rules["operating_mode"]
-  production_index_enabled = index_rules["production_index_enabled"] == true
   add_check(
     checks,
     "MODE",

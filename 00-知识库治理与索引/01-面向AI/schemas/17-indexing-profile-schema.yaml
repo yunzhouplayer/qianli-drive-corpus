@@ -1,0 +1,76 @@
+# 用途：校验索引实现的可调参数配置；稳定安全原则仍以 10-indexing-policy.yaml 为准。
+# 路径：配置文件及其 Schema 引用都以 governance_root 为逻辑根，禁止绝对路径和父级穿越。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:indexing-profile:v1
+title: 千里智行知识索引实现配置
+type: object
+additionalProperties: false
+required: [$schema, schema_version, profile_id, profile_version, path_scope, intended_mode, validation_only, chunking, reliability, retrieval]
+properties:
+  $schema: {type: string, const: 01-面向AI/schemas/17-indexing-profile-schema.yaml, description: 相对于知识治理根目录的当前文件 Schema 路径。}
+  schema_version: {type: string, const: "1.0", description: 索引实现配置结构版本。}
+  profile_id: {type: string, pattern: '^[a-z][a-z0-9-]+$', description: 实现配置稳定 ID。}
+  profile_version: {type: string, minLength: 1, description: 参与索引 generation 和评测记录的配置版本。}
+  path_scope: {type: string, const: governance_root, description: 文件路径统一相对于知识治理根目录解析。}
+  intended_mode: {type: string, enum: [governance_validation, production], description: 配置仅用于治理验证还是拟用于生产。}
+  validation_only: {type: boolean, description: true 表示参数只用于验证，不能据此声明生产就绪。}
+  chunking:
+    type: object
+    additionalProperties: false
+    description: Tokenizer、块大小、重叠范围和图片识别等可调分块参数。
+    required: [tokenizer_ref, max_tokens, overlap_tokens, optical_character_recognition_enabled]
+    properties:
+      tokenizer_ref:
+        description: Tokenizer 实现引用；治理验证阶段允许为 null。
+        oneOf: [{type: string, minLength: 1}, {type: "null"}]
+      max_tokens: {type: integer, minimum: 128, maximum: 4096, description: 单分块最大 Token 数。}
+      overlap_tokens: {type: integer, minimum: 0, maximum: 512, description: 相邻分块重叠 Token 数；语义校验必须保证小于 max_tokens。}
+      optical_character_recognition_enabled: {type: boolean, description: 是否启用图片 OCR。}
+  reliability:
+    type: object
+    additionalProperties: false
+    description: 重试次数、死信和墓碑保留期限等可调可靠性参数。
+    required: [max_retry_attempts, dead_letter_retention, tombstone_retention]
+    properties:
+      max_retry_attempts: {type: integer, minimum: 0, maximum: 10, description: 临时失败最大重试次数。}
+      dead_letter_retention: {type: string, pattern: '^P', description: 死信记录保留期限，使用 ISO 8601 Duration。}
+      tombstone_retention: {type: string, pattern: '^P', description: 删除墓碑保留期限，使用 ISO 8601 Duration。}
+  retrieval:
+    type: object
+    additionalProperties: false
+    description: 召回算法、模型、融合权重、候选数量和证据阈值等可调检索参数。
+    required: [keyword_algorithm, keyword_weight, vector_weight, embedding_model_ref, rerank_enabled, rerank_model_ref, missing_rerank_action, candidate_top_k, final_top_k, minimum_score]
+    properties:
+      keyword_algorithm: {type: string, const: bm25, description: 关键词召回算法。}
+      keyword_weight: {type: number, minimum: 0, maximum: 1, description: 关键词召回融合权重。}
+      vector_weight: {type: number, minimum: 0, maximum: 1, description: 向量召回融合权重；语义校验必须保证与关键词权重之和为 1。}
+      embedding_model_ref:
+        description: Embedding 模型配置引用；治理验证阶段允许为 null。
+        oneOf: [{type: string, minLength: 1}, {type: "null"}]
+      rerank_enabled: {type: boolean, description: 是否启用重排阶段。}
+      rerank_model_ref:
+        description: 重排模型配置引用；未启用或治理验证阶段允许为 null。
+        oneOf: [{type: string, minLength: 1}, {type: "null"}]
+      missing_rerank_action: {type: string, const: use_fused_rank_with_recorded_degradation, description: 缺少重排模型时记录降级并使用融合排序。}
+      candidate_top_k: {type: integer, minimum: 1, maximum: 100, description: 重排前候选数量。}
+      final_top_k: {type: integer, minimum: 1, maximum: 20, description: 最终返回结果数量；语义校验必须保证不大于 candidate_top_k。}
+      minimum_score:
+        description: 经评测校准的最低证据分数；治理验证阶段允许为 null。
+        oneOf: [{type: number, minimum: 0, maximum: 1}, {type: "null"}]
+allOf:
+  - if:
+      properties:
+        intended_mode: {const: production}
+      required: [intended_mode]
+    then:
+      properties:
+        validation_only: {const: false}
+        chunking:
+          properties:
+            tokenizer_ref: {type: string, minLength: 1}
+          required: [tokenizer_ref]
+        retrieval:
+          properties:
+            embedding_model_ref: {type: string, minLength: 1}
+            minimum_score: {type: number, minimum: 0, maximum: 1}
+          required: [embedding_model_ref, minimum_score]

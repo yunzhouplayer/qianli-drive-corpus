@@ -12,6 +12,7 @@ properties:
   identity_context:
     type: object
     additionalProperties: false
+    description: 当前员工、租户、群组和 ACL 快照组成的已认证身份上下文。
     required: [subject_ref, tenant_ref, group_refs, authenticated_at, acl_snapshot_version]
     properties:
       subject_ref: {type: string, minLength: 1, description: 当前员工身份的不可逆稳定引用。}
@@ -26,6 +27,7 @@ properties:
   filters:
     type: object
     additionalProperties: false
+    description: 在逐文档权限校验之前缩小候选范围的可选治理过滤条件。
     properties:
       space_ids:
         type: array

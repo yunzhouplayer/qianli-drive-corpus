@@ -1,0 +1,39 @@
+# 用途：冻结本地 AI、MCP 或 HTTP 适配器共同遵守的检索请求、权限、结果和错误语义。
+# 边界：本文件不表示任何检索服务已部署；当前只用于治理验证和实现验收。
+$schema: ./schemas/08-retrieval-runtime-contract-schema.yaml
+schema_version: "1.0"
+contract_id: qianli-knowledge-retrieval
+state_ref: 00-ai-control-manifest.yaml # 全局运行模式和生产开关只从启动清单读取。
+implementation_status: contract_only
+transport_binding: transport_agnostic
+request_schema_ref: schemas/15-retrieval-request-schema.yaml
+response_schema_ref: schemas/16-retrieval-response-schema.yaml
+acl_decision_schema_ref: schemas/14-acl-decision-schema.yaml
+
+# 请求字段、长度和数量限制只由 request_schema_ref 指向的 Schema 定义。
+identity_rules:
+  anonymous_allowed: false
+  plaintext_personal_data_allowed: false
+  stale_identity_action: deny_access
+
+permission_checks:
+  pre_retrieval:
+    required: true
+    action: filter_by_source_acl
+  pre_document_read:
+    required: true
+    action: revalidate_source_acl
+  pre_answer:
+    required: true
+    action: validate_all_citations_accessible
+  unknown_or_unavailable_acl: deny_access
+  deny_precedence: explicit_deny_overrides_allow
+  inheritance_source: source_knowledge_base
+
+# 响应字段、引用字段、错误码、公共消息和重试语义只由 response_schema_ref 指向的 Schema 定义。
+answer_rules:
+  evidence_required: true
+  accessible_citation_required: true
+  stale_source_allowed: false
+  permission_filtered_count_exposed: false
+  unauthorized_resource_existence_exposed: false

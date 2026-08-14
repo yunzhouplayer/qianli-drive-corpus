@@ -92,8 +92,30 @@ $defs:
   error:
     type: object
     additionalProperties: false
+    description: 不泄露未授权资源存在性的稳定公共错误；错误码、消息和重试语义只在本 Schema 定义。
     required: [code, message, retryable]
     properties:
-      code: {type: string, enum: [permission_denied, no_evidence, source_stale, control_invalid, service_unavailable], description: 稳定公共错误码。}
-      message: {type: string, minLength: 1, description: 不泄露未授权资源的公共提示。}
+      code: {type: string, description: 稳定公共错误码。}
+      message: {type: string, description: 不泄露未授权资源的固定公共提示。}
       retryable: {type: boolean, description: 调用方是否可以在状态变化后重试。}
+    oneOf:
+      - properties:
+          code: {const: permission_denied}
+          message: {const: 无法访问请求范围内的知识。}
+          retryable: {const: false}
+      - properties:
+          code: {const: no_evidence}
+          message: {const: 当前可访问知识中没有足够依据回答。}
+          retryable: {const: false}
+      - properties:
+          code: {const: source_stale}
+          message: {const: 知识来源状态需要重新同步，暂不回答。}
+          retryable: {const: true}
+      - properties:
+          code: {const: control_invalid}
+          message: {const: 知识控制配置无效，服务已安全停止。}
+          retryable: {const: false}
+      - properties:
+          code: {const: service_unavailable}
+          message: {const: 知识检索服务暂时不可用。}
+          retryable: {const: true}

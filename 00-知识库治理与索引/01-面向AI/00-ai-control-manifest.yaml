@@ -22,6 +22,15 @@ failure_policy:
   acl_state_unknown: deny_access
   source_version_stale: deny_answer
 
+# 路径作用域由加载器映射到受控根目录；所有机器引用都禁止绝对路径和父级穿越。
+path_policy:
+  default_scope: ai_root
+  allowed_scopes:
+    - ai_root
+    - governance_root
+  absolute_paths_allowed: false
+  parent_traversal_allowed: false
+
 # 运行状态、索引、缓存和查询日志只允许放在 Git 忽略目录中。
 runtime_state:
   root: 00-知识库治理与索引/.runtime
@@ -36,152 +45,121 @@ runtime_state:
     - access_tokens
     - secret_keys
 
-# priority 数字越小越先加载；同一优先级视为配置错误。
+# 数组顺序就是唯一加载顺序；所有登记项均为启动必需文件。
 load_sequence:
   - control_id: knowledge_structure
     path: 01-knowledge-structure.yaml
     format: yaml
     validation_schema: schemas/01-knowledge-structure-schema.yaml
     phase: structure
-    required: true
-    priority: 10
   - control_id: metadata_schema
     path: schemas/02-metadata-schema.yaml
     format: json_schema
     validation_schema: null
     phase: metadata
-    required: true
-    priority: 20
   - control_id: controlled_vocabulary_schema
     path: schemas/03-controlled-vocabulary-schema.yaml
     format: json_schema
     validation_schema: null
     phase: vocabulary
-    required: true
-    priority: 30
   - control_id: document_types
     path: vocabularies/01-document-types.yaml
     format: yaml
     validation_schema: schemas/03-controlled-vocabulary-schema.yaml
     phase: vocabulary
-    required: true
-    priority: 40
   - control_id: security_levels
     path: vocabularies/02-security-levels.yaml
     format: yaml
     validation_schema: schemas/03-controlled-vocabulary-schema.yaml
     phase: vocabulary
-    required: true
-    priority: 50
   - control_id: business_domains
     path: vocabularies/03-business-domains.yaml
     format: yaml
     validation_schema: schemas/03-controlled-vocabulary-schema.yaml
     phase: vocabulary
-    required: true
-    priority: 60
   - control_id: systems_platforms
     path: vocabularies/04-systems-platforms.yaml
     format: yaml
     validation_schema: schemas/03-controlled-vocabulary-schema.yaml
     phase: vocabulary
-    required: true
-    priority: 70
   - control_id: source_systems
     path: vocabularies/05-source-systems.yaml
     format: yaml
     validation_schema: schemas/03-controlled-vocabulary-schema.yaml
     phase: vocabulary
-    required: true
-    priority: 80
   - control_id: retention_policies
     path: vocabularies/06-retention-policies.yaml
     format: yaml
     validation_schema: schemas/03-controlled-vocabulary-schema.yaml
     phase: vocabulary
-    required: true
-    priority: 90
   - control_id: index_admission
     path: 03-index-admission-rules.yaml
     format: yaml
     validation_schema: schemas/12-index-admission-rules-schema.yaml
     phase: admission
-    required: true
-    priority: 100
   - control_id: admission_decision_schema
     path: schemas/13-admission-decision-schema.yaml
     format: json_schema
     validation_schema: null
     phase: admission
-    required: true
-    priority: 105
   - control_id: authority_sources
     path: 05-authority-sources.yaml
     format: yaml
     validation_schema: schemas/04-authority-sources-schema.yaml
     phase: authority
-    required: true
-    priority: 110
   - control_id: corpus_manifest
     path: 06-corpus-manifest.yaml
     format: yaml
     validation_schema: schemas/05-corpus-manifest-schema.yaml
     phase: corpus
-    required: true
-    priority: 120
+  - control_id: indexing_profile_schema
+    path: schemas/17-indexing-profile-schema.yaml
+    format: json_schema
+    validation_schema: null
+    phase: indexing
+  - control_id: indexing_profile
+    path: 03-平台运维/configs/governance-validation-indexing-profile.yaml
+    path_scope: governance_root
+    format: yaml
+    validation_schema: schemas/17-indexing-profile-schema.yaml
+    phase: indexing
   - control_id: indexing_policy
-    path: 13-indexing-policy.yaml
+    path: 10-indexing-policy.yaml
     format: yaml
     validation_schema: schemas/09-indexing-policy-schema.yaml
     phase: indexing
-    required: true
-    priority: 130
   - control_id: retrieval_runtime_contract
-    path: 12-retrieval-runtime-contract.yaml
+    path: 09-retrieval-runtime-contract.yaml
     format: yaml
     validation_schema: schemas/08-retrieval-runtime-contract-schema.yaml
     phase: retrieval
-    required: true
-    priority: 140
   - control_id: acl_decision_schema
     path: schemas/14-acl-decision-schema.yaml
     format: json_schema
     validation_schema: null
     phase: retrieval
-    required: true
-    priority: 141
   - control_id: retrieval_request_schema
     path: schemas/15-retrieval-request-schema.yaml
     format: json_schema
     validation_schema: null
     phase: retrieval
-    required: true
-    priority: 142
   - control_id: retrieval_response_schema
     path: schemas/16-retrieval-response-schema.yaml
     format: json_schema
     validation_schema: null
     phase: retrieval
-    required: true
-    priority: 143
   - control_id: evaluation_cases
     path: 07-evaluation-cases.yaml
     format: yaml
     validation_schema: schemas/06-evaluation-case-schema.yaml
     phase: evaluation
-    required: true
-    priority: 150
   - control_id: runtime_audit_schema
     path: schemas/10-runtime-audit-event-schema.yaml
     format: json_schema
     validation_schema: null
     phase: audit
-    required: true
-    priority: 160
   - control_id: evaluation_result_schema
     path: schemas/11-evaluation-result-schema.yaml
     format: json_schema
     validation_schema: null
     phase: evaluation
-    required: true
-    priority: 170

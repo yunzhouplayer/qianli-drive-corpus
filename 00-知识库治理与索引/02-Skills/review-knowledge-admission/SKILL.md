@@ -2,7 +2,7 @@
 name: review-knowledge-admission
 description: 独立检查 Markdown、Word、PDF、飞书导出或其他可读取文件是否满足千里智行公司知识库准入要求；校验元数据、目录归属、受控字典、正文质量、安全边界、责任审批和当前运行模式，生成可追溯审查报告，并在全部通过且管理员明确确认后引导完成受控入库和治理记录更新。用于“检查是否能入库”“执行入库审查”“管理员如何入库”“更新权威来源”等请求；不负责前期内容代写。
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   language: "zh-CN"
   format: "agent-skills"
   portability: "agent-agnostic"
@@ -33,7 +33,7 @@ metadata:
 2. 定位当前项目的 `00-知识库治理与索引`；找不到时停止并询问用户。
 3. 读取原始待审文件、候选元数据和必要附件定位。
 4. 读取当前机器蓝图、元数据 Schema、受控字典、索引准入规则和安全规范。
-5. 记录 `operating_mode` 与 `production_index_enabled`，不得使用历史状态。
+5. 读取 `00-ai-control-manifest.yaml`，以其作为 `operating_mode` 与 `production_index_enabled` 的唯一来源，并确认准入规则的 `state_ref` 指向该文件；不得使用历史状态或下游副本。
 6. 读取候选元数据的 `admission_context`；没有该上下文时按已有权威源执行完整校验，不自动假定为首次创建。
 
 ## 独立审查流程

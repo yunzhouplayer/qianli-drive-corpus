@@ -13,6 +13,7 @@ required:
   - production_index_enabled
   - authority_precedence
   - failure_policy
+  - path_policy
   - runtime_state
   - load_sequence
 properties:
@@ -33,6 +34,7 @@ properties:
     description: 冲突处理权威顺序，从高到低排列。
   failure_policy:
     type: object
+    description: 控制文件、Schema、ACL 或来源状态异常时必须执行的安全失败动作。
     additionalProperties: false
     required: [missing_required_file, incompatible_schema_major, invalid_cross_reference, unknown_control_field, acl_state_unknown, source_version_stale]
     properties:
@@ -42,8 +44,25 @@ properties:
       unknown_control_field: {type: string, const: deny_startup, description: 未知控制字段默认阻断。}
       acl_state_unknown: {type: string, const: deny_access, description: ACL 状态未知时拒绝访问。}
       source_version_stale: {type: string, const: deny_answer, description: 来源过期时拒绝回答。}
+  path_policy:
+    type: object
+    additionalProperties: false
+    description: 机器控制文件解析项目内引用时允许使用的逻辑根目录和路径安全限制。
+    required: [default_scope, allowed_scopes, absolute_paths_allowed, parent_traversal_allowed]
+    properties:
+      default_scope: {type: string, const: ai_root, description: 未显式声明作用域的控制路径相对于面向 AI 根目录解析。}
+      allowed_scopes:
+        type: array
+        minItems: 2
+        maxItems: 2
+        uniqueItems: true
+        items: {type: string, enum: [ai_root, governance_root]}
+        description: 允许解析的逻辑根目录；分别表示面向 AI 目录和知识治理根目录。
+      absolute_paths_allowed: {type: boolean, const: false, description: 禁止机器控制引用本机绝对路径。}
+      parent_traversal_allowed: {type: boolean, const: false, description: 禁止引用路径包含父级穿越片段。}
   runtime_state:
     type: object
+    description: 可重建运行数据的保存边界以及凭证和令牌的禁止项。
     additionalProperties: false
     required: [root, git_tracked, allowed_content, prohibited_content]
     properties:
@@ -70,10 +89,11 @@ $defs:
   control:
     type: object
     additionalProperties: false
-    required: [control_id, path, format, validation_schema, phase, required, priority]
+    required: [control_id, path, format, validation_schema, phase]
     properties:
       control_id: {type: string, pattern: '^[a-z][a-z0-9_]+$', description: 控制文件稳定 ID。}
-      path: {type: string, minLength: 1, description: 相对于 01-面向AI 的规范化路径。}
+      path: {type: string, minLength: 1, description: 相对于 path_scope 指定逻辑根目录的规范化路径。}
+      path_scope: {type: string, enum: [ai_root, governance_root], description: 可选路径根；省略时使用 path_policy.default_scope。}
       format: {type: string, enum: [yaml, json, json_schema, markdown], description: 文件机器格式。}
       validation_schema:
         description: 实例文件使用的 Schema；Schema 或 Markdown 文件可为 null。
@@ -82,5 +102,3 @@ $defs:
             minLength: 1
           - type: "null"
       phase: {type: string, enum: [structure, metadata, vocabulary, admission, authority, corpus, indexing, retrieval, evaluation, audit], description: 加载阶段。}
-      required: {type: boolean, description: 是否为启动必需文件。}
-      priority: {type: integer, minimum: 1, description: 唯一加载优先级，数值越小越先加载。}

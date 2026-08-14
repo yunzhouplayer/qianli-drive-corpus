@@ -1,41 +1,41 @@
-# 用途：校验分块、写入、生命周期、混合检索和索引版本策略。
+# 用途：校验稳定的分块、写入、生命周期、证据和索引版本原则；可调参数由独立实现配置定义。
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: urn:qianli-drive:knowledge:indexing-policy:v1
-title: 千里智行知识索引策略
+title: 千里智行知识索引稳定策略
 type: object
 additionalProperties: false
-required: [$schema, schema_version, policy_id, operating_mode, implementation_status, production_ready, chunking, write_semantics, lifecycle, retrieval, versioning]
+required: [$schema, schema_version, policy_id, state_ref, implementation_status, implementation_profile_path_scope, implementation_profile_ref, implementation_profile_schema_ref, missing_implementation_profile_action, chunking, write_semantics, lifecycle, retrieval, versioning]
 properties:
   $schema: {type: string, const: ./schemas/09-indexing-policy-schema.yaml, description: 当前文件使用的项目内 Schema 路径。}
-  schema_version: {type: string, const: "1.0", description: 索引策略结构版本。}
+  schema_version: {type: string, const: "1.0", description: 索引稳定策略结构版本。}
   policy_id: {type: string, pattern: '^[a-z][a-z0-9-]+$', description: 索引策略稳定 ID。}
-  operating_mode: {type: string, enum: [governance_validation, production], description: 当前运行模式。}
-  implementation_status: {type: string, enum: [contract_only, implemented, validated], description: 策略实现状态。}
-  production_ready: {type: boolean, description: 是否具备生产启用证据。}
+  state_ref: {type: string, const: 00-ai-control-manifest.yaml, description: 全局运行模式和生产开关的唯一机器来源。}
+  implementation_status: {type: string, enum: [contract_only, implemented, validated], description: 稳定策略的实现和验证状态。}
+  implementation_profile_path_scope: {type: string, const: governance_root, description: 实现配置路径相对于知识治理根目录解析。}
+  implementation_profile_ref: {type: string, const: 03-平台运维/configs/governance-validation-indexing-profile.yaml, description: 治理验证索引参数配置的受控相对路径；当前阶段允许尚未创建。}
+  implementation_profile_schema_ref: {type: string, const: 01-面向AI/schemas/17-indexing-profile-schema.yaml, description: 相对于知识治理根目录的实现配置 Schema 路径。}
+  missing_implementation_profile_action: {type: string, const: deny_production_enablement, description: 实现配置缺失时禁止启用生产索引。}
   chunking:
     type: object
     additionalProperties: false
-    required: [strategy, tokenizer_ref, max_tokens, overlap_tokens, chunk_id_components, preserve_blocks, unsupported_content_action, images, attachments]
+    description: 不依赖具体 Tokenizer 或数值参数的稳定分块语义。
+    required: [strategy, chunk_id_components, preserve_blocks, unsupported_content_action, images, attachments]
     properties:
       strategy: {type: string, const: heading_aware, description: 按标题层级感知边界的分块策略。}
-      tokenizer_ref:
-        description: Tokenizer 实现引用；未选定时为 null 并阻断生产启用。
-        oneOf: [{type: string, minLength: 1}, {type: "null"}]
-      max_tokens: {type: integer, minimum: 128, maximum: 4096, description: 单分块最大 Token 数。}
-      overlap_tokens: {type: integer, minimum: 0, maximum: 512, description: 相邻分块重叠 Token 数。}
       chunk_id_components: {$ref: '#/$defs/nonempty_unique_strings', description: 稳定 chunk ID 的组成字段。}
       preserve_blocks: {$ref: '#/$defs/nonempty_unique_strings', description: 优先保持原子性的内容块。}
       unsupported_content_action: {type: string, const: reject_with_reason, description: 无法解析内容必须拒绝并记录原因。}
       images:
         type: object
         additionalProperties: false
-        required: [optical_character_recognition_enabled, require_human_verified_description]
+        description: 图片内容形成可检索知识前必须满足的人工确认要求。
+        required: [require_human_verified_description]
         properties:
-          optical_character_recognition_enabled: {type: boolean, description: 当前是否启用图片 OCR。}
           require_human_verified_description: {type: boolean, const: true, description: 图片知识进入索引前需人工确认描述。}
       attachments:
         type: object
         additionalProperties: false
+        description: 附件内容必须独立登记且禁止未经批准递归索引。
         required: [recursive_indexing_allowed, require_independent_metadata]
         properties:
           recursive_indexing_allowed: {type: boolean, const: false, description: 禁止未经登记递归索引附件。}
@@ -43,65 +43,39 @@ properties:
   write_semantics:
     type: object
     additionalProperties: false
-    required: [content_hash_algorithm, idempotency_key_components, event_deduplication_required, source_cursor_required, max_retry_attempts, exhausted_retry_action, dead_letter_retention, partial_document_commit_allowed]
+    description: 索引写入必须满足的哈希、幂等、游标、失败处理和原子性原则。
+    required: [content_hash_algorithm, idempotency_key_components, event_deduplication_required, source_cursor_required, exhausted_retry_action, partial_document_commit_allowed]
     properties:
       content_hash_algorithm: {type: string, const: sha256, description: 内容哈希算法。}
       idempotency_key_components: {$ref: '#/$defs/nonempty_unique_strings', description: 幂等键组成字段。}
       event_deduplication_required: {type: boolean, const: true, description: 同步事件必须去重。}
       source_cursor_required: {type: boolean, const: true, description: 增量同步必须记录可恢复源游标。}
-      max_retry_attempts: {type: integer, minimum: 0, maximum: 10, description: 临时失败最大重试次数。}
-      exhausted_retry_action: {type: string, const: dead_letter_and_alert, description: 重试耗尽后进入死信并告警。}
-      dead_letter_retention: {type: string, pattern: '^P', description: 死信记录保留期限，使用 ISO 8601 Duration。}
+      exhausted_retry_action: {type: string, const: dead_letter_and_alert, description: 配置的重试次数耗尽后进入死信并告警。}
       partial_document_commit_allowed: {type: boolean, const: false, description: 禁止提交部分文档分块。}
   lifecycle:
     type: object
     additionalProperties: false
-    required: [update_strategy, permission_change_strategy, deprecation_strategy, deletion_strategy, tombstone_retention, source_missing_action]
+    description: 文档更新、权限变化、废弃、删除和来源缺失时的稳定失效策略。
+    required: [update_strategy, permission_change_strategy, deprecation_strategy, deletion_strategy, source_missing_action]
     properties:
       update_strategy: {type: string, const: replace_document_generation_atomically, description: 更新按文档 generation 原子替换。}
       permission_change_strategy: {type: string, const: invalidate_then_rebuild, description: 权限变化先失效再重建。}
       deprecation_strategy: {type: string, const: remove_from_active_retrieval, description: 废弃文档移出有效检索。}
-      deletion_strategy: {type: string, const: tombstone_then_delete, description: 删除先写墓碑再清理。}
-      tombstone_retention: {type: string, pattern: '^P', description: 墓碑保留期限，使用 ISO 8601 Duration。}
+      deletion_strategy: {type: string, const: tombstone_then_delete, description: 删除先写墓碑再按实现配置清理。}
       source_missing_action: {type: string, const: deny_retrieval_and_alert, description: 源缺失时停止召回并告警。}
   retrieval:
     type: object
     additionalProperties: false
-    required: [strategy, keyword, vector, rerank, candidate_top_k, final_top_k, minimum_score, missing_score_threshold_action, minimum_evidence_policy, below_threshold_action]
+    description: 混合检索必须遵守的权威证据和无证据拒答原则。
+    required: [strategy, minimum_evidence_policy, below_threshold_action]
     properties:
-      strategy: {type: string, const: hybrid, description: 关键词与向量混合检索。}
-      keyword: {$ref: '#/$defs/rank_source', description: 关键词召回设置。}
-      vector:
-        type: object
-        additionalProperties: false
-        required: [weight, embedding_model_ref, missing_model_action]
-        properties:
-          weight: {type: number, minimum: 0, maximum: 1, description: 向量召回融合权重。}
-          embedding_model_ref:
-            description: Embedding 模型配置引用；未选定时为 null。
-            oneOf: [{type: string, minLength: 1}, {type: "null"}]
-          missing_model_action: {type: string, const: deny_production_enablement, description: 模型未配置时禁止生产启用。}
-      rerank:
-        type: object
-        additionalProperties: false
-        required: [enabled, model_ref, missing_model_action]
-        properties:
-          enabled: {type: boolean, description: 是否要求重排阶段。}
-          model_ref:
-            description: 重排模型配置引用；未选定时为 null。
-            oneOf: [{type: string, minLength: 1}, {type: "null"}]
-          missing_model_action: {type: string, const: use_fused_rank_with_recorded_degradation, description: 未配置重排模型时记录降级并使用融合排序。}
-      candidate_top_k: {type: integer, minimum: 1, maximum: 100, description: 重排前候选数量。}
-      final_top_k: {type: integer, minimum: 1, maximum: 20, description: 最终返回结果数量。}
-      minimum_score:
-        description: 经评测校准的统一最低证据分数；尚未选定模型时为 null。
-        oneOf: [{type: number, minimum: 0, maximum: 1}, {type: "null"}]
-      missing_score_threshold_action: {type: string, const: deny_production_enablement, description: 未校准最低分数时禁止生产启用。}
-      minimum_evidence_policy: {type: string, const: at_least_one_accessible_authoritative_source, description: 至少一个可访问权威来源。}
-      below_threshold_action: {type: string, const: return_no_evidence, description: 证据不足时返回无证据。}
+      strategy: {type: string, const: hybrid, description: 关键词与向量混合检索；算法、权重和模型由实现配置定义。}
+      minimum_evidence_policy: {type: string, const: at_least_one_accessible_authoritative_source, description: 至少需要一个调用方可访问的权威来源。}
+      below_threshold_action: {type: string, const: return_no_evidence, description: 低于实现配置的证据阈值时返回无证据。}
   versioning:
     type: object
     additionalProperties: false
+    description: 索引 generation 发布、评测、原子切换和回滚的稳定控制。
     required: [policy_version, generation_format, evaluation_gate_required, atomic_alias_switch_required, rollback_generation_required, rollback_when]
     properties:
       policy_version: {type: string, minLength: 1, description: 参与幂等键和评测记录的策略版本。}
@@ -116,10 +90,3 @@ $defs:
     minItems: 1
     uniqueItems: true
     items: {type: string, minLength: 1}
-  rank_source:
-    type: object
-    additionalProperties: false
-    required: [algorithm, weight]
-    properties:
-      algorithm: {type: string, const: bm25, description: 关键词排序算法。}
-      weight: {type: number, minimum: 0, maximum: 1, description: 关键词召回融合权重。}

@@ -1,0 +1,32 @@
+# 用途：保存治理验证阶段的索引可调参数，使稳定安全策略不与模型和阈值配置混在一起。
+# 边界：本配置仅复现原验证契约参数，不代表已完成 Tokenizer、Embedding、重排或阈值评测。
+$schema: 01-面向AI/schemas/17-indexing-profile-schema.yaml
+schema_version: "1.0"
+profile_id: qianli-governance-validation-indexing
+profile_version: "1.0"
+path_scope: governance_root
+intended_mode: governance_validation
+validation_only: true
+
+chunking:
+  tokenizer_ref: null # 尚未绑定实际 Tokenizer，生产启用时必须补齐并重新评测。
+  max_tokens: 800
+  overlap_tokens: 120
+  optical_character_recognition_enabled: false
+
+reliability:
+  max_retry_attempts: 3
+  dead_letter_retention: P30D
+  tombstone_retention: P30D
+
+retrieval:
+  keyword_algorithm: bm25
+  keyword_weight: 0.4
+  vector_weight: 0.6
+  embedding_model_ref: null # 尚未绑定 Embedding 模型，生产启用时必须补齐。
+  rerank_enabled: true
+  rerank_model_ref: null # 当前只定义降级行为，未绑定重排模型。
+  missing_rerank_action: use_fused_rank_with_recorded_degradation
+  candidate_top_k: 20
+  final_top_k: 5
+  minimum_score: null # 必须通过实际评测校准，不能沿用空阈值进入生产。

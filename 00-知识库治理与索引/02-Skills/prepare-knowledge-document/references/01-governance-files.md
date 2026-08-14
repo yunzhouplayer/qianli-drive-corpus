@@ -13,11 +13,12 @@
 
 ## 最小读取策略
 
-先读取以下三类规则：
+先读取以下四类规则：
 
-1. `01-面向AI/03-index-admission-rules.yaml`：只读取当前运行模式和生产索引开关。
-2. `01-面向AI/schemas/02-metadata-schema.yaml`：读取字段和条件约束。
-3. `00-面向人员/07-权限与安全规范.md`：执行禁止原始入库检查。
+1. `01-面向AI/00-ai-control-manifest.yaml`：只读取当前运行模式和生产索引开关。
+2. `01-面向AI/03-index-admission-rules.yaml`：读取准入条件，并确认 `state_ref` 指向启动清单。
+3. `01-面向AI/schemas/02-metadata-schema.yaml`：读取字段和条件约束。
+4. `00-面向人员/07-权限与安全规范.md`：执行禁止原始入库检查。
 
 确定文档类型后，再读取 AI 友好写作规范中对应文档类型的小节；需要改标题时才读取命名规范；需要判断生命周期时才读取生命周期规范。
 
@@ -32,8 +33,9 @@
 |`00-面向人员/06-元数据填写规范.md`|人员填写原则|
 |`00-面向人员/07-权限与安全规范.md`|安全等级和禁止原始入库内容|
 |`00-面向人员/09-AI友好内容写作规范.md`|只读取通用原则和当前文档类型小节|
+|`01-面向AI/00-ai-control-manifest.yaml`|当前运行模式和生产索引全局开关的唯一来源|
 |`01-面向AI/01-knowledge-structure.yaml`|通过结构化查询提取候选空间和目录，不整份输出|
-|`01-面向AI/03-index-admission-rules.yaml`|当前模式和全局准入开关|
+|`01-面向AI/03-index-admission-rules.yaml`|准入条件及其启动清单状态引用|
 |`01-面向AI/schemas/02-metadata-schema.yaml`|元数据字段、类型和条件必填规则|
 |`01-面向AI/vocabularies/`|只读取当前字段需要的字典文件和有效值|
 

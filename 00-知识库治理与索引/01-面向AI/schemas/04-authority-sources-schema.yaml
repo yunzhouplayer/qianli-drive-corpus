@@ -1,6 +1,6 @@
 # 用途：校验业务主题到唯一权威文档的登记结构；不判断业务内容本身是否正确。
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: urn:qianli-drive:knowledge:authority-sources:v1
+$id: urn:qianli-drive:knowledge:authority-sources:v2
 title: 千里智行知识权威来源登记表
 description: 业务主题、适用范围与权威源文档之间的受控映射。
 type: object
@@ -13,7 +13,7 @@ properties:
     description: 当前文件使用的项目内 Schema 路径。
   schema_version:
     type: string
-    const: "1.0"
+    const: "2.0"
     description: 权威来源登记结构版本。
   owner:
     description: 登记表责任人；未正式启用时允许为 null。
@@ -41,12 +41,9 @@ $defs:
       - topic_name
       - applies_to
       - authoritative_document_id
-      - source_url
-      - owner
-      - authority_status
-      - effective_status
-      - effective_at
-      - review_due
+      - mapping_owner
+      - mapping_effective_at
+      - mapping_review_due
     properties:
       topic_id:
         type: string
@@ -64,27 +61,15 @@ $defs:
         type: string
         minLength: 1
         description: 当前适用范围内唯一权威文档 ID。
-      source_url:
-        type: string
-        format: uri
-        description: 权威源文档地址，不得指向索引副本。
-      owner:
+      mapping_owner:
         type: string
         minLength: 1
-        description: 对主题映射负责的业务人员标识。
-      authority_status:
-        type: string
-        const: formal
-        description: 只有正式文档可以登记为权威来源。
-      effective_status:
-        type: string
-        const: effective
-        description: 只有当前有效文档可以登记为权威来源。
-      effective_at:
+        description: 对“主题与权威文档”映射关系负责的业务人员标识。
+      mapping_effective_at:
         type: string
         format: date-time
         description: 权威映射开始生效时间。
-      review_due:
+      mapping_review_due:
         type: string
         format: date
-        description: 下一次业务复审日期。
+        description: 权威映射关系的下一次业务复审日期。

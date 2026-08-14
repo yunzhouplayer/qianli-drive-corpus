@@ -10,8 +10,10 @@ require "yaml"
 
 AI_ROOT = File.expand_path("..", __dir__)
 PROJECT_ROOT = File.expand_path("../../..", __dir__)
+GOVERNANCE_ROOT = File.dirname(AI_ROOT)
 VALIDATOR = File.join(__dir__, "validate_ai_controls.rb")
 AI_RELATIVE = "00-知识库治理与索引/01-面向AI"
+PROFILE_RELATIVE = "00-知识库治理与索引/03-平台运维/configs/governance-validation-indexing-profile.yaml"
 
 def assert(condition, message)
   raise message unless condition
@@ -22,6 +24,9 @@ def prepare_case(base, name)
   ai_root = File.join(root, AI_RELATIVE)
   FileUtils.mkdir_p(File.dirname(ai_root))
   FileUtils.cp_r(AI_ROOT, ai_root)
+  profile_target = File.join(root, PROFILE_RELATIVE)
+  FileUtils.mkdir_p(File.dirname(profile_target))
+  FileUtils.cp(File.join(GOVERNANCE_ROOT, "03-平台运维", "configs", "governance-validation-indexing-profile.yaml"), profile_target)
   FileUtils.cp(File.join(PROJECT_ROOT, ".gitignore"), File.join(root, ".gitignore"))
   [root, ai_root]
 end
@@ -38,17 +43,15 @@ def write_yaml(path, value)
   File.write(path, YAML.dump(value), encoding: "UTF-8")
 end
 
-def add_fixture_control(ai_root, control_id, path, schema, priority)
-  manifest_path = File.join(ai_root, "11-ai-control-manifest.yaml")
+def add_fixture_control(ai_root, control_id, path, schema)
+  manifest_path = File.join(ai_root, "00-ai-control-manifest.yaml")
   manifest = YAML.safe_load(File.read(manifest_path, encoding: "UTF-8"), aliases: false)
   manifest["load_sequence"] << {
     "control_id" => control_id,
     "path" => path,
     "format" => "yaml",
     "validation_schema" => schema,
-    "phase" => "retrieval",
-    "required" => true,
-    "priority" => priority
+    "phase" => "retrieval"
   }
   write_yaml(manifest_path, manifest)
 end
@@ -62,13 +65,19 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
   cases << "valid_controls"
 
   root, ai_root = prepare_case(base, "missing-file")
-  FileUtils.rm(File.join(ai_root, "13-indexing-policy.yaml"))
+  FileUtils.rm(File.join(ai_root, "10-indexing-policy.yaml"))
   code, report = run_validator(root, ai_root)
   assert(code == 1 && report["findings"].any? { |item| item["id"] == "CONTROL_FILE_MISSING" }, "缺失必需文件应被阻断")
   cases << "missing_required_file"
 
+  root, ai_root = prepare_case(base, "missing-external-profile")
+  FileUtils.rm(File.join(root, PROFILE_RELATIVE))
+  code, report = run_validator(root, ai_root)
+  assert(code == 1 && report["findings"].any? { |item| item["id"] == "CONTROL_FILE_MISSING" }, "治理根目录中的实现配置缺失应被阻断")
+  cases << "missing_governance_scoped_profile"
+
   root, ai_root = prepare_case(base, "duplicate-id")
-  manifest_path = File.join(ai_root, "11-ai-control-manifest.yaml")
+  manifest_path = File.join(ai_root, "00-ai-control-manifest.yaml")
   manifest = YAML.safe_load(File.read(manifest_path, encoding: "UTF-8"), aliases: false)
   manifest["load_sequence"][1]["control_id"] = manifest["load_sequence"][0]["control_id"]
   write_yaml(manifest_path, manifest)
@@ -77,7 +86,7 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
   cases << "duplicate_control_id"
 
   root, ai_root = prepare_case(base, "missing-schema")
-  manifest_path = File.join(ai_root, "11-ai-control-manifest.yaml")
+  manifest_path = File.join(ai_root, "00-ai-control-manifest.yaml")
   manifest = YAML.safe_load(File.read(manifest_path, encoding: "UTF-8"), aliases: false)
   manifest["load_sequence"].find { |item| item["control_id"] == "authority_sources" }["validation_schema"] = "schemas/missing.yaml"
   write_yaml(manifest_path, manifest)
@@ -86,7 +95,7 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
   cases << "missing_validation_schema"
 
   root, ai_root = prepare_case(base, "unknown-field")
-  contract_path = File.join(ai_root, "12-retrieval-runtime-contract.yaml")
+  contract_path = File.join(ai_root, "09-retrieval-runtime-contract.yaml")
   contract = YAML.safe_load(File.read(contract_path, encoding: "UTF-8"), aliases: false)
   contract["unsafe_bypass"] = true
   write_yaml(contract_path, contract)
@@ -94,8 +103,17 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
   assert(code == 1 && report["findings"].any? { |item| item["id"] == "SCHEMA_UNKNOWN_FIELD" }, "未知控制字段应被阻断")
   cases << "unknown_control_field"
 
+  root, ai_root = prepare_case(base, "invalid-state-ref")
+  contract_path = File.join(ai_root, "09-retrieval-runtime-contract.yaml")
+  contract = YAML.safe_load(File.read(contract_path, encoding: "UTF-8"), aliases: false)
+  contract["state_ref"] = "missing-control-manifest.yaml"
+  write_yaml(contract_path, contract)
+  code, report = run_validator(root, ai_root)
+  assert(code == 1 && report["findings"].any? { |item| item["id"] == "SCHEMA_CONST" || item["id"] == "CONTROL_STATE_REF_INVALID" }, "失效的运行状态引用应被阻断")
+  cases << "invalid_control_state_ref"
+
   root, ai_root = prepare_case(base, "mode-conflict")
-  manifest_path = File.join(ai_root, "11-ai-control-manifest.yaml")
+  manifest_path = File.join(ai_root, "00-ai-control-manifest.yaml")
   manifest = YAML.safe_load(File.read(manifest_path, encoding: "UTF-8"), aliases: false)
   manifest["production_index_enabled"] = true
   write_yaml(manifest_path, manifest)
@@ -104,10 +122,10 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
   cases << "governance_production_conflict"
 
   root, ai_root = prepare_case(base, "invalid-index-semantics")
-  policy_path = File.join(ai_root, "13-indexing-policy.yaml")
-  policy = YAML.safe_load(File.read(policy_path, encoding: "UTF-8"), aliases: false)
-  policy["chunking"]["overlap_tokens"] = policy["chunking"]["max_tokens"]
-  write_yaml(policy_path, policy)
+  profile_path = File.join(root, PROFILE_RELATIVE)
+  profile = YAML.safe_load(File.read(profile_path, encoding: "UTF-8"), aliases: false)
+  profile["chunking"]["overlap_tokens"] = profile["chunking"]["max_tokens"]
+  write_yaml(profile_path, profile)
   code, report = run_validator(root, ai_root)
   assert(code == 1 && report["findings"].any? { |item| item["id"] == "CHUNK_OVERLAP_INVALID" }, "分块重叠不小于最大块长应被阻断")
   cases << "invalid_chunk_overlap"
@@ -136,7 +154,7 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
     "max_results" => 5
   }
   write_yaml(request_path, request_payload)
-  add_fixture_control(ai_root, "test_request", "test-request.yaml", "schemas/15-retrieval-request-schema.yaml", 999)
+  add_fixture_control(ai_root, "test_request", "test-request.yaml", "schemas/15-retrieval-request-schema.yaml")
   code, report = run_validator(root, ai_root, skip_readme: true)
   assert(code.zero? && report["result"] == "passed", "符合契约的检索请求应通过")
   cases << "valid_retrieval_request_payload"
@@ -163,7 +181,7 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
     "error" => {"code" => "permission_denied", "message" => "无法访问请求范围内的知识。", "retryable" => false}
   }
   write_yaml(response_path, response_payload)
-  add_fixture_control(ai_root, "test_response", "test-response.yaml", "schemas/16-retrieval-response-schema.yaml", 999)
+  add_fixture_control(ai_root, "test_response", "test-response.yaml", "schemas/16-retrieval-response-schema.yaml")
   code, report = run_validator(root, ai_root, skip_readme: true)
   assert(code == 1 && report["findings"].any? { |item| item["id"] == "SCHEMA_MAX_ITEMS" }, "拒绝响应携带结果应被阻断")
   cases << "denied_response_cannot_expose_results"
