@@ -258,17 +258,21 @@ function markdownBlocks(content, path) {
   return blocks;
 }
 
-function blocksFor(item) {
+function blocksForContent(item, suppliedBody = null) {
   const blocks = [richTextBlock(2, 'text', markerFor(item))];
   if (item.kind === 'directory') {
     blocks.push(richTextBlock(2, 'text', '此页是由受控导入程序创建的目录节点；目录为空不代表已存在业务知识。'));
     return blocks;
   }
-  const body = readTextFile(item.absolutePath);
+  const body = suppliedBody === null ? readTextFile(item.absolutePath) : String(suppliedBody);
   const extension = extname(item.path).toLowerCase();
   if (extension === '.md' || extension === '.markdown') blocks.push(...markdownBlocks(body, item.path));
   else blocks.push(...codeBlocks(body, item.path));
   return blocks;
+}
+
+function blocksFor(item) {
+  return blocksForContent(item);
 }
 
 function scanProject(projectRoot, publicationManifestPath = join(projectRoot, DEFAULT_PUBLICATION_MANIFEST_RELATIVE)) {
@@ -985,7 +989,7 @@ async function verifyImport(scan, options, client, parentNode) {
 }
 
 export {
-  blockSignature, blocksFor, loadPublicationManifest, managedMarker, markerFor,
+  blockSignature, blocksFor, blocksForContent, loadPublicationManifest, managedMarker, markerFor,
   parseArguments, planSummary, scanProject, scopeDiagnostic,
 };
 

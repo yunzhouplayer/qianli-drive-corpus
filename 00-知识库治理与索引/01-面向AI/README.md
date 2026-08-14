@@ -62,11 +62,21 @@ node scripts/feishu-governance-import.mjs apply --execute
 
 # 4. 读回核对父子关系、标题、块数和文件哈希标记。
 node scripts/feishu-governance-import.mjs verify
+
+# 5. 仅在批准清单、权限诊断和全量只读预检均通过后退役范围外节点。
+node scripts/feishu-governance-retire.mjs plan
+node scripts/feishu-governance-retire.mjs diagnose
+node scripts/feishu-governance-retire.mjs preflight
+node scripts/feishu-governance-retire.mjs apply --execute --confirm-count 59
 ```
 
 默认从 macOS 钥匙串服务 `qianli-feishu-smoke` 和 `qianli-feishu-smoke-node` 读取已有凭证与授权节点。`diagnose` 使用飞书租户授权状态接口检查实际生效的 `scope_type`；用户身份权限不能代替 `tenant_access_token` 所需的应用身份权限。导入状态保存在 `.runtime/feishu-import-state.json`，文件权限为仅当前用户可读，并已被 Git 忽略。
 
 文件页面首次创建完成后标记为 `content_authority=feishu`，后续 `apply` 只核验受控标记，不因 Git 种子哈希变化覆盖飞书正文。目录结构仍按 Git 蓝图校验；受控目录改名必须显式登记。旧状态中存在超出新发布范围的节点时，`preflight`、`apply` 和 `verify` 会报告 `retired_managed_nodes` 并阻塞，脚本不会自动删除、移动或隐藏飞书节点。
+
+`feishu-governance-retire.mjs` 是独立的受控退役工具。它只处理“旧受控状态减去当前显式发布计划”得到的批准范围，强制保护受控根和三份保留治理文档，逐页比较飞书正文与原 Git 导入版本，并按叶子优先顺序删除；每次删除后确认节点已从父目录消失，才更新 Git 忽略的本地状态。删除接口的最终一致性通过有限轮询和 `retirement_pending` 断点处理。
+
+当前仓库没有实现飞书正文反向覆盖 Git 源文件的双向同步。正文、权限和飞书版本记录以飞书为权威；Git 中的 Schema、字典、发布清单、脚本和治理控制仍以 Git 为权威。如需留存飞书正文，应新增独立的只读快照流水线，把块结构、纯文本或 DOCX/PDF 导出物写入专用快照目录并经 PR 审查，不得覆盖本目录中的首次创建种子。
 
 `apply` 汇总会分别报告创建节点数、受控改名节点数、恢复中的节点数、首次写入页数、目录内容更新页数、飞书权威正文核验页数、未变化目录页数和旧内容块范围删除次数。幂等重跑应满足 `created_nodes=0`、`renamed_nodes=0`、`content_updated=0`、`deleted_block_ranges=0`；文件页计入 `content_feishu_authoritative`，目录页计入 `content_unchanged`。
 
@@ -78,6 +88,7 @@ node scripts/feishu-governance-import.mjs verify
 ruby scripts/validate_knowledge_structure.rb
 ruby scripts/test_validate_knowledge_structure.rb
 node scripts/test_feishu_governance_import.mjs
+node scripts/test_feishu_governance_retire.mjs
 ```
 
 `validate_knowledge_structure.rb` 补充 JSON Schema 无法表达的跨记录检查：空间和目录 ID/路径唯一、两位序号、目录 ID 与空间序号一致、父目录 ID 与物理路径一致、登记目录真实存在、人员蓝图文件可定位。默认使用当前项目，可通过 `--structure` 和 `--project-root` 检查其他副本；只检查导出文件时可显式使用 `--skip-filesystem`。
