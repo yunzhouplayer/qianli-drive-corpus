@@ -1,0 +1,85 @@
+# 用途：定义文档分块、索引写入、检索排序、失效处理和版本回滚的稳定机器策略。
+# 当前状态：只验证契约，不执行真实分块、Embedding、写库或删除。
+$schema: ./schemas/09-indexing-policy-schema.yaml
+schema_version: "1.0"
+policy_id: qianli-default-indexing
+operating_mode: governance_validation
+implementation_status: contract_only
+production_ready: false
+
+chunking:
+  strategy: heading_aware
+  tokenizer_ref: null
+  max_tokens: 800
+  overlap_tokens: 120
+  chunk_id_components:
+    - document_id
+    - source_version
+    - section_path
+    - chunk_ordinal
+  preserve_blocks:
+    - heading_with_first_paragraph
+    - table
+    - ordered_steps
+    - code_block
+  unsupported_content_action: reject_with_reason
+  images:
+    optical_character_recognition_enabled: false
+    require_human_verified_description: true
+  attachments:
+    recursive_indexing_allowed: false
+    require_independent_metadata: true
+
+write_semantics:
+  content_hash_algorithm: sha256
+  idempotency_key_components:
+    - document_id
+    - source_version
+    - content_hash
+    - policy_version
+  event_deduplication_required: true
+  source_cursor_required: true
+  max_retry_attempts: 3
+  exhausted_retry_action: dead_letter_and_alert
+  dead_letter_retention: P30D
+  partial_document_commit_allowed: false
+
+lifecycle:
+  update_strategy: replace_document_generation_atomically
+  permission_change_strategy: invalidate_then_rebuild
+  deprecation_strategy: remove_from_active_retrieval
+  deletion_strategy: tombstone_then_delete
+  tombstone_retention: P30D
+  source_missing_action: deny_retrieval_and_alert
+
+retrieval:
+  strategy: hybrid
+  keyword:
+    algorithm: bm25
+    weight: 0.4
+  vector:
+    weight: 0.6
+    embedding_model_ref: null
+    missing_model_action: deny_production_enablement
+  rerank:
+    enabled: true
+    model_ref: null
+    missing_model_action: use_fused_rank_with_recorded_degradation
+  candidate_top_k: 20
+  final_top_k: 5
+  minimum_score: null
+  missing_score_threshold_action: deny_production_enablement
+  minimum_evidence_policy: at_least_one_accessible_authoritative_source
+  below_threshold_action: return_no_evidence
+
+versioning:
+  policy_version: "1.0"
+  generation_format: timestamp_contenthash
+  evaluation_gate_required: true
+  atomic_alias_switch_required: true
+  rollback_generation_required: true
+  rollback_when:
+    - permission_leakage_detected
+    - control_validation_failed
+    - evaluation_gate_failed
+    - source_deletion_not_propagated_within_sla

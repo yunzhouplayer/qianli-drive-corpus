@@ -1,5 +1,7 @@
 # AI Agent 使用契约
 
+> 本文供人员审查使用；本地 AI 和检索适配器的机器请求、响应、ACL 与错误语义以[12-retrieval-runtime-contract.yaml](./12-retrieval-runtime-contract.yaml)及其引用的 JSON Schema 为准。当前仅冻结契约，未表示服务已经部署。
+
 ## 默认来源
 
 Agent 只能默认使用同时满足以下条件的内容：
@@ -28,3 +30,5 @@ Agent 只能默认使用同时满足以下条件的内容：
 用户无权访问某内容时，Agent 不得暴露其标题、摘要、命中数量或存在性。
 
 Schema、受控字典、准入规则和 AI 处理策略以 Git 已批准版本为准；正文、文档元数据值、页面版本和实际 ACL 以飞书为准。任一来源拒绝使用时，Agent 必须拒绝引用。
+
+任何客户端不得绕过[11-ai-control-manifest.yaml](./11-ai-control-manifest.yaml)自行猜测控制文件，也不得使用应用超管身份代替当前员工身份查询。

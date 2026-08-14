@@ -1,0 +1,64 @@
+# 用途：校验检索与回答评测用例；用例内容必须经业务、安全和治理责任人确认。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:evaluation-cases:v1
+title: 千里智行知识检索评测用例集
+type: object
+additionalProperties: false
+required: [$schema, schema_version, owner, updated_at, cases]
+properties:
+  $schema:
+    type: string
+    const: ./schemas/06-evaluation-case-schema.yaml
+    description: 当前文件使用的项目内 Schema 路径。
+  schema_version: {type: string, const: "1.0", description: 评测用例结构版本。}
+  owner:
+    description: 用例集责任人；未正式启用时允许为 null。
+    oneOf:
+      - type: string
+        minLength: 1
+      - type: "null"
+  updated_at:
+    description: 用例集更新时间；空清单未启用时允许为 null。
+    oneOf:
+      - type: string
+        format: date
+      - type: "null"
+  cases:
+    type: array
+    description: 已审批评测用例；治理验证阶段允许为空。
+    items:
+      $ref: '#/$defs/case'
+$defs:
+  case:
+    type: object
+    additionalProperties: false
+    required:
+      - case_id
+      - question
+      - user_role
+      - expected_source_ids
+      - forbidden_source_ids
+      - expected_behavior
+      - risk_level
+    properties:
+      case_id: {type: string, pattern: '^EVAL-[A-Z0-9_-]+$', description: 稳定评测用例 ID。}
+      question: {type: string, minLength: 1, description: 经审批的评测问题。}
+      user_role: {type: string, minLength: 1, description: 执行用例时使用的权限角色引用。}
+      expected_source_ids:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 允许且期望召回或引用的文档 ID。
+      forbidden_source_ids:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 对该角色不得召回、引用或暴露存在性的文档 ID。
+      expected_behavior:
+        type: string
+        enum: [answer, clarify, refuse]
+        description: 期望回答、澄清或拒答。
+      risk_level:
+        type: string
+        enum: [low, medium, high, critical]
+        description: 用例风险等级。

@@ -1,5 +1,6 @@
 # 用途：保存检索与回答质量的标准评测用例。
 # 责任：问题、期望来源和禁止来源必须由业务、安全及知识治理责任人确认，不能由 AI 自行填充后直接生效。
+$schema: ./schemas/06-evaluation-case-schema.yaml
 schema_version: "1.0"
 owner: null
 updated_at: null

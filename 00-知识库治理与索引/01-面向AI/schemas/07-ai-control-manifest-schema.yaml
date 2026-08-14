@@ -1,0 +1,86 @@
+# 用途：校验 AI 控制面启动清单、加载顺序、权威优先级和安全失败策略。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:ai-control-manifest:v1
+title: 千里智行 AI 知识控制面启动清单
+type: object
+additionalProperties: false
+required:
+  - $schema
+  - schema_version
+  - control_plane_id
+  - updated_at
+  - operating_mode
+  - production_index_enabled
+  - authority_precedence
+  - failure_policy
+  - runtime_state
+  - load_sequence
+properties:
+  $schema: {type: string, const: ./schemas/07-ai-control-manifest-schema.yaml, description: 当前文件使用的项目内 Schema 路径。}
+  schema_version: {type: string, const: "1.0", description: 控制面主版本。}
+  control_plane_id: {type: string, pattern: '^[a-z][a-z0-9-]+$', description: 控制面稳定 ID。}
+  updated_at: {type: string, format: date, description: 控制面最后更新时间。}
+  operating_mode: {type: string, enum: [governance_validation, production], description: 当前运行模式。}
+  production_index_enabled: {type: boolean, description: 生产索引全局开关。}
+  authority_precedence:
+    type: array
+    minItems: 4
+    maxItems: 4
+    uniqueItems: true
+    items:
+      type: string
+      enum: [source_permissions, source_content, git_governance_controls, runtime_index]
+    description: 冲突处理权威顺序，从高到低排列。
+  failure_policy:
+    type: object
+    additionalProperties: false
+    required: [missing_required_file, incompatible_schema_major, invalid_cross_reference, unknown_control_field, acl_state_unknown, source_version_stale]
+    properties:
+      missing_required_file: {type: string, const: deny_startup, description: 缺必需文件时停止启动。}
+      incompatible_schema_major: {type: string, const: deny_startup, description: 主版本不兼容时停止启动。}
+      invalid_cross_reference: {type: string, const: deny_startup, description: 引用失效时停止启动。}
+      unknown_control_field: {type: string, const: deny_startup, description: 未知控制字段默认阻断。}
+      acl_state_unknown: {type: string, const: deny_access, description: ACL 状态未知时拒绝访问。}
+      source_version_stale: {type: string, const: deny_answer, description: 来源过期时拒绝回答。}
+  runtime_state:
+    type: object
+    additionalProperties: false
+    required: [root, git_tracked, allowed_content, prohibited_content]
+    properties:
+      root: {type: string, const: 00-知识库治理与索引/.runtime, description: 相对于项目根目录且被 Git 忽略的运行态根目录。}
+      git_tracked: {type: boolean, const: false, description: 运行态不得提交 Git。}
+      allowed_content:
+        type: array
+        uniqueItems: true
+        items: {type: string, enum: [connector_state, index_state, query_audit, evaluation_results]}
+        description: 允许保存在运行态目录的内容类型。
+      prohibited_content:
+        type: array
+        minItems: 3
+        uniqueItems: true
+        items: {type: string, enum: [plaintext_credentials, access_tokens, secret_keys]}
+        description: 任何情况下都不得持久化的秘密类型。
+  load_sequence:
+    type: array
+    minItems: 1
+    items:
+      $ref: '#/$defs/control'
+    description: 必需控制文件及确定性加载顺序。
+$defs:
+  control:
+    type: object
+    additionalProperties: false
+    required: [control_id, path, format, validation_schema, phase, required, priority]
+    properties:
+      control_id: {type: string, pattern: '^[a-z][a-z0-9_]+$', description: 控制文件稳定 ID。}
+      path: {type: string, minLength: 1, description: 相对于 01-面向AI 的规范化路径。}
+      format: {type: string, enum: [yaml, json, json_schema, markdown], description: 文件机器格式。}
+      validation_schema:
+        description: 实例文件使用的 Schema；Schema 或 Markdown 文件可为 null。
+        oneOf:
+          - type: string
+            minLength: 1
+          - type: "null"
+      phase: {type: string, enum: [structure, metadata, vocabulary, admission, authority, corpus, indexing, retrieval, evaluation, audit], description: 加载阶段。}
+      required: {type: boolean, description: 是否为启动必需文件。}
+      priority: {type: integer, minimum: 1, description: 唯一加载优先级，数值越小越先加载。}

@@ -21,6 +21,7 @@
 用于检索系统、AI Agent 和校验程序读取，包括元数据 Schema、受控字典、Agent 使用契约、索引准入规则和空载控制清单。
 
 - [AI 控制文件导航](./01-面向AI/README.md)
+- [AI 控制面机器启动入口](./01-面向AI/11-ai-control-manifest.yaml)
 - [元数据 Schema](./01-面向AI/schemas/02-metadata-schema.yaml)
 - [知识库机器蓝图](./01-面向AI/01-knowledge-structure.yaml)
 

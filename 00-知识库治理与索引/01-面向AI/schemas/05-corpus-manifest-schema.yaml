@@ -1,0 +1,96 @@
+# 用途：校验索引发布流程生成的 generation 快照；快照不保存正文，也不替代实时运行状态。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:corpus-manifest:v1
+title: 千里智行生产索引语料清单
+description: 记录批准发布 generation 的源文档、治理归属、源版本、ACL 与索引处理结果快照。
+type: object
+additionalProperties: false
+required:
+  - $schema
+  - schema_version
+  - generated_at
+  - generated_by
+  - source_of_truth
+  - index_generation
+  - documents
+properties:
+  $schema:
+    type: string
+    const: ./schemas/05-corpus-manifest-schema.yaml
+    description: 当前文件使用的项目内 Schema 路径。
+  schema_version:
+    type: string
+    const: "1.0"
+    description: 语料清单结构版本。
+  generated_at:
+    description: 索引流程生成时间；尚未运行时为 null。
+    oneOf:
+      - type: string
+        format: date-time
+      - type: "null"
+  generated_by:
+    description: 生成任务稳定标识；尚未运行时为 null。
+    oneOf:
+      - type: string
+        minLength: 1
+      - type: "null"
+  source_of_truth:
+    type: string
+    const: source_knowledge_base
+    description: 正文和权限始终以源知识库为准。
+  index_generation:
+    description: 已发布索引 generation；未构建时为 null。
+    oneOf:
+      - type: string
+        minLength: 1
+      - type: "null"
+  documents:
+    type: array
+    description: 索引处理过的源文档列表，治理验证阶段必须为空。
+    items:
+      $ref: '#/$defs/document'
+$defs:
+  document:
+    type: object
+    additionalProperties: false
+    required:
+      - document_id
+      - source_url
+      - space_id
+      - directory_id
+      - source_version
+      - updated_at
+      - security_level
+      - acl_ref
+      - index_status
+      - indexed_at
+      - processing_result
+    properties:
+      document_id: {type: string, minLength: 1, description: 源文档稳定 ID。}
+      source_url: {type: string, format: uri, description: 权威源地址。}
+      space_id: {type: string, pattern: '^SPACE-[A-Z0-9-]+$', description: 机器蓝图空间 ID。}
+      directory_id: {type: string, pattern: '^DIR-[0-9]{2}-[0-9]{3}$', description: 机器蓝图目录 ID。}
+      source_version: {type: string, minLength: 1, description: 建立索引时读取的源版本。}
+      updated_at: {type: string, format: date-time, description: 源文档更新时间。}
+      security_level:
+        type: string
+        enum: [public, internal, confidential, restricted]
+        description: 建立索引时使用的安全等级快照。
+      acl_ref: {type: string, minLength: 1, description: 源权限引用。}
+      index_status:
+        type: string
+        enum: [indexed, rejected, failed, invalidated, deleted]
+        description: 当前索引处理状态。
+      indexed_at:
+        description: 成功写入索引的时间；未写入时为 null。
+        oneOf:
+          - type: string
+            format: date-time
+          - type: "null"
+      processing_result:
+        type: object
+        additionalProperties: false
+        required: [code, message]
+        properties:
+          code: {type: string, minLength: 1, description: 稳定处理结果码。}
+          message: {type: string, minLength: 1, description: 不包含秘密或未授权内容的结果说明。}

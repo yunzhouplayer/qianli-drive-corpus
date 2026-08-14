@@ -23,10 +23,26 @@
 |[07-evaluation-cases.yaml](./07-evaluation-cases.yaml)|检索与回答评测问题|空清单，待业务和安全负责人确认|
 |[08-检索与回答评测规范.md](./08-检索与回答评测规范.md)|指标、评测集和纠错闭环|已填写通用规则|
 |[09-feishu-import-path-renames.json](./09-feishu-import-path-renames.json)|飞书受控知识树同父级路径改名清单|已登记归档目录编号修正|
-|[10-feishu-publication-manifest.json](./10-feishu-publication-manifest.json)|飞书公司知识正文和业务目录显式发布清单|默认拒绝；当前登记14个正文种子和8个业务目录根|
+|[10-feishu-publication-manifest.json](./10-feishu-publication-manifest.json)|飞书公司知识正文和业务目录显式发布清单|默认拒绝；当前登记17个正文种子和8个业务目录根|
+|[11-ai-control-manifest.yaml](./11-ai-control-manifest.yaml)|本地 AI 加载知识控制面的唯一机器入口|治理验证模式；必需文件失效时默认拒绝启动|
+|[12-retrieval-runtime-contract.yaml](./12-retrieval-runtime-contract.yaml)|身份、ACL、查询、结果、引用和错误语义|仅冻结契约；尚未绑定 MCP 或 HTTP 实现|
+|[13-indexing-policy.yaml](./13-indexing-policy.yaml)|分块、写入、混合检索、生命周期和回滚策略|仅冻结契约；生产就绪为 false|
 |[schemas/01-knowledge-structure-schema.yaml](./schemas/01-knowledge-structure-schema.yaml)|空间、目录和索引策略的结构约束|已填写通用规则|
 |[schemas/02-metadata-schema.yaml](./schemas/02-metadata-schema.yaml)|正式文档元数据字段与校验条件|已填写通用规则|
 |[schemas/03-controlled-vocabulary-schema.yaml](./schemas/03-controlled-vocabulary-schema.yaml)|受控字典及字典值结构约束|已填写通用规则|
+|[schemas/04-authority-sources-schema.yaml](./schemas/04-authority-sources-schema.yaml)|权威主题与源文档映射结构|已启用；业务条目仍为空|
+|[schemas/05-corpus-manifest-schema.yaml](./schemas/05-corpus-manifest-schema.yaml)|索引语料清单结构|已启用；生产索引关闭时清单为空|
+|[schemas/06-evaluation-case-schema.yaml](./schemas/06-evaluation-case-schema.yaml)|检索与回答评测用例结构|已启用；评测用例仍为空|
+|[schemas/07-ai-control-manifest-schema.yaml](./schemas/07-ai-control-manifest-schema.yaml)|AI 启动清单及失败策略结构|已填写通用规则|
+|[schemas/08-retrieval-runtime-contract-schema.yaml](./schemas/08-retrieval-runtime-contract-schema.yaml)|检索运行契约结构|已填写通用规则|
+|[schemas/09-indexing-policy-schema.yaml](./schemas/09-indexing-policy-schema.yaml)|索引策略结构|已填写通用规则|
+|[schemas/10-runtime-audit-event-schema.yaml](./schemas/10-runtime-audit-event-schema.yaml)|运行审计事件结构|只定义格式；真实日志不进入 Git|
+|[schemas/11-evaluation-result-schema.yaml](./schemas/11-evaluation-result-schema.yaml)|离线评测结果结构|已填写通用规则|
+|[schemas/12-index-admission-rules-schema.yaml](./schemas/12-index-admission-rules-schema.yaml)|索引准入政策结构|已约束默认拒绝、SLA 和决定输出|
+|[schemas/13-admission-decision-schema.yaml](./schemas/13-admission-decision-schema.yaml)|单次索引准入决定载荷|只定义格式；真实决定写入运行审计|
+|[schemas/14-acl-decision-schema.yaml](./schemas/14-acl-decision-schema.yaml)|检索三阶段 ACL 判定载荷|未知或失效权限不得生成允许决定|
+|[schemas/15-retrieval-request-schema.yaml](./schemas/15-retrieval-request-schema.yaml)|本地 AI 的统一检索请求载荷|包含本人身份、群组和 ACL 快照|
+|[schemas/16-retrieval-response-schema.yaml](./schemas/16-retrieval-response-schema.yaml)|统一检索结果、引用和安全错误载荷|未授权结果不得暴露资源存在性|
 |[vocabularies/README.md](./vocabularies/README.md)|字典维护边界|部分试点值已登记；系统与保留期限待确认|
 |[vocabularies/01-document-types.yaml](./vocabularies/01-document-types.yaml)|通用文档类型编码|已填写通用值|
 |[vocabularies/02-security-levels.yaml](./vocabularies/02-security-levels.yaml)|安全等级及默认 AI 权限|已填写通用值|
@@ -35,6 +51,29 @@
 |[vocabularies/05-source-systems.yaml](./vocabularies/05-source-systems.yaml)|权威知识来源平台编码|已登记飞书知识库|
 |[vocabularies/06-retention-policies.yaml](./vocabularies/06-retention-policies.yaml)|保留期限与清理规则编码|具体值待确认|
 |[scripts/feishu-governance-import.mjs](./scripts/feishu-governance-import.mjs)|将本地治理树受控映射到已授权的飞书知识库测试子树|支持诊断、导入/续传、受控更新/改名和核验；不自动删除或移动节点|
+|[scripts/feishu-governance-retire.mjs](./scripts/feishu-governance-retire.mjs)|受控退役旧发布范围中的飞书节点|仅处理批准差集；执行前必须预检和确认数量|
+|[scripts/validate_ai_controls.rb](./scripts/validate_ai_controls.rb)|统一检查 AI 控制文件、Schema 引用和跨文件关系|只读；失败时返回稳定错误码|
+|[scripts/evaluate_retrieval.rb](./scripts/evaluate_retrieval.rb)|核对离线检索结果、权限负例、引用和拒答行为|空用例集只返回未执行，不声明质量通过|
+
+## AI 启动入口与读取顺序
+
+本地 AI、检索服务或适配器必须从[11-ai-control-manifest.yaml](./11-ai-control-manifest.yaml)启动，不得自行扫描目录猜测配置。确定性加载顺序如下：
+
+1. 读取启动清单并核对运行模式、生产开关和失败策略。
+2. 加载目录结构、元数据 Schema 和全部受控字典。
+3. 加载索引准入、权威来源和实际语料范围。
+4. 加载索引策略和检索运行契约。
+5. 加载评测用例、运行审计和评测结果 Schema。
+
+任一必需文件缺失、Schema 主版本不兼容、未知控制字段或交叉引用失效时必须 fail closed：启动、索引或回答按对应策略停止，不能忽略错误继续运行。机器读取以启动清单的 `load_sequence` 为准；本 README 只提供人员导航。
+
+## 本地 AI 接入边界
+
+- 当前只提供与传输协议无关的检索契约，尚未部署 MCP、HTTP、Embedding、向量库或重排服务。
+- 后续 Codex、Claude Code 或其他本地 AI 适配器必须把用户身份、群组、租户和 ACL 快照传入统一契约，不得共用超管身份代替员工本人权限。
+- 检索前、读取前和回答前三次权限判断均不得跳过；ACL 缺失或过期时按无权限处理。
+- 生产索引、缓存、连接器状态、评测结果和查询审计只能写入 Git 忽略的 `00-知识库治理与索引/.runtime/` 或批准的外部运行平台。
+- 真实运行证据完成前，本仓库只能声明“治理验证可执行”，不能声明本地 AI 已经能够检索公司知识。
 
 ## 单一来源
 
@@ -87,6 +126,10 @@ node scripts/feishu-governance-retire.mjs apply --execute --confirm-count 59
 ```bash
 ruby scripts/validate_knowledge_structure.rb
 ruby scripts/test_validate_knowledge_structure.rb
+ruby scripts/validate_ai_controls.rb
+ruby scripts/test_validate_ai_controls.rb
+ruby scripts/evaluate_retrieval.rb
+ruby scripts/test_evaluate_retrieval.rb
 node scripts/test_feishu_governance_import.mjs
 node scripts/test_feishu_governance_retire.mjs
 ```

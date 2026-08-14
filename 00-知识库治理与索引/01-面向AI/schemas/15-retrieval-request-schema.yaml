@@ -1,0 +1,50 @@
+# 用途：定义本地 AI、MCP 或 HTTP 适配器提交的统一知识检索请求。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:retrieval-request:v1
+title: 千里智行知识检索请求
+type: object
+additionalProperties: false
+required: [schema_version, trace_id, query, identity_context]
+properties:
+  schema_version: {type: string, const: "1.0", description: 检索请求结构版本。}
+  trace_id: {type: string, minLength: 1, description: 调用方生成的唯一追踪 ID。}
+  query: {type: string, minLength: 1, maxLength: 2000, description: 用户知识问题，不得包含凭证或密钥。}
+  identity_context:
+    type: object
+    additionalProperties: false
+    required: [subject_ref, tenant_ref, group_refs, authenticated_at, acl_snapshot_version]
+    properties:
+      subject_ref: {type: string, minLength: 1, description: 当前员工身份的不可逆稳定引用。}
+      tenant_ref: {type: string, minLength: 1, description: 公司租户稳定引用。}
+      group_refs:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 当前身份已确认的组织或群组引用。
+      authenticated_at: {type: string, format: date-time, description: 身份认证时间。}
+      acl_snapshot_version: {type: string, minLength: 1, description: 权限快照版本。}
+  filters:
+    type: object
+    additionalProperties: false
+    properties:
+      space_ids:
+        type: array
+        uniqueItems: true
+        items: {type: string, pattern: '^SPACE-[A-Z0-9-]+$'}
+        description: 可选空间过滤；仍需逐文档鉴权。
+      directory_ids:
+        type: array
+        uniqueItems: true
+        items: {type: string, pattern: '^DIR-[0-9]{2}-[0-9]{3}$'}
+        description: 可选目录过滤；仍需逐文档鉴权。
+      business_domains:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 可选受控业务域过滤。
+      systems_platforms:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 可选受控系统平台过滤。
+  max_results: {type: integer, minimum: 1, maximum: 20, default: 5, description: 请求返回的最大结果数量。}

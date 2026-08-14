@@ -1,0 +1,45 @@
+# 用途：校验离线检索评测结果，使结果可关联用例、控制面版本和索引 generation。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:evaluation-result:v1
+title: 千里智行知识检索离线评测结果
+type: object
+additionalProperties: false
+required: [schema_version, run_id, executed_at, control_plane_version, index_generation, results]
+properties:
+  schema_version: {type: string, const: "1.0", description: 评测结果结构版本。}
+  run_id: {type: string, minLength: 1, description: 唯一评测运行 ID。}
+  executed_at: {type: string, format: date-time, description: 带时区的执行时间。}
+  control_plane_version: {type: string, minLength: 1, description: 评测使用的控制面版本。}
+  index_generation:
+    description: 被评测索引 generation；治理验证且未执行时允许为 null。
+    oneOf: [{type: string, minLength: 1}, {type: "null"}]
+  results:
+    type: array
+    items:
+      $ref: '#/$defs/result'
+    description: 与评测用例一一对应的结果。
+$defs:
+  result:
+    type: object
+    additionalProperties: false
+    required: [case_id, status, returned_source_ids, cited_source_ids, leaked_source_ids, answer_behavior]
+    properties:
+      case_id: {type: string, pattern: '^EVAL-[A-Z0-9_-]+$', description: 对应评测用例 ID。}
+      status: {type: string, enum: [completed, failed, skipped], description: 单用例执行状态。}
+      returned_source_ids:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 实际召回的源文档 ID。
+      cited_source_ids:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 实际回答引用的源文档 ID。
+      leaked_source_ids:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 被检测为越权暴露的源文档 ID，合格结果必须为空。
+      answer_behavior: {type: string, enum: [answer, clarify, refuse], description: 实际回答行为。}
+      notes: {type: string, minLength: 1, description: 不包含未授权内容的失败或跳过说明。}

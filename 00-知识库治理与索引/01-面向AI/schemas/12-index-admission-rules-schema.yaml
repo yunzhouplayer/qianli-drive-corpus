@@ -1,0 +1,80 @@
+# 用途：校验索引准入政策、默认拒绝规则、同步 SLA 和决定输出契约。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:index-admission-rules:v1
+title: 千里智行知识索引准入规则
+type: object
+additionalProperties: false
+required: [$schema, schema_version, policy_id, policy_version, operating_mode, production_index_enabled, default_action, required_conditions, security_rules, deny_when, sync_sla, audit_required, decision_contract]
+properties:
+  $schema: {type: string, const: ./schemas/12-index-admission-rules-schema.yaml, description: 当前文件使用的项目内 Schema 路径。}
+  schema_version: {type: string, const: "1.0", description: 准入规则结构版本。}
+  policy_id: {type: string, pattern: '^[a-z][a-z0-9-]+$', description: 准入政策稳定 ID。}
+  policy_version: {type: string, minLength: 1, description: 参与决定审计的政策版本。}
+  operating_mode: {type: string, enum: [governance_validation, production], description: 当前运行模式。}
+  production_index_enabled: {type: boolean, description: 生产索引全局开关。}
+  default_action: {type: string, const: deny, description: 未明确满足全部条件时默认拒绝。}
+  required_conditions:
+    type: object
+    additionalProperties: false
+    required: [metadata_schema_valid, structure_path_valid, authority_status, effective_status, source_accessible, acl_ref_present, allow_index, allow_answer_citation]
+    properties:
+      metadata_schema_valid: {type: boolean, const: true, description: 元数据 Schema 必须有效。}
+      structure_path_valid: {type: boolean, const: true, description: 空间和目录必须已登记。}
+      authority_status: {type: string, const: formal, description: 文档必须是正式状态。}
+      effective_status: {type: string, const: effective, description: 文档必须当前有效。}
+      source_accessible: {type: boolean, const: true, description: 权威源必须可读取。}
+      acl_ref_present: {type: boolean, const: true, description: 必须具有源 ACL 引用。}
+      allow_index: {type: boolean, const: true, description: 必须明确允许索引。}
+      allow_answer_citation: {type: boolean, const: true, description: 必须明确允许回答引用。}
+  security_rules:
+    type: object
+    additionalProperties: false
+    required: [public, internal, confidential, restricted]
+    properties:
+      public: {$ref: '#/$defs/security_rule'}
+      internal: {$ref: '#/$defs/security_rule'}
+      confidential: {$ref: '#/$defs/security_rule'}
+      restricted: {$ref: '#/$defs/security_rule'}
+  deny_when:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items: {type: string, pattern: '^[a-z][a-z0-9_]+$'}
+    description: 任一命中即拒绝或失效的稳定原因码。
+  sync_sla:
+    type: object
+    additionalProperties: false
+    required: [permission_restriction_or_sensitive_removal, ordinary_update_or_deprecation]
+    properties:
+      permission_restriction_or_sensitive_removal: {type: string, pattern: '^P', description: 权限收紧或敏感删除处理时限。}
+      ordinary_update_or_deprecation: {type: string, pattern: '^P', description: 普通更新或废弃处理时限。}
+  audit_required: {type: boolean, const: true, description: 所有准入动作必须审计。}
+  decision_contract:
+    type: object
+    additionalProperties: false
+    required: [schema_ref, allowed_outcomes, required_fields]
+    properties:
+      schema_ref: {type: string, const: schemas/13-admission-decision-schema.yaml, description: 准入决定载荷 Schema。}
+      allowed_outcomes:
+        type: array
+        minItems: 3
+        maxItems: 3
+        uniqueItems: true
+        items: {type: string, enum: [admit, reject, defer]}
+        description: 准入决定允许结果。
+      required_fields:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+        description: 每个决定必须提供的审计字段。
+$defs:
+  security_rule:
+    type: object
+    additionalProperties: false
+    required: [action]
+    properties:
+      action:
+        type: string
+        enum: [evaluate_required_conditions, require_explicit_security_approval, deny]
+        description: 安全等级附加处理动作。

@@ -1,11 +1,15 @@
-# 用途：记录实际进入生产索引的文档及其同步状态。
-# 生成方式：应由索引流程生成或更新，不由人员手工复制正文，也不作为权威知识源。
+# 用途：记录批准发布的索引 generation 及其文档处理结果快照，不承担实时运行状态。
+# 生成方式：应由索引发布流程生成并受控审查，不由人员手工复制正文，也不作为权威知识源。
+# 实时状态：连接器游标、重试、当前健康度和查询审计保存在 Git 之外。
 # 当前状态：处于治理验证阶段，生产索引关闭，本清单必须保持为空。
+$schema: ./schemas/05-corpus-manifest-schema.yaml
 schema_version: "1.0"
 # 尚未运行索引流程时，生成时间和执行主体保持 null。
 generated_at: null
 generated_by: null
 source_of_truth: source_knowledge_base
+# 尚未构建索引时 generation 保持 null；不得使用虚构版本表示已完成构建。
+index_generation: null
 # documents 当前为空。每个条目应至少包含：
 # - document_id/source_url: 源文档标识与地址
 # - space_id/directory_id: 01-knowledge-structure.yaml 中登记的空间和目录ID

@@ -1,0 +1,90 @@
+# 用途：校验业务主题到唯一权威文档的登记结构；不判断业务内容本身是否正确。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:authority-sources:v1
+title: 千里智行知识权威来源登记表
+description: 业务主题、适用范围与权威源文档之间的受控映射。
+type: object
+additionalProperties: false
+required: [$schema, schema_version, owner, updated_at, entries]
+properties:
+  $schema:
+    type: string
+    const: ./schemas/04-authority-sources-schema.yaml
+    description: 当前文件使用的项目内 Schema 路径。
+  schema_version:
+    type: string
+    const: "1.0"
+    description: 权威来源登记结构版本。
+  owner:
+    description: 登记表责任人；未正式启用时允许为 null。
+    oneOf:
+      - type: string
+        minLength: 1
+      - type: "null"
+  updated_at:
+    description: 最后更新时间；空清单未启用时允许为 null。
+    oneOf:
+      - type: string
+        format: date
+      - type: "null"
+  entries:
+    type: array
+    description: 经业务负责人确认的权威来源条目，治理验证阶段允许为空。
+    items:
+      $ref: '#/$defs/entry'
+$defs:
+  entry:
+    type: object
+    additionalProperties: false
+    required:
+      - topic_id
+      - topic_name
+      - applies_to
+      - authoritative_document_id
+      - source_url
+      - owner
+      - authority_status
+      - effective_status
+      - effective_at
+      - review_due
+    properties:
+      topic_id:
+        type: string
+        pattern: '^[A-Z][A-Z0-9_-]+$'
+        description: 不随显示名称变化的业务主题稳定标识。
+      topic_name:
+        type: string
+        minLength: 1
+        description: 主题中文显示名称。
+      applies_to:
+        type: string
+        minLength: 1
+        description: 角色、区域、系统版本或其他适用范围。
+      authoritative_document_id:
+        type: string
+        minLength: 1
+        description: 当前适用范围内唯一权威文档 ID。
+      source_url:
+        type: string
+        format: uri
+        description: 权威源文档地址，不得指向索引副本。
+      owner:
+        type: string
+        minLength: 1
+        description: 对主题映射负责的业务人员标识。
+      authority_status:
+        type: string
+        const: formal
+        description: 只有正式文档可以登记为权威来源。
+      effective_status:
+        type: string
+        const: effective
+        description: 只有当前有效文档可以登记为权威来源。
+      effective_at:
+        type: string
+        format: date-time
+        description: 权威映射开始生效时间。
+      review_due:
+        type: string
+        format: date
+        description: 下一次业务复审日期。

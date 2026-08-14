@@ -1,6 +1,9 @@
 # 用途：定义文档进入生产检索索引前必须满足的通用条件。
 # 核心原则：默认拒绝；只有明确满足全部准入条件的文档才可进入生产索引。
+$schema: ./schemas/12-index-admission-rules-schema.yaml
 schema_version: "1.0"
+policy_id: qianli-default-index-admission
+policy_version: "1.0"
 # 当前仅验证治理结构、元数据、字典和准入规则，不执行真实生产索引。
 operating_mode: governance_validation # governance_validation 表示只做治理验证。
 production_index_enabled: false # false 表示生产索引全局关闭。
@@ -49,3 +52,20 @@ sync_sla:
 
 # 所有准入、拒绝、更新和清理动作都必须保留审计记录。
 audit_required: true # true 表示所有动作必须保留审计记录。
+
+# 每次准入判断必须生成独立决定对象，不允许只写布尔结果或自由文本。
+decision_contract:
+  schema_ref: schemas/13-admission-decision-schema.yaml
+  allowed_outcomes:
+    - admit
+    - reject
+    - defer
+  required_fields:
+    - decision_id
+    - document_id
+    - outcome
+    - reason_codes
+    - evaluated_at
+    - control_plane_version
+    - policy_version
+    - evaluator_ref

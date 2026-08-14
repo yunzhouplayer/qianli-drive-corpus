@@ -1,0 +1,31 @@
+# 用途：定义检索前、读取前和回答前的统一 ACL 判定载荷。
+# 安全：缺少主体、资源、ACL 或快照版本时不得生成 allow 决定。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:acl-decision:v1
+title: 千里智行知识访问控制决定
+type: object
+additionalProperties: false
+required: [schema_version, decision_id, trace_id, stage, subject_ref, resource_ref, acl_ref, acl_snapshot_version, decision, reason_codes, evaluated_at, inheritance_source]
+properties:
+  schema_version: {type: string, const: "1.0", description: ACL 决定结构版本。}
+  decision_id: {type: string, minLength: 1, description: 全局唯一权限决定 ID。}
+  trace_id: {type: string, minLength: 1, description: 关联查询或任务的追踪 ID。}
+  stage: {type: string, enum: [pre_retrieval, pre_document_read, pre_answer], description: 权限检查阶段。}
+  subject_ref: {type: string, minLength: 1, description: 已认证用户的不可逆稳定引用。}
+  resource_ref: {type: string, minLength: 1, description: 被判断文档或分块引用。}
+  acl_ref: {type: string, minLength: 1, description: 源知识库权限引用。}
+  acl_snapshot_version: {type: string, minLength: 1, description: 权限判断使用的快照版本。}
+  decision: {type: string, enum: [allow, deny], description: 允许或拒绝；无法判断时必须为 deny。}
+  reason_codes:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items: {type: string, pattern: '^[a-z][a-z0-9_]+$'}
+    description: 稳定允许或拒绝原因码。
+  evaluated_at: {type: string, format: date-time, description: 带时区的判断时间。}
+  inheritance_source: {type: string, const: source_knowledge_base, description: 权限继承只从源知识库解析。}
+  inheritance_chain_refs:
+    type: array
+    uniqueItems: true
+    items: {type: string, minLength: 1}
+    description: 参与判断的父级 ACL 引用链，不复制成员列表。

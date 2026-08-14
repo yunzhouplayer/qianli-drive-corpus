@@ -1,0 +1,99 @@
+# 用途：定义统一知识检索响应、结果、引用和安全错误载荷。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:retrieval-response:v1
+title: 千里智行知识检索响应
+type: object
+additionalProperties: false
+required: [schema_version, trace_id, status, results, citations, control_plane_version, index_generation, error]
+properties:
+  schema_version: {type: string, const: "1.0", description: 检索响应结构版本。}
+  trace_id: {type: string, minLength: 1, description: 与请求一致的追踪 ID。}
+  status: {type: string, enum: [ok, no_evidence, denied, error], description: 检索结果状态。}
+  results:
+    type: array
+    maxItems: 20
+    items:
+      $ref: '#/$defs/result'
+    description: 仅包含调用方有权访问的结果；拒绝时必须为空。
+  citations:
+    type: array
+    maxItems: 20
+    items:
+      $ref: '#/$defs/citation'
+    description: 可供调用方访问和读回的来源引用。
+  control_plane_version: {type: string, minLength: 1, description: 响应使用的控制面版本。}
+  index_generation:
+    description: 响应使用的索引 generation；服务错误或未执行时允许为 null。
+    oneOf: [{type: string, minLength: 1}, {type: "null"}]
+  error:
+    description: 成功时为 null；失败时使用稳定公共错误，不包含未授权资源信息。
+    oneOf:
+      - type: "null"
+      - $ref: '#/$defs/error'
+allOf:
+  - if:
+      properties:
+        status: {const: ok}
+      required: [status]
+    then:
+      properties:
+        index_generation: {type: string, minLength: 1}
+        error: {type: "null"}
+  - if:
+      properties:
+        status: {enum: [no_evidence, denied]}
+      required: [status]
+    then:
+      properties:
+        results: {type: array, maxItems: 0}
+        citations: {type: array, maxItems: 0}
+        error: {$ref: '#/$defs/error'}
+  - if:
+      properties:
+        status: {const: denied}
+      required: [status]
+    then:
+      properties:
+        error:
+          type: object
+          properties:
+            code: {const: permission_denied}
+  - if:
+      properties:
+        status: {const: no_evidence}
+      required: [status]
+    then:
+      properties:
+        error:
+          type: object
+          properties:
+            code: {const: no_evidence}
+$defs:
+  result:
+    type: object
+    additionalProperties: false
+    required: [document_id, chunk_id, source_version, score, citation_ref]
+    properties:
+      document_id: {type: string, minLength: 1, description: 源文档稳定 ID。}
+      chunk_id: {type: string, minLength: 1, description: 稳定分块 ID。}
+      source_version: {type: string, minLength: 1, description: 被索引的源版本。}
+      score: {type: number, minimum: 0, maximum: 1, description: 归一化检索分数。}
+      citation_ref: {type: string, minLength: 1, description: 对应 citations 中的引用 ID。}
+  citation:
+    type: object
+    additionalProperties: false
+    required: [citation_ref, document_id, source_url, source_version, locator]
+    properties:
+      citation_ref: {type: string, minLength: 1, description: 响应内唯一引用 ID。}
+      document_id: {type: string, minLength: 1, description: 源文档稳定 ID。}
+      source_url: {type: string, format: uri, description: 调用方可访问的源地址。}
+      source_version: {type: string, minLength: 1, description: 引用对应源版本。}
+      locator: {type: string, minLength: 1, description: 标题路径、块 ID 或其他可读回定位信息。}
+  error:
+    type: object
+    additionalProperties: false
+    required: [code, message, retryable]
+    properties:
+      code: {type: string, enum: [permission_denied, no_evidence, source_stale, control_invalid, service_unavailable], description: 稳定公共错误码。}
+      message: {type: string, minLength: 1, description: 不泄露未授权资源的公共提示。}
+      retryable: {type: boolean, description: 调用方是否可以在状态变化后重试。}

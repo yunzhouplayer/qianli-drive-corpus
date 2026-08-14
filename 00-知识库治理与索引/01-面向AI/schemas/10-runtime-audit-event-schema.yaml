@@ -1,0 +1,40 @@
+# 用途：定义控制加载、索引、ACL、查询、回答和评测的统一运行审计事件格式。
+# 边界：本文件只定义 Schema；真实事件必须写入 Git 忽略的受控日志系统。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:runtime-audit-event:v1
+title: 千里智行知识运行审计事件
+type: object
+additionalProperties: false
+required: [schema_version, event_id, event_type, occurred_at, trace_id, actor_ref, control_plane_version, outcome, reason_code]
+properties:
+  schema_version: {type: string, const: "1.0", description: 审计事件结构版本。}
+  event_id: {type: string, minLength: 1, description: 全局唯一审计事件 ID。}
+  event_type:
+    type: string
+    enum: [control_load, admission_decision, sync_run, acl_decision, retrieval_query, answer_delivery, evaluation_run, rollback_decision]
+    description: 审计事件类型。
+  occurred_at: {type: string, format: date-time, description: 带时区的事件发生时间。}
+  trace_id: {type: string, minLength: 1, description: 串联一次请求或任务的追踪 ID。}
+  actor_ref: {type: string, minLength: 1, description: 不包含明文个人信息的主体引用。}
+  control_plane_version: {type: string, minLength: 1, description: 执行时控制面版本。}
+  index_generation:
+    description: 涉及索引时的 generation；不涉及时可为 null。
+    oneOf: [{type: string, minLength: 1}, {type: "null"}]
+  acl_snapshot_version:
+    description: 权限判断使用的快照版本；不涉及时可为 null。
+    oneOf: [{type: string, minLength: 1}, {type: "null"}]
+  resource_refs:
+    type: array
+    uniqueItems: true
+    items: {type: string, minLength: 1}
+    description: 调用方有权记录的文档或任务引用，不保存正文。
+  query_hash:
+    type: string
+    pattern: '^[a-f0-9]{64}$'
+    description: 查询文本 SHA-256；默认不记录查询原文。
+  outcome: {type: string, enum: [allowed, denied, succeeded, failed, degraded, skipped], description: 事件结果。}
+  reason_code: {type: string, pattern: '^[a-z][a-z0-9_]+$', description: 稳定结果或拒绝原因码。}
+  details:
+    type: object
+    description: 不包含正文、秘密或未授权资源信息的扩展字段。
+    additionalProperties: true

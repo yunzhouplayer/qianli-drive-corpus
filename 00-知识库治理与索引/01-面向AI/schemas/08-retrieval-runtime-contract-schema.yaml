@@ -1,0 +1,96 @@
+# 用途：校验检索运行契约的身份、ACL、请求、结果、引用和安全错误语义。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:retrieval-runtime-contract:v1
+title: 千里智行知识检索运行契约
+type: object
+additionalProperties: false
+required: [$schema, schema_version, contract_id, operating_mode, implementation_status, transport_binding, request_schema_ref, response_schema_ref, acl_decision_schema_ref, request_contract, permission_checks, response_contract, errors]
+properties:
+  $schema: {type: string, const: ./schemas/08-retrieval-runtime-contract-schema.yaml, description: 当前文件使用的项目内 Schema 路径。}
+  schema_version: {type: string, const: "1.0", description: 检索契约版本。}
+  contract_id: {type: string, pattern: '^[a-z][a-z0-9-]+$', description: 检索契约稳定 ID。}
+  operating_mode: {type: string, enum: [governance_validation, production], description: 当前运行模式。}
+  implementation_status: {type: string, enum: [contract_only, implemented, validated], description: 契约实现状态。}
+  transport_binding: {type: string, enum: [transport_agnostic, mcp, http], description: 协议绑定；当前保持与传输无关。}
+  request_schema_ref: {type: string, const: schemas/15-retrieval-request-schema.yaml, description: 实际查询请求载荷 Schema。}
+  response_schema_ref: {type: string, const: schemas/16-retrieval-response-schema.yaml, description: 实际检索响应载荷 Schema。}
+  acl_decision_schema_ref: {type: string, const: schemas/14-acl-decision-schema.yaml, description: 实际 ACL 判定载荷 Schema。}
+  request_contract:
+    type: object
+    additionalProperties: false
+    required: [required_fields, optional_fields, max_query_characters, max_results_limit, identity_required_fields, identity_rules]
+    properties:
+      required_fields: {$ref: '#/$defs/nonempty_unique_strings', description: 每次查询必须提供的顶层字段。}
+      optional_fields: {$ref: '#/$defs/unique_strings', description: 允许提供的可选顶层字段。}
+      max_query_characters: {type: integer, minimum: 1, maximum: 10000, description: 查询文本最大字符数。}
+      max_results_limit: {type: integer, minimum: 1, maximum: 100, description: 调用方可请求的最大结果数。}
+      identity_required_fields: {$ref: '#/$defs/nonempty_unique_strings', description: 身份上下文必填字段。}
+      identity_rules:
+        type: object
+        additionalProperties: false
+        required: [anonymous_allowed, plaintext_personal_data_allowed, stale_identity_action]
+        properties:
+          anonymous_allowed: {type: boolean, const: false, description: 不允许匿名访问公司知识。}
+          plaintext_personal_data_allowed: {type: boolean, const: false, description: 不在请求审计中保存明文个人信息。}
+          stale_identity_action: {type: string, const: deny_access, description: 身份快照过期时拒绝访问。}
+  permission_checks:
+    type: object
+    additionalProperties: false
+    required: [pre_retrieval, pre_document_read, pre_answer, unknown_or_unavailable_acl, deny_precedence, inheritance_source]
+    properties:
+      pre_retrieval: {$ref: '#/$defs/permission_stage', description: 召回前权限过滤。}
+      pre_document_read: {$ref: '#/$defs/permission_stage', description: 读取源文档前二次鉴权。}
+      pre_answer: {$ref: '#/$defs/permission_stage', description: 输出回答前引用鉴权。}
+      unknown_or_unavailable_acl: {type: string, const: deny_access, description: ACL 不可用时拒绝。}
+      deny_precedence: {type: string, const: explicit_deny_overrides_allow, description: 显式拒绝优先于允许。}
+      inheritance_source: {type: string, const: source_knowledge_base, description: 权限继承以源知识库为准。}
+  response_contract:
+    type: object
+    additionalProperties: false
+    required: [required_fields, result_required_fields, citation_required_fields, answer_rules]
+    properties:
+      required_fields: {$ref: '#/$defs/nonempty_unique_strings', description: 响应顶层必填字段。}
+      result_required_fields: {$ref: '#/$defs/nonempty_unique_strings', description: 单条召回结果必填字段。}
+      citation_required_fields: {$ref: '#/$defs/nonempty_unique_strings', description: 单条引用必填字段。}
+      answer_rules:
+        type: object
+        additionalProperties: false
+        required: [evidence_required, accessible_citation_required, stale_source_allowed, permission_filtered_count_exposed, unauthorized_resource_existence_exposed]
+        properties:
+          evidence_required: {type: boolean, const: true, description: 回答必须具有证据。}
+          accessible_citation_required: {type: boolean, const: true, description: 回答必须提供调用方可访问的引用。}
+          stale_source_allowed: {type: boolean, const: false, description: 禁止使用过期来源回答。}
+          permission_filtered_count_exposed: {type: boolean, const: false, description: 不暴露被权限过滤的命中数量。}
+          unauthorized_resource_existence_exposed: {type: boolean, const: false, description: 不暴露未授权资源存在性。}
+  errors:
+    type: array
+    minItems: 5
+    items:
+      $ref: '#/$defs/error'
+    description: 稳定公共错误定义。
+$defs:
+  unique_strings:
+    type: array
+    uniqueItems: true
+    items: {type: string, minLength: 1}
+  nonempty_unique_strings:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items: {type: string, minLength: 1}
+  permission_stage:
+    type: object
+    additionalProperties: false
+    required: [required, action]
+    properties:
+      required: {type: boolean, const: true, description: 该权限检查不得跳过。}
+      action: {type: string, minLength: 1, description: 稳定权限动作编码。}
+  error:
+    type: object
+    additionalProperties: false
+    required: [code, public_message, retryable, expose_resource_existence]
+    properties:
+      code: {type: string, pattern: '^[a-z][a-z0-9_]+$', description: 稳定错误码。}
+      public_message: {type: string, minLength: 1, description: 不泄露未授权资源的用户提示。}
+      retryable: {type: boolean, description: 调用方是否可以在状态变化后重试。}
+      expose_resource_existence: {type: boolean, const: false, description: 错误不得暴露未授权资源存在性。}

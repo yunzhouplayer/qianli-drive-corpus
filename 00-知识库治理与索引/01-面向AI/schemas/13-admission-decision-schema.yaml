@@ -1,0 +1,38 @@
+# 用途：定义单次索引准入决定的可审计机器载荷。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:knowledge:admission-decision:v1
+title: 千里智行知识索引准入决定
+type: object
+additionalProperties: false
+required: [schema_version, decision_id, document_id, outcome, reason_codes, evaluated_at, control_plane_version, policy_version, evaluator_ref]
+properties:
+  schema_version: {type: string, const: "1.0", description: 准入决定结构版本。}
+  decision_id: {type: string, minLength: 1, description: 全局唯一决定 ID。}
+  document_id: {type: string, minLength: 1, description: 被评估文档稳定 ID。}
+  outcome: {type: string, enum: [admit, reject, defer], description: 准入、拒绝或等待补充状态。}
+  reason_codes:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items: {type: string, pattern: '^[a-z][a-z0-9_]+$'}
+    description: 支持决定的稳定原因码，允许结果也必须说明依据。
+  evaluated_at: {type: string, format: date-time, description: 带时区的决定时间。}
+  control_plane_version: {type: string, minLength: 1, description: 决定使用的控制面版本。}
+  policy_version: {type: string, minLength: 1, description: 决定使用的准入政策版本。}
+  evaluator_ref: {type: string, minLength: 1, description: 评估任务或人员的稳定引用。}
+  acl_snapshot_version:
+    description: 决定使用的权限快照版本；未能取得时 outcome 不能为 admit。
+    oneOf: [{type: string, minLength: 1}, {type: "null"}]
+  source_version:
+    description: 决定使用的源版本；未能取得时 outcome 不能为 admit。
+    oneOf: [{type: string, minLength: 1}, {type: "null"}]
+allOf:
+  - if:
+      properties:
+        outcome: {const: admit}
+      required: [outcome]
+    then:
+      properties:
+        acl_snapshot_version: {type: string, minLength: 1}
+        source_version: {type: string, minLength: 1}
+      required: [acl_snapshot_version, source_version]

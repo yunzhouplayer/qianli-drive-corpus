@@ -1,5 +1,6 @@
 # 用途：登记每个业务主题在特定适用范围内的唯一权威文档。
 # 责任：条目必须由对应业务负责人确认，不能由 AI 或知识库管理员猜测生成。
+$schema: ./schemas/04-authority-sources-schema.yaml
 schema_version: "1.0"
 owner: null
 updated_at: null

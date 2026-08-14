@@ -104,8 +104,13 @@ AI 读取顺序固定为：启动清单 → 结构和字典 → 元数据与准�
 - `schemas/09-indexing-policy-schema.yaml`；
 - `schemas/10-runtime-audit-event-schema.yaml`；
 - `schemas/11-evaluation-result-schema.yaml`。
+- `schemas/12-index-admission-rules-schema.yaml`；
+- `schemas/13-admission-decision-schema.yaml`；
+- `schemas/14-acl-decision-schema.yaml`；
+- `schemas/15-retrieval-request-schema.yaml`；
+- `schemas/16-retrieval-response-schema.yaml`。
 
-Schema 使用 JSON Schema Draft 2020-12，业务字段提供中文 `description`，核心对象默认拒绝未知字段。现有 `05`、`06`、`07` 文件增加 `$schema`、版本和责任字段，但继续保持业务条目为空。
+Schema 使用 JSON Schema Draft 2020-12，业务字段提供中文 `description`，核心对象默认拒绝未知字段。现有 `03`、`05`、`06`、`07` 文件增加 `$schema` 或决定契约，业务清单继续保持为空。准入、ACL、检索请求和检索响应使用独立载荷 Schema，避免适配器只依赖文字字段说明。
 
 ### 4.5 审计与评测
 
