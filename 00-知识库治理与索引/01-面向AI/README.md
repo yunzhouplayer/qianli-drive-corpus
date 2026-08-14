@@ -23,6 +23,7 @@
 |[07-evaluation-cases.yaml](./07-evaluation-cases.yaml)|检索与回答评测问题|空清单，待业务和安全负责人确认|
 |[08-检索与回答评测规范.md](./08-检索与回答评测规范.md)|指标、评测集和纠错闭环|已填写通用规则|
 |[09-feishu-import-path-renames.json](./09-feishu-import-path-renames.json)|飞书受控知识树同父级路径改名清单|已登记归档目录编号修正|
+|[10-feishu-publication-manifest.json](./10-feishu-publication-manifest.json)|飞书公司知识正文和业务目录显式发布清单|默认拒绝；当前登记14个正文种子和8个业务目录根|
 |[schemas/01-knowledge-structure-schema.yaml](./schemas/01-knowledge-structure-schema.yaml)|空间、目录和索引策略的结构约束|已填写通用规则|
 |[schemas/02-metadata-schema.yaml](./schemas/02-metadata-schema.yaml)|正式文档元数据字段与校验条件|已填写通用规则|
 |[schemas/03-controlled-vocabulary-schema.yaml](./schemas/03-controlled-vocabulary-schema.yaml)|受控字典及字典值结构约束|已填写通用规则|
@@ -46,7 +47,7 @@
 
 ## 飞书治理树导入
 
-`scripts/feishu-governance-import.mjs` 只将当前项目映射到已授权测试节点下的独立 `qianli-drive-Corpus` 子树。应用最小 API 权限为节点读取、子节点列表、节点创建、节点标题更新和新版文档读写；脚本不需要节点删除或移动权限。
+`scripts/feishu-governance-import.mjs` 只将发布清单明确登记的正文种子和业务目录映射到已授权测试节点下的独立 `qianli-drive-Corpus` 子树。未登记文件默认拒绝，不会把 Git 仓库整体镜像为飞书正文。应用最小 API 权限为节点读取、子节点列表、节点创建、节点标题更新和新版文档读写；脚本不需要节点删除或移动权限。
 
 ```bash
 # 1. 本地扫描、密钥门禁和节点/块数估算，不访问飞书。
@@ -63,11 +64,13 @@ node scripts/feishu-governance-import.mjs apply --execute
 node scripts/feishu-governance-import.mjs verify
 ```
 
-默认从 macOS 钥匙串服务 `qianli-feishu-smoke` 和 `qianli-feishu-smoke-node` 读取已有凭证与授权节点。`diagnose` 使用飞书租户授权状态接口检查实际生效的 `scope_type`；用户身份权限不能代替 `tenant_access_token` 所需的应用身份权限。导入状态保存在 `.runtime/feishu-import-state.json`，文件权限为仅当前用户可读，并已被 Git 忽略。若已受控的本地文件发生变更，脚本先追加并读回新版本，确认完整后才删除旧内容块；不删除飞书节点，不接管无本地受控状态的同名页面。
+默认从 macOS 钥匙串服务 `qianli-feishu-smoke` 和 `qianli-feishu-smoke-node` 读取已有凭证与授权节点。`diagnose` 使用飞书租户授权状态接口检查实际生效的 `scope_type`；用户身份权限不能代替 `tenant_access_token` 所需的应用身份权限。导入状态保存在 `.runtime/feishu-import-state.json`，文件权限为仅当前用户可读，并已被 Git 忽略。
 
-`apply` 汇总会分别报告创建节点数、受控改名节点数、恢复中的节点数、首次写入页数、内容更新页数、未变化页数和旧内容块范围删除次数。幂等重跑应满足 `created_nodes=0`、`renamed_nodes=0`、`content_updated=0`、`deleted_block_ranges=0`，并且 `content_unchanged` 等于计划节点总数。
+文件页面首次创建完成后标记为 `content_authority=feishu`，后续 `apply` 只核验受控标记，不因 Git 种子哈希变化覆盖飞书正文。目录结构仍按 Git 蓝图校验；受控目录改名必须显式登记。旧状态中存在超出新发布范围的节点时，`preflight`、`apply` 和 `verify` 会报告 `retired_managed_nodes` 并阻塞，脚本不会自动删除、移动或隐藏飞书节点。
 
-本地目录需要改名时，先修改物理目录、人员蓝图和机器蓝图，再将旧/新项目相对路径登记到 `09-feishu-import-path-renames.json`。导入器仅允许同一父目录下改名：先核对受控节点和同名冲突，调用飞书节点标题更新接口，读回确认后迁移本地状态；节点本身不重新创建，历史迁移记录不删除。
+`apply` 汇总会分别报告创建节点数、受控改名节点数、恢复中的节点数、首次写入页数、目录内容更新页数、飞书权威正文核验页数、未变化目录页数和旧内容块范围删除次数。幂等重跑应满足 `created_nodes=0`、`renamed_nodes=0`、`content_updated=0`、`deleted_block_ranges=0`；文件页计入 `content_feishu_authoritative`，目录页计入 `content_unchanged`。
+
+本地目录需要改名时，先修改物理目录、人员蓝图、机器蓝图和正文发布清单，再将旧/新项目相对路径登记到 `09-feishu-import-path-renames.json`。导入器仅允许同一父目录下改名：先核对受控节点和同名冲突，调用飞书节点标题更新接口，读回确认后迁移本地状态；节点本身不重新创建，历史迁移记录不删除。
 
 本地回归命令：
 
