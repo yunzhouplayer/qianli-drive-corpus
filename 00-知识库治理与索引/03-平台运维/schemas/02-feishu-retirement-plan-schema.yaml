@@ -1,0 +1,109 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://qianli-drive.local/schemas/feishu-retirement-plan-v1.yaml"
+title: 飞书受控节点退役计划
+description: >-
+  约束飞书受控节点退役范围。计划必须显式列出目标并带摘要；历史记录可以标记为
+  executable=false，此时任何命令都必须拒绝再次执行。
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - plan_id
+  - created_at
+  - purpose_cn
+  - executable
+  - expected_counts
+  - protected_paths
+  - targets
+  - plan_digest
+properties:
+  schema_version:
+    const: "1.0"
+    description: 退役计划格式版本。
+  plan_id:
+    type: string
+    pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$"
+    description: 稳定且可审计的计划编号。
+  created_at:
+    type: string
+    format: date-time
+    description: 计划首次生成时间。
+  completed_at:
+    type: string
+    format: date-time
+    description: 历史计划完成时间；未执行计划可省略。
+  purpose_cn:
+    type: string
+    minLength: 1
+    description: 中文说明本次退役的范围与原因。
+  evidence_ref:
+    type: string
+    minLength: 1
+    description: 可追溯的 Git 证据文件路径。
+  executable:
+    type: boolean
+    description: 是否仍允许执行；已完成或仅留档的计划必须为 false。
+  expected_counts:
+    type: object
+    additionalProperties: false
+    required: [total, files, directories]
+    properties:
+      total:
+        type: integer
+        minimum: 0
+      files:
+        type: integer
+        minimum: 0
+      directories:
+        type: integer
+        minimum: 0
+  protected_paths:
+    type: array
+    uniqueItems: true
+    description: 永远不得由本计划退役的受控路径。
+    items:
+      type: string
+      minLength: 1
+  targets:
+    type: array
+    description: 显式退役目标；不得通过扫描发布清单推导额外目标。
+    items:
+      type: object
+      additionalProperties: false
+      required: [target_id, path, kind, reason_code, node_ref]
+      properties:
+        target_id:
+          type: string
+          pattern: "^[FD]-[0-9]{3}$"
+        path:
+          type: string
+          minLength: 1
+        kind:
+          type: string
+          enum: [file, directory]
+        reason_code:
+          type: string
+          pattern: "^R[1-6]$"
+        node_ref:
+          type: string
+          pattern: "^[0-9a-f]{10,64}$"
+          description: 原始节点 token 的不可逆哈希引用。
+        depends_on:
+          type: array
+          uniqueItems: true
+          description: 必须先完成的目标编号，主要用于目录的叶子优先约束。
+          items:
+            type: string
+            pattern: "^[FD]-[0-9]{3}$"
+  plan_digest:
+    type: string
+    pattern: "^[0-9a-f]{64}$"
+    description: 对不含本字段的规范化计划计算的 SHA-256。
+allOf:
+  - if:
+      properties:
+        executable:
+          const: false
+    then:
+      required: [completed_at, evidence_ref]
+

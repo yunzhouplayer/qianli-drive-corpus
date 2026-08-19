@@ -9,9 +9,9 @@ import { createServer } from 'node:http';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { scanProject } from './feishu-governance-import.mjs';
+import { scanProject } from './feishu-governance-publish.mjs';
 
-const SCRIPT = resolve(fileURLToPath(new URL('./feishu-governance-import.mjs', import.meta.url)));
+const SCRIPT = resolve(fileURLToPath(new URL('./feishu-governance-publish.mjs', import.meta.url)));
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);

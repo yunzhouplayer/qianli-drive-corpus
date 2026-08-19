@@ -1,0 +1,149 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://qianli-drive.local/schemas/feishu-body-reconciliation-v1.yaml"
+title: 飞书治理正文协调计划
+description: >-
+  约束 Git 治理正文提案与飞书现有正文之间的只读协调计划。计划只保存在 Git 忽略的
+  .runtime 目录；执行前必须确认 plan_digest，并在写入前重新核对全部远端基线。
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - generated_at
+  - mode
+  - publication_manifest_sha256
+  - source_state_sha256
+  - scope
+  - actions
+  - plan_digest
+properties:
+  schema_version:
+    const: "1.0"
+    description: 协调计划格式版本。
+  generated_at:
+    type: string
+    format: date-time
+    description: 只读预检生成计划的时间。
+  mode:
+    const: governance_validation
+    description: 当前仅允许治理验证模式生成和执行协调计划。
+  publication_manifest_sha256:
+    $ref: "#/$defs/sha256"
+    description: 生成计划时所用发布清单的完整哈希。
+  source_state_sha256:
+    $ref: "#/$defs/sha256"
+    description: 生成计划时所用本地发布状态的完整哈希。
+  scope:
+    type: object
+    additionalProperties: false
+    description: 已验证的应用身份、空间与受控根节点范围；只保存不可逆引用。
+    required: [app_id_sha256, space_id_sha256, managed_root_node_sha256]
+    properties:
+      app_id_sha256:
+        $ref: "#/$defs/sha256"
+      space_id_sha256:
+        $ref: "#/$defs/sha256"
+      managed_root_node_sha256:
+        $ref: "#/$defs/sha256"
+  actions:
+    type: array
+    minItems: 1
+    description: 计划内全部页面动作；任一页面漂移会使整份计划失效。
+    items:
+      $ref: "#/$defs/action"
+  plan_digest:
+    $ref: "#/$defs/sha256"
+    description: 对不含本字段的规范化计划计算的 SHA-256；执行时必须显式确认。
+$defs:
+  sha256:
+    type: string
+    pattern: "^[0-9a-f]{64}$"
+  node_ref:
+    type: string
+    pattern: "^[0-9a-f]{10,64}$"
+    description: 节点 token 的不可逆哈希引用，不是访问凭证。
+  action:
+    type: object
+    additionalProperties: false
+    description: 单个现有页面到目标页面的协调动作。
+    required:
+      - action_id
+      - source_path
+      - target_path
+      - source_node_ref
+      - target_node_ref
+      - expected_remote
+      - proposal
+      - authority_decision
+      - allowed_action
+      - idempotency_key
+    properties:
+      action_id:
+        type: string
+        pattern: "^REC-[0-9]{3}$"
+        description: 计划内稳定动作编号。
+      source_path:
+        type: string
+        minLength: 1
+        description: 当前飞书页面对应的原 Git 规范路径。
+      target_path:
+        type: string
+        minLength: 1
+        description: 协调完成后承载有效正文的 Git 规范路径。
+      source_node_ref:
+        $ref: "#/$defs/node_ref"
+      target_node_ref:
+        $ref: "#/$defs/node_ref"
+      expected_remote:
+        type: object
+        additionalProperties: false
+        description: dry-run 时读取的远端基线；执行前必须全部重新核对。
+        required:
+          - revision_id
+          - body_sha256
+          - title_sha256
+          - parent_node_ref
+          - marker_sha256
+          - scope_sha256
+        properties:
+          revision_id:
+            oneOf:
+              - type: integer
+                minimum: 0
+              - type: string
+                minLength: 1
+            description: 飞书文档精确 revision；禁止使用 -1 代表最新版本。
+          body_sha256:
+            $ref: "#/$defs/sha256"
+          title_sha256:
+            $ref: "#/$defs/sha256"
+          parent_node_ref:
+            $ref: "#/$defs/node_ref"
+          marker_sha256:
+            $ref: "#/$defs/sha256"
+          scope_sha256:
+            $ref: "#/$defs/sha256"
+      proposal:
+        type: object
+        additionalProperties: false
+        description: 本次 Git 提案转换为飞书块后的稳定摘要。
+        required: [git_sha256, block_signature_sha256, resolved_links_sha256]
+        properties:
+          git_sha256:
+            $ref: "#/$defs/sha256"
+          block_signature_sha256:
+            $ref: "#/$defs/sha256"
+          resolved_links_sha256:
+            $ref: "#/$defs/sha256"
+      authority_decision:
+        type: string
+        enum: [remote_unchanged, manual_merge_approved, no_write]
+        description: 正文权威协调结论；发现未处理的飞书人工修改时不得生成可执行动作。
+      allowed_action:
+        type: string
+        enum: [keep, update_body, rename_in_place, merge_into_target, write_legacy_redirect]
+        description: 管理员可确认的唯一页面动作，不包含移动或删除。
+      idempotency_key:
+        type: string
+        pattern: "^[A-Za-z0-9_-]{16,64}$"
+        description: 页面级确定性幂等键。
+

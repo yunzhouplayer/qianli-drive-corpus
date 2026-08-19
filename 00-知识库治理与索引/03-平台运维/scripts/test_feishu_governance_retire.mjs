@@ -10,7 +10,8 @@ import { createServer } from 'node:http';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { blocksForContent } from './feishu-governance-import.mjs';
+import { blocksForContent } from './feishu-governance-publish.mjs';
+import { planDigest } from './lib/feishu-governance-core.mjs';
 
 const SCRIPT = resolve(fileURLToPath(new URL('./feishu-governance-retire.mjs', import.meta.url)));
 
@@ -61,6 +62,7 @@ const temporaryRoot = mkdtempSync(join(tmpdir(), 'qianli-feishu-retire-test-'));
 const projectRoot = join(temporaryRoot, 'project');
 const statePath = join(temporaryRoot, 'runtime', 'state.json');
 const manifestPath = join(temporaryRoot, 'manifest.json');
+const retirementPlanPath = join(temporaryRoot, 'retirement-plan.json');
 mkdirSync(projectRoot, { recursive: true });
 mkdirSync(dirname(statePath), { recursive: true });
 const keepBody = '# 保留正文\n';
@@ -92,6 +94,21 @@ writeFileSync(statePath, `${JSON.stringify({
     'remove.md': { kind: 'file', title: 'remove.md', parent_path: '.', node_token: 'wik-remove', obj_token: 'doc-remove', status: 'complete', source_hash: removeHash, block_count: removeBlocks.length },
   },
 }, null, 2)}\n`, 'utf8');
+
+const approvedPlan = {
+  schema_version: '1.0', plan_id: '2026-08-14-loopback-retirement',
+  created_at: '2026-08-14T00:00:00Z', purpose_cn: '本地回环退役测试。', executable: true,
+  expected_counts: { total: 1, files: 1, directories: 0 },
+  protected_paths: [
+    '.', '00-知识库治理与索引/01-面向AI',
+    '00-知识库治理与索引/01-面向AI/02-AI-Agent使用契约.md',
+    '00-知识库治理与索引/01-面向AI/04-索引准入与同步规范.md',
+    '00-知识库治理与索引/01-面向AI/08-检索与回答评测规范.md',
+  ],
+  targets: [{ target_id: 'F-001', path: 'remove.md', kind: 'file', reason_code: 'R2', node_ref: hash('wik-remove').slice(0, 10) }],
+};
+approvedPlan.plan_digest = planDigest(approvedPlan);
+writeFileSync(retirementPlanPath, `${JSON.stringify(approvedPlan, null, 2)}\n`, 'utf8');
 
 const server = createServer(async (request, response) => {
   try {
@@ -151,26 +168,52 @@ const environment = {
   FEISHU_API_BASE: `http://127.0.0.1:${address.port}`,
   FEISHU_RETIRE_TEST_MODE: '1', FEISHU_RETIRE_TEST_SECRET: 'test-only',
   FEISHU_RETIRE_TEST_PARENT_NODE: 'wik-parent', FEISHU_RETIRE_MIN_DELAY_MS: '0',
-  FEISHU_RETIRE_TEST_EXPECTED_COUNT: '1', FEISHU_RETIRE_TEST_EXPECTED_FILES: '1',
-  FEISHU_RETIRE_TEST_EXPECTED_DIRECTORIES: '0',
 };
 
 try {
-  const common = ['--project-root', projectRoot, '--state', statePath, '--publication-manifest', manifestPath];
+  const common = [
+    '--project-root', projectRoot, '--state', statePath,
+    '--publication-manifest', manifestPath, '--retirement-plan', retirementPlanPath,
+  ];
   const plan = await run(['plan', ...common], environment);
-  assert(plan.code === 0 && plan.report.remaining_retirement_nodes === 1, '退役计划统计不正确');
-  const rejected = await run(['apply', ...common, '--execute', '--confirm-count', '2'], environment);
+  assert(plan.code === 0 && plan.report.remaining_retirement_nodes === 1
+    && plan.report.plan_digest === approvedPlan.plan_digest, '退役计划统计或摘要不正确');
+  const rejected = await run([
+    'apply', ...common, '--execute', '--confirm-count', '2',
+    '--confirm-plan-digest', approvedPlan.plan_digest,
+  ], environment);
   assert(rejected.code !== 0 && deleteCalls === 0, '错误确认数量必须在删除前被拒绝');
-  const applied = await run(['apply', ...common, '--execute', '--confirm-count', '1'], environment);
+  const wrongDigest = await run([
+    'apply', ...common, '--execute', '--confirm-count', '1', '--confirm-plan-digest', '0'.repeat(64),
+  ], environment);
+  assert(wrongDigest.code !== 0 && deleteCalls === 0, '错误计划摘要必须在删除前被拒绝');
+  const applied = await run([
+    'apply', ...common, '--execute', '--confirm-count', '1',
+    '--confirm-plan-digest', approvedPlan.plan_digest,
+  ], environment);
   assert(applied.code === 0 && applied.report.deleted_nodes === 1 && deleteCalls === 1, '受控删除未完成');
   const finalState = JSON.parse(readFileSync(statePath, 'utf8'));
   assert(!finalState.nodes['remove.md'] && finalState.nodes['keep.md'], '状态未按远端结果更新');
   assert(finalState.retirement_history?.length === 1, '缺少退役审计记录');
+  approvedPlan.executable = false;
+  approvedPlan.completed_at = '2026-08-14T00:01:00Z';
+  approvedPlan.evidence_ref = 'loopback-evidence.md';
+  approvedPlan.plan_digest = planDigest(approvedPlan);
+  writeFileSync(retirementPlanPath, `${JSON.stringify(approvedPlan, null, 2)}\n`, 'utf8');
   const completed = await run(['plan', ...common], environment);
-  assert(completed.code === 0 && completed.report.remaining_retirement_nodes === 0
+  assert(completed.code === 0 && completed.report.result === 'archived'
+    && completed.report.remaining_retirement_nodes === 0
     && completed.report.already_retired_nodes === 1, '完成后的退役计划不正确');
+  const replay = await run([
+    'apply', ...common, '--execute', '--confirm-count', '1',
+    '--confirm-plan-digest', approvedPlan.plan_digest,
+  ], environment);
+  assert(replay.code !== 0 && deleteCalls === 1, '历史 executable=false 计划不得再次执行');
   console.log(JSON.stringify({
-    result: 'passed', cases: ['count_gate', 'exact_content_preflight', 'leaf_delete_readback', 'state_audit'],
+    result: 'passed', cases: [
+      'count_gate', 'plan_digest_gate', 'exact_content_preflight', 'leaf_delete_readback',
+      'state_audit', 'historical_plan_replay_denied',
+    ],
     delete_calls: deleteCalls, network: 'loopback_only',
   }, null, 2));
 } finally {

@@ -8,12 +8,13 @@ require "open3"
 require "tmpdir"
 require "yaml"
 
-AI_ROOT = File.expand_path("..", __dir__)
 PROJECT_ROOT = File.expand_path("../../..", __dir__)
-GOVERNANCE_ROOT = File.dirname(AI_ROOT)
+GOVERNANCE_ROOT = File.join(PROJECT_ROOT, "00-知识库治理与索引")
+AI_ROOT = File.join(GOVERNANCE_ROOT, "01-面向AI")
 VALIDATOR = File.join(__dir__, "validate_ai_controls.rb")
 AI_RELATIVE = "00-知识库治理与索引/01-面向AI"
 PROFILE_RELATIVE = "00-知识库治理与索引/03-平台运维/configs/governance-validation-indexing-profile.yaml"
+PUBLICATION_RELATIVE = "00-知识库治理与索引/03-平台运维/02-feishu-publication-manifest.json"
 
 def assert(condition, message)
   raise message unless condition
@@ -27,6 +28,9 @@ def prepare_case(base, name)
   profile_target = File.join(root, PROFILE_RELATIVE)
   FileUtils.mkdir_p(File.dirname(profile_target))
   FileUtils.cp(File.join(GOVERNANCE_ROOT, "03-平台运维", "configs", "governance-validation-indexing-profile.yaml"), profile_target)
+  publication_target = File.join(root, PUBLICATION_RELATIVE)
+  FileUtils.mkdir_p(File.dirname(publication_target))
+  FileUtils.cp(File.join(GOVERNANCE_ROOT, "03-平台运维", "02-feishu-publication-manifest.json"), publication_target)
   FileUtils.cp(File.join(PROJECT_ROOT, ".gitignore"), File.join(root, ".gitignore"))
   [root, ai_root]
 end
@@ -130,13 +134,16 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
   assert(code == 1 && report["findings"].any? { |item| item["id"] == "CHUNK_OVERLAP_INVALID" }, "分块重叠不小于最大块长应被阻断")
   cases << "invalid_chunk_overlap"
 
-  root, ai_root = prepare_case(base, "readme-drift")
+  root, ai_root = prepare_case(base, "readme-publication-link-drift")
   readme_path = File.join(ai_root, "README.md")
-  readme = File.read(readme_path, encoding: "UTF-8").sub("当前登记17个正文种子", "当前登记16个正文种子")
+  readme = File.read(readme_path, encoding: "UTF-8").sub(
+    "../03-平台运维/02-feishu-publication-manifest.json",
+    "../03-平台运维/不存在的发布清单.json"
+  )
   File.write(readme_path, readme, encoding: "UTF-8")
   code, report = run_validator(root, ai_root)
-  assert(code == 1 && report["findings"].any? { |item| item["id"] == "README_PUBLICATION_COUNT" }, "README 发布数量漂移应被阻断")
-  cases << "readme_publication_count_drift"
+  assert(code == 1 && report["findings"].any? { |item| item["id"] == "README_PUBLICATION_LINK" }, "README 发布清单链接漂移应被阻断")
+  cases << "readme_publication_link_drift"
 
   root, ai_root = prepare_case(base, "valid-request-payload")
   request_path = File.join(ai_root, "test-request.yaml")

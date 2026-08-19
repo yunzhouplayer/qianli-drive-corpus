@@ -23,8 +23,8 @@
 |[06-corpus-manifest.yaml](./06-corpus-manifest.yaml)|实际进入索引的文档清单|治理验证期间保持为空|
 |[07-evaluation-cases.yaml](./07-evaluation-cases.yaml)|检索与回答评测问题|空清单，待业务和安全负责人确认|
 |[08-检索与回答评测规范.md](./08-检索与回答评测规范.md)|指标、评测集和纠错闭环|已填写通用规则|
-|[09-feishu-import-path-renames.json](./09-feishu-import-path-renames.json)|飞书受控知识树同父级路径改名清单|已登记归档目录编号修正|
-|[10-feishu-publication-manifest.json](./10-feishu-publication-manifest.json)|飞书公司知识正文和业务目录显式发布清单|默认拒绝；当前登记17个正文种子和8个业务目录根|
+|[飞书发布路径迁移清单](../03-平台运维/01-feishu-publication-path-renames.json)|飞书受控知识树原位路径改名清单|由平台运维目录维护；历史记录不删除|
+|[飞书正文发布清单](../03-平台运维/02-feishu-publication-manifest.json)|飞书公司知识正文、旧页提示和业务目录显式白名单|默认拒绝；实际数量以清单为准|
 |[09-retrieval-runtime-contract.yaml](./09-retrieval-runtime-contract.yaml)|身份、ACL、证据和回答安全不变量|仅冻结契约；请求、响应和错误字段以独立 Schema 为准|
 |[10-indexing-policy.yaml](./10-indexing-policy.yaml)|稳定分块、写入、生命周期、证据和回滚原则|仅冻结契约；可调参数迁入独立实现配置|
 |[治理验证索引配置](../03-平台运维/configs/governance-validation-indexing-profile.yaml)|治理验证使用的块大小、融合权重、数量和保留期限参数|`validation_only=true`；不得作为生产就绪证据|
@@ -52,10 +52,10 @@
 |[vocabularies/04-systems-platforms.yaml](./vocabularies/04-systems-platforms.yaml)|业务系统与技术平台编码|具体值待确认|
 |[vocabularies/05-source-systems.yaml](./vocabularies/05-source-systems.yaml)|权威知识来源平台编码|已登记飞书知识库|
 |[vocabularies/06-retention-policies.yaml](./vocabularies/06-retention-policies.yaml)|保留期限与清理规则编码|具体值待确认|
-|[scripts/feishu-governance-import.mjs](./scripts/feishu-governance-import.mjs)|将本地治理树受控映射到已授权的飞书知识库测试子树|支持诊断、导入/续传、受控更新/改名和核验；不自动删除或移动节点|
-|[scripts/feishu-governance-retire.mjs](./scripts/feishu-governance-retire.mjs)|受控退役旧发布范围中的飞书节点|仅处理批准差集；执行前必须预检和确认数量|
-|[scripts/validate_ai_controls.rb](./scripts/validate_ai_controls.rb)|统一检查 AI 控制文件、Schema 引用和跨文件关系|只读；失败时返回稳定错误码|
-|[scripts/evaluate_retrieval.rb](./scripts/evaluate_retrieval.rb)|核对离线检索结果、权限负例、引用和拒答行为|空用例集只返回未执行，不声明质量通过|
+|[飞书治理发布工具](../03-平台运维/scripts/feishu-governance-publish.mjs)|将显式登记内容受控发布到已授权的飞书知识库测试子树|支持诊断、发布/续传、受控更新/改名和核验；不自动删除或移动节点|
+|[飞书治理退役工具](../03-平台运维/scripts/feishu-governance-retire.mjs)|独立退役旧发布范围中的飞书节点|仅处理批准差集；执行前必须预检和确认数量|
+|[AI 控制面校验器](../03-平台运维/scripts/validate_ai_controls.rb)|统一检查 AI 控制文件、Schema 引用和跨文件关系|只读；失败时返回稳定错误码|
+|[离线检索评测器](../03-平台运维/scripts/evaluate_retrieval.rb)|核对离线检索结果、权限负例、引用和拒答行为|空用例集只返回未执行，不声明质量通过|
 
 ## AI 启动入口与读取顺序
 
@@ -86,55 +86,23 @@
 - 实际索引范围以`06-corpus-manifest.yaml`为准，不能用索引内容反向修改源知识。
 - 本目录中的空清单不得由 AI 自动生成业务事实后直接提交。
 
-## 飞书治理树导入
+## 飞书治理发布与退役
 
-`scripts/feishu-governance-import.mjs` 只将发布清单明确登记的正文种子和业务目录映射到已授权测试节点下的独立 `qianli-drive-Corpus` 子树。未登记文件默认拒绝，不会把 Git 仓库整体镜像为飞书正文。应用最小 API 权限为节点读取、子节点列表、节点创建、节点标题更新和新版文档读写；脚本不需要节点删除或移动权限。
+正式实现和测试已迁入[03-平台运维](../03-平台运维/README.md)。发布工具只处理显式清单登记的正文种子和业务目录；未登记文件默认拒绝，不会把 Git 仓库整体镜像为飞书正文。退役仍由独立命令承担，发布命令不删除节点。
 
-```bash
-# 1. 本地扫描、密钥门禁和节点/块数估算，不访问飞书。
-node scripts/feishu-governance-import.mjs plan
-
-# 2. 只读解析授权父节点并枚举直接子节点。
-node scripts/feishu-governance-import.mjs diagnose
-node scripts/feishu-governance-import.mjs preflight
-
-# 3. 显式开启首次导入或中断续传。
-node scripts/feishu-governance-import.mjs apply --execute
-
-# 4. 读回核对父子关系、标题、块数和文件哈希标记。
-node scripts/feishu-governance-import.mjs verify
-
-# 5. 仅在批准清单、权限诊断和全量只读预检均通过后退役范围外节点。
-node scripts/feishu-governance-retire.mjs plan
-node scripts/feishu-governance-retire.mjs diagnose
-node scripts/feishu-governance-retire.mjs preflight
-node scripts/feishu-governance-retire.mjs apply --execute --confirm-count 59
-```
-
-默认从 macOS 钥匙串服务 `qianli-feishu-smoke` 和 `qianli-feishu-smoke-node` 读取已有凭证与授权节点。`diagnose` 使用飞书租户授权状态接口检查实际生效的 `scope_type`；用户身份权限不能代替 `tenant_access_token` 所需的应用身份权限。导入状态保存在 `.runtime/feishu-import-state.json`，文件权限为仅当前用户可读，并已被 Git 忽略。
+新 Keychain 服务 `qianli-feishu-governance` 与 `qianli-feishu-governance-node` 必须成对存在；只有两项都缺失时才兼容旧 smoke 配置，部分迁移会 fail closed。默认状态已改为 `.runtime/feishu-publication-state.json`（Schema 1.1）；旧 `.runtime/feishu-import-state.json` 首次使用时保留内容和摘要迁移，不自动删除。
 
 文件页面首次创建完成后标记为 `content_authority=feishu`，后续 `apply` 只核验受控标记，不因 Git 种子哈希变化覆盖飞书正文。目录结构仍按 Git 蓝图校验；受控目录改名必须显式登记。旧状态中存在超出新发布范围的节点时，`preflight`、`apply` 和 `verify` 会报告 `retired_managed_nodes` 并阻塞，脚本不会自动删除、移动或隐藏飞书节点。
 
-`feishu-governance-retire.mjs` 是独立的受控退役工具。它只处理“旧受控状态减去当前显式发布计划”得到的批准范围，强制保护受控根和三份保留治理文档，逐页比较飞书正文与原 Git 导入版本，并按叶子优先顺序删除；每次删除后确认节点已从父目录消失，才更新 Git 忽略的本地状态。删除接口的最终一致性通过有限轮询和 `retirement_pending` 断点处理。
+`feishu-governance-retire.mjs` 是独立的受控退役工具。它只处理 Git 中显式、摘要校验通过且 `executable=true` 的退役计划；历史完成计划必须为 `executable=false`，不能再次执行。工具强制保护受控根和三份保留治理文档，逐页比较飞书正文与原受控发布版本，并按叶子优先顺序删除；执行时必须同时确认数量和计划摘要。每次删除后确认节点已从父目录消失，才更新 Git 忽略的本地状态。
 
 当前仓库没有实现飞书正文反向覆盖 Git 源文件的双向同步。正文、权限和飞书版本记录以飞书为权威；Git 中的 Schema、字典、发布清单、脚本和治理控制仍以 Git 为权威。如需留存飞书正文，应新增独立的只读快照流水线，把块结构、纯文本或 DOCX/PDF 导出物写入专用快照目录并经 PR 审查，不得覆盖本目录中的首次创建种子。
 
 `apply` 汇总会分别报告创建节点数、受控改名节点数、恢复中的节点数、首次写入页数、目录内容更新页数、飞书权威正文核验页数、未变化目录页数和旧内容块范围删除次数。幂等重跑应满足 `created_nodes=0`、`renamed_nodes=0`、`content_updated=0`、`deleted_block_ranges=0`；文件页计入 `content_feishu_authoritative`，目录页计入 `content_unchanged`。
 
-本地目录需要改名时，先修改物理目录、人员蓝图、机器蓝图和正文发布清单，再将旧/新项目相对路径登记到 `09-feishu-import-path-renames.json`。导入器仅允许同一父目录下改名：先核对受控节点和同名冲突，调用飞书节点标题更新接口，读回确认后迁移本地状态；节点本身不重新创建，历史迁移记录不删除。
+本地目录需要改名时，先修改物理目录、人员蓝图、机器蓝图和正文发布清单，再将旧/新项目相对路径登记到[飞书发布路径迁移清单](../03-平台运维/01-feishu-publication-path-renames.json)。常规发布仅允许目录在同一父节点下原位改名；正文页面改名、合并和旧页提示必须走正文协调计划。节点本身不重新创建，历史迁移记录不删除。
 
-本地回归命令：
-
-```bash
-ruby scripts/validate_knowledge_structure.rb
-ruby scripts/test_validate_knowledge_structure.rb
-ruby scripts/validate_ai_controls.rb
-ruby scripts/test_validate_ai_controls.rb
-ruby scripts/evaluate_retrieval.rb
-ruby scripts/test_evaluate_retrieval.rb
-node scripts/test_feishu_governance_import.mjs
-node scripts/test_feishu_governance_retire.mjs
-```
+旧 `01-面向AI/scripts/` 命令仅作为一个治理周期的兼容包装器，保持参数和退出码并输出弃用提示。正式命令和完整本地回归清单见[平台运维导航](../03-平台运维/README.md)。
 
 `validate_knowledge_structure.rb` 补充 JSON Schema 无法表达的跨记录检查：空间和目录 ID/路径唯一、两位序号、目录 ID 与空间序号一致、父目录 ID 与物理路径一致、登记目录真实存在、人员蓝图文件可定位。默认使用当前项目，可通过 `--structure` 和 `--project-root` 检查其他副本；只检查导出文件时可显式使用 `--skip-filesystem`。
 
