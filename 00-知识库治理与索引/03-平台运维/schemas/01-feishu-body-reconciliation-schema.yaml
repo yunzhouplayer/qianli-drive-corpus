@@ -13,11 +13,12 @@ required:
   - publication_manifest_sha256
   - source_state_sha256
   - scope
+  - directory_actions
   - actions
   - plan_digest
 properties:
   schema_version:
-    const: "1.0"
+    const: "1.1"
     description: 协调计划格式版本。
   generated_at:
     type: string
@@ -50,6 +51,11 @@ properties:
     description: 计划内全部页面动作；任一页面漂移会使整份计划失效。
     items:
       $ref: "#/$defs/action"
+  directory_actions:
+    type: array
+    description: 同一父节点下的受控目录原位改名；不创建、移动或删除目录。
+    items:
+      $ref: "#/$defs/directory_action"
   plan_digest:
     $ref: "#/$defs/sha256"
     description: 对不含本字段的规范化计划计算的 SHA-256；执行时必须显式确认。
@@ -61,6 +67,38 @@ $defs:
     type: string
     pattern: "^[0-9a-f]{10,64}$"
     description: 节点 token 的不可逆哈希引用，不是访问凭证。
+  directory_action:
+    type: object
+    additionalProperties: false
+    required: [action_id, source_path, target_path, node_ref, expected_remote, allowed_action, idempotency_key]
+    properties:
+      action_id:
+        type: string
+        pattern: "^DIR-[0-9]{3}$"
+      source_path:
+        type: string
+        minLength: 1
+      target_path:
+        type: string
+        minLength: 1
+      node_ref:
+        $ref: "#/$defs/node_ref"
+      expected_remote:
+        type: object
+        additionalProperties: false
+        required: [title_sha256, parent_node_ref, scope_sha256]
+        properties:
+          title_sha256:
+            $ref: "#/$defs/sha256"
+          parent_node_ref:
+            $ref: "#/$defs/node_ref"
+          scope_sha256:
+            $ref: "#/$defs/sha256"
+      allowed_action:
+        const: rename_in_place
+      idempotency_key:
+        type: string
+        pattern: "^[A-Za-z0-9_-]{16,64}$"
   action:
     type: object
     additionalProperties: false

@@ -32,9 +32,15 @@ const input = {
   generatedAt: '2026-08-14T00:00:00Z', publicationManifestSha256: h('manifest'),
   sourceStateSha256: h('state'),
   scope: { app_id_sha256: h('app'), space_id_sha256: h('space'), managed_root_node_sha256: h('root') },
+  directories: [{
+    source_path: 'old-directory', target_path: '00-new-directory',
+    node_ref: h('directory').slice(0, 10), title_sha256: h('old-directory-title'),
+    parent_node_ref: h('directory-parent').slice(0, 10), scope_sha256: h('directory-scope'),
+  }],
   pages: [page],
 };
 const plan = buildReconciliationPlan(input);
+assert(plan.schema_version === '1.1' && plan.directory_actions.length === 1, '协调计划必须包含目录动作');
 assert(plan.actions[0].allowed_action === 'rename_in_place', '路径变化应生成原位重命名动作');
 const renameAndUpdate = buildReconciliationPlan({
   ...input,
@@ -61,6 +67,10 @@ const current = {
   publication_manifest_sha256: plan.publication_manifest_sha256,
   source_state_sha256: plan.source_state_sha256,
   scope: { ...plan.scope },
+  directory_actions: plan.directory_actions.map((action) => ({
+    action_id: action.action_id, node_ref: action.node_ref,
+    expected_remote: { ...action.expected_remote },
+  })),
   actions: plan.actions.map((action) => ({
     action_id: action.action_id, source_node_ref: action.source_node_ref,
     target_node_ref: action.target_node_ref, expected_remote: { ...action.expected_remote },
@@ -73,6 +83,9 @@ expectFailure(() => assertWholePlanFresh(plan, drifted), /整份协调计划失�
 const scopeDrift = structuredClone(current);
 scopeDrift.scope.app_id_sha256 = h('other-app');
 expectFailure(() => assertWholePlanFresh(plan, scopeDrift), /整份协调计划失效/);
+const directoryDrift = structuredClone(current);
+directoryDrift.directory_actions[0].expected_remote.title_sha256 = h('renamed elsewhere');
+expectFailure(() => assertWholePlanFresh(plan, directoryDrift), /整份协调计划失效/);
 
 console.log(JSON.stringify({
   result: 'passed',
@@ -80,6 +93,7 @@ console.log(JSON.stringify({
     'deterministic_digest', 'digest_confirmation', 'exact_revision_required', 'rename_and_update',
     'link_only_remote_accepted',
     'remote_edit_requires_merge', 'whole_plan_revision_drift', 'whole_plan_scope_drift',
+    'whole_plan_directory_drift',
   ],
   network: 'none',
 }, null, 2));

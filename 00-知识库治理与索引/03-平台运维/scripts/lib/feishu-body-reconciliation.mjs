@@ -73,7 +73,7 @@ function actionFor(page) {
 }
 
 function buildReconciliationPlan({
-  generatedAt, publicationManifestSha256, sourceStateSha256, scope, pages,
+  generatedAt, publicationManifestSha256, sourceStateSha256, scope, pages, directories = [],
 }) {
   assertSha256(publicationManifestSha256, 'publication_manifest_sha256');
   assertSha256(sourceStateSha256, 'source_state_sha256');
@@ -81,6 +81,7 @@ function buildReconciliationPlan({
     assertSha256(scope?.[field], `scope.${field}`);
   }
   if (!Array.isArray(pages) || pages.length < 1) fail('协调计划至少需要一个页面动作。');
+  if (!Array.isArray(directories)) fail('目录协调动作必须是数组。');
   const sourcePaths = new Set();
   const actionIds = new Set();
   const actions = pages.map((page, index) => {
@@ -123,8 +124,42 @@ function buildReconciliationPlan({
       idempotency_key: idempotencyKey,
     };
   });
+  const directoryPaths = new Set();
+  const directoryActions = directories.map((directory, index) => {
+    if (!directory.source_path || !directory.target_path || directory.source_path === directory.target_path) {
+      fail('目录协调动作必须包含不同的 source_path 和 target_path。');
+    }
+    if (directoryPaths.has(directory.source_path)) fail(`目录协调计划包含重复来源：${directory.source_path}`);
+    directoryPaths.add(directory.source_path);
+    if (!/^[0-9a-f]{10,64}$/.test(String(directory.node_ref || ''))) {
+      fail(`目录节点引用格式不合法：${directory.source_path}`);
+    }
+    const expected = {
+      title_sha256: directory.title_sha256,
+      parent_node_ref: directory.parent_node_ref,
+      scope_sha256: directory.scope_sha256,
+    };
+    for (const field of ['title_sha256', 'scope_sha256']) {
+      assertSha256(expected[field], `${directory.source_path}.${field}`);
+    }
+    if (!/^[0-9a-f]{10,64}$/.test(String(expected.parent_node_ref || ''))) {
+      fail(`${directory.source_path}.parent_node_ref 格式不合法。`);
+    }
+    return {
+      action_id: `DIR-${String(index + 1).padStart(3, '0')}`,
+      source_path: directory.source_path,
+      target_path: directory.target_path,
+      node_ref: directory.node_ref,
+      expected_remote: expected,
+      allowed_action: 'rename_in_place',
+      idempotency_key: sha256([
+        directory.source_path, directory.target_path, directory.node_ref,
+        expected.title_sha256, expected.parent_node_ref, expected.scope_sha256,
+      ].join('\u0000')).slice(0, 40),
+    };
+  });
   const plan = {
-    schema_version: '1.0',
+    schema_version: '1.1',
     generated_at: generatedAt || new Date().toISOString(),
     mode: 'governance_validation',
     publication_manifest_sha256: publicationManifestSha256,
@@ -134,6 +169,7 @@ function buildReconciliationPlan({
       space_id_sha256: scope.space_id_sha256,
       managed_root_node_sha256: scope.managed_root_node_sha256,
     },
+    directory_actions: directoryActions,
     actions,
   };
   plan.plan_digest = planDigest(plan);
@@ -172,6 +208,19 @@ function assertWholePlanFresh(plan, current) {
     ]) {
       if (actual?.[field] !== expected[field]) {
         fail(`页面远端基线已变化，整份协调计划失效：${action.action_id}.${field}`);
+      }
+    }
+  }
+  const currentDirectories = new Map((current.directory_actions || []).map((action) => [action.action_id, action]));
+  if (currentDirectories.size !== plan.directory_actions.length) fail('远端目录集合已变化，整份协调计划失效。');
+  for (const action of plan.directory_actions) {
+    const snapshot = currentDirectories.get(action.action_id);
+    if (!snapshot || snapshot.node_ref !== action.node_ref) {
+      fail(`目录节点绑定已变化，整份协调计划失效：${action.action_id}`);
+    }
+    for (const field of ['title_sha256', 'parent_node_ref', 'scope_sha256']) {
+      if (snapshot.expected_remote?.[field] !== action.expected_remote[field]) {
+        fail(`目录远端基线已变化，整份协调计划失效：${action.action_id}.${field}`);
       }
     }
   }

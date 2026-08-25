@@ -245,6 +245,35 @@ async function readRemotePage({
   };
 }
 
+async function readRemoteDirectory({ client, state, migration, appId, spaceId, managedRootToken }) {
+  const record = state.nodes[migration.oldPath];
+  const parent = state.nodes[record?.parent_path];
+  if (record?.kind !== 'directory' || !record.node_token || !parent?.node_token) {
+    fail(`旧发布状态缺少目录迁移基线：${migration.oldPath}`, 8);
+  }
+  if (state.nodes[migration.newPath]) fail(`目录迁移目标已存在受控状态：${migration.newPath}`, 8);
+  const remote = await client.resolveNode(record.node_token);
+  const title = remote.title || record.title;
+  if (remote.node_token !== record.node_token || title !== record.title) {
+    fail(`待改名目录身份或标题已漂移：${migration.oldPath}`, 8);
+  }
+  const remoteParent = remote.parent_node_token || parent.node_token;
+  if (remoteParent !== parent.node_token) fail(`待改名目录父节点已漂移：${migration.oldPath}`, 8);
+  const targetTitle = basename(migration.newPath);
+  const siblings = await client.listNodes(spaceId, parent.node_token);
+  const controlled = siblings.filter((node) => node.node_token === record.node_token && node.title === record.title);
+  const conflicts = siblings.filter((node) => node.node_token !== record.node_token && node.title === targetTitle);
+  if (controlled.length !== 1 || conflicts.length) fail(`待改名目录远端集合不唯一或目标标题冲突：${migration.oldPath}`, 8);
+  return {
+    source_path: migration.oldPath,
+    target_path: migration.newPath,
+    node_ref: shortHash(record.node_token),
+    title_sha256: sha256(title),
+    parent_node_ref: shortHash(remoteParent),
+    scope_sha256: sha256([appId, spaceId, managedRootToken, record.node_token].join('\u0000')),
+  };
+}
+
 async function buildLivePlan(options) {
   if (!existsSync(options.statePath)) fail('缺少正文协调所需的本地发布状态。', 7);
   const stateRaw = readFileSync(options.statePath, 'utf8');
@@ -254,6 +283,14 @@ async function buildLivePlan(options) {
   const scan = scanProject(options.projectRoot, options.manifestPath);
   const migrations = loadRenameMap(options.renamePath);
   const sourceByTarget = actionSourceMapping(scan, state, migrations);
+  const plannedDirectoryPaths = new Set(scan.items
+    .filter((item) => item.kind === 'directory').map((item) => item.path));
+  const directoryMigrations = migrations.filter((migration) => state.nodes[migration.oldPath]?.kind === 'directory');
+  for (const migration of directoryMigrations) {
+    if (!plannedDirectoryPaths.has(migration.newPath)) {
+      fail(`目录迁移目标不在当前发布结构中：${migration.newPath}`, 8);
+    }
+  }
   const config = loadFeishuConfiguration({
     appId: APP_ID, apiBase: API_BASE, testMode: TEST_MODE,
     testSecretEnv: 'FEISHU_IMPORT_TEST_SECRET', testNodeEnv: 'FEISHU_IMPORT_TEST_PARENT_NODE',
@@ -309,6 +346,13 @@ async function buildLivePlan(options) {
       baselineAvailablePaths, baselinePublicationPaths, baselineRegistry, managedLinkIdentities,
     });
     remoteByPath.set(path, snapshot);
+  }
+  const directoryActions = [];
+  for (const migration of directoryMigrations) {
+    directoryActions.push(await readRemoteDirectory({
+      client, state, migration, appId: APP_ID, spaceId: state.space_id,
+      managedRootToken: rootRecord.node_token,
+    }));
   }
   client.token = undefined;
   const drifted = [...remoteByPath.values()].filter((item) => !item.remote_unchanged);
@@ -380,14 +424,16 @@ async function buildLivePlan(options) {
       space_id_sha256: sha256(state.space_id),
       managed_root_node_sha256: sha256(rootRecord.node_token),
     },
-    pages,
+    pages, directories: directoryActions,
   });
   saveStateAtomic(options.outputPath, plan);
   const actions = {};
   for (const action of plan.actions) actions[action.allowed_action] = (actions[action.allowed_action] || 0) + 1;
   return {
     result: 'ready', mode: 'plan', checked_pages: remoteByPath.size,
+    checked_directories: directoryActions.length,
     plan_actions: plan.actions.length, action_counts: actions,
+    directory_actions: plan.directory_actions.length,
     plan_digest: plan.plan_digest, output: relativeOutput(options.projectRoot, options.outputPath),
     exact_revisions_frozen: true, remote_edits_detected: false,
     accepted_link_only_pages: acceptedLinkOnly.map((item) => item.path),
