@@ -202,6 +202,17 @@ function writePublicationManifest(path, { files, directoryRoots }) {
   }, null, 2)}\n`, 'utf8');
 }
 
+function writePublicationManifestV2(path, { activeFiles, directoryRoots, legacyRedirects }) {
+  writeFileSync(path, `${JSON.stringify({
+    schema_version: '2.0',
+    description_cn: '本地回环测试用飞书正文发布清单 v2。',
+    default_action: 'deny',
+    active_files: activeFiles,
+    legacy_redirects: legacyRedirects,
+    directory_roots: directoryRoots,
+  }, null, 2)}\n`, 'utf8');
+}
+
 writePublicationManifest(publicationManifestPath, {
   files: ['README.md', '01-content/guide.md'],
   directoryRoots: ['00-empty', '01-content'],
@@ -321,6 +332,18 @@ try {
     source_hash: 'legacy', block_count: 1, content_authority: 'feishu',
   };
   writeFileSync(retiredStatePath, `${JSON.stringify(retiredState, null, 2)}\n`, 'utf8');
+  const legacyManifestPath = join(temporaryRoot, 'legacy-publication-manifest.json');
+  writePublicationManifestV2(legacyManifestPath, {
+    activeFiles: ['README.md', '01-content/guide.md'],
+    directoryRoots: ['00-empty', '01-content'],
+    legacyRedirects: [{ legacy_path: 'legacy-process.md', replacement_path: 'README.md' }],
+  });
+  const legacyPreflight = await runImporter([
+    'preflight', '--project-root', projectRoot, '--state', retiredStatePath,
+    '--rename-map', renameMapPath, '--publication-manifest', legacyManifestPath,
+  ], environment);
+  assert(legacyPreflight.code === 0 && legacyPreflight.report.retired_managed_nodes === 0,
+    '显式旧页提示来源应保留，不得误判为待退役节点');
   const retiredPreflight = await runImporter([
     'preflight', '--project-root', projectRoot, '--state', retiredStatePath,
     '--rename-map', renameMapPath, '--publication-manifest', publicationManifestPath,
@@ -382,7 +405,7 @@ try {
     result: 'passed',
     cases: [
       'publication_manifest_default_deny', 'manifest_path_validation', 'plan_and_secret_gate',
-      'read_only_preflight', 'rate_limit_retry', 'first_import', 'retired_state_blocks_writes',
+      'read_only_preflight', 'rate_limit_retry', 'first_import', 'legacy_redirect_preserved', 'retired_state_blocks_writes',
       'scope_identity_mismatch_detected', 'tenant_scope_gate_passed',
       'controlled_path_rename', 'feishu_content_authority_preserved', 'idempotent_resume', 'full_verify',
       'unmanaged_name_conflict_rejected',

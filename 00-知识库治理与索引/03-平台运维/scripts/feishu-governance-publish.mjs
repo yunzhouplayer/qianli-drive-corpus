@@ -840,7 +840,12 @@ function retiredStatePaths(scan, state, migrations = []) {
   const migratable = new Set(migrations
     .filter((migration) => expected.has(migration.newPath))
     .map((migration) => migration.oldPath));
-  return Object.keys(state.nodes).filter((path) => !expected.has(path) && !migratable.has(path));
+  const legacyRedirects = new Set((scan.publication.legacy_redirects || [])
+    .filter((redirect) => expected.has(redirect.replacementPath))
+    .map((redirect) => redirect.legacyPath));
+  return Object.keys(state.nodes).filter((path) => (
+    !expected.has(path) && !migratable.has(path) && !legacyRedirects.has(path)
+  ));
 }
 
 function blockRetiredState(scan, state, migrations = []) {
