@@ -1,0 +1,169 @@
+# 用途：校验飞书现有外部知识树绑定，不允许把未验证定位符、ACL或写权限带入 Git。
+# 边界：Schema 只描述稳定绑定和只读快照；真实存在性与权限必须通过飞书实时只读核验。
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: urn:qianli-drive:feishu:space-bindings:v1
+title: 飞书外部知识树绑定
+description: Git 稳定标识与飞书现有非发布托管知识树之间的安全边界。
+type: object
+additionalProperties: false
+required: [schema_version, updated_at, bindings]
+properties:
+  schema_version:
+    type: string
+    const: "1.0"
+    description: 绑定文件结构版本。
+  updated_at:
+    type: string
+    format: date
+    description: 绑定文件最后更新日期。
+  bindings:
+    type: array
+    minItems: 1
+    description: 外部知识树绑定列表。
+    items:
+      $ref: "#/$defs/binding"
+$defs:
+  binding:
+    type: object
+    additionalProperties: false
+    required:
+      - binding_id
+      - stable_external_id
+      - display_name_cn
+      - feishu_physical_name
+      - binding_type
+      - verification_status
+      - governance_directory_id
+      - controls
+      - snapshot
+      - refresh_policy
+      - notes_cn
+    allOf:
+      - if:
+          properties:
+            verification_status: {const: verified_readonly}
+        then:
+          required: [remote_locator]
+        else:
+          not:
+            required: [remote_locator]
+    properties:
+      binding_id:
+        type: string
+        pattern: "^FEISHU-[A-Z0-9-]+$"
+        description: 绑定记录稳定ID。
+      stable_external_id:
+        type: string
+        pattern: "^EXT-[A-Z0-9-]+$"
+        description: 不冒充治理目录ID的外部知识树稳定ID。
+      display_name_cn:
+        type: string
+        minLength: 1
+        description: 供开发和治理人员阅读的中文名称。
+      feishu_physical_name:
+        type: string
+        minLength: 1
+        description: 飞书当前物理名称；本文件不据此自动改名。
+      binding_type:
+        type: string
+        const: external_existing_tree
+        description: 表示飞书已存在、但不受治理正文发布器管理的知识树。
+      verification_status:
+        type: string
+        enum: [unverified, stale_readonly_snapshot, verified_readonly]
+        description: 只读核验状态；旧快照不得冒充当前已验证状态。
+      governance_directory_id:
+        type: "null"
+        description: 外部业务树不是治理目录，必须保持 null。
+      remote_locator:
+        $ref: "#/$defs/remote_locator"
+        description: 仅在当前只读核验通过时保存的飞书稳定定位符；不包含凭证。
+      controls:
+        $ref: "#/$defs/controls"
+        description: 固定拒绝写入、发布托管和正文复制的控制边界。
+      snapshot:
+        $ref: "#/$defs/snapshot"
+        description: 最近一次脱敏只读快照摘要。
+      refresh_policy:
+        $ref: "#/$defs/refresh_policy"
+        description: 进入协调前的刷新与漂移处理规则。
+      notes_cn:
+        type: string
+        minLength: 1
+        description: 中文维护说明。
+  controls:
+    type: object
+    additionalProperties: false
+    required: [admission_allowed, write_allowed, publication_managed, body_copy_allowed, acl_authority]
+    properties:
+      admission_allowed:
+        type: boolean
+        const: false
+        description: 不纳入治理正文准入。
+      write_allowed:
+        type: boolean
+        const: false
+        description: 本绑定不授权任何飞书写入。
+      publication_managed:
+        type: boolean
+        const: false
+        description: 不由治理正文发布器创建、更新或退役节点。
+      body_copy_allowed:
+        type: boolean
+        const: false
+        description: 不把业务正文复制进 Git。
+      acl_authority:
+        type: string
+        const: feishu_realtime
+        description: 实际访问权限只以飞书实时 ACL 为准。
+  remote_locator:
+    type: object
+    additionalProperties: false
+    required: [space_id, root_node_token]
+    properties:
+      space_id:
+        type: string
+        minLength: 1
+        description: 只读核验得到的飞书知识空间ID。
+      root_node_token:
+        type: string
+        minLength: 1
+        description: 只读核验得到的根节点定位符；不是访问凭证。
+  snapshot:
+    type: object
+    additionalProperties: false
+    required: [captured_at, total_nodes, top_level_branches, business_document_bodies_read]
+    properties:
+      captured_at:
+        type: string
+        format: date
+        description: 快照采集日期。
+      total_nodes:
+        type: integer
+        minimum: 0
+        description: 快照时节点总数，仅供漂移比较。
+      top_level_branches:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        description: 快照时一级分支物理名称。
+        items:
+          type: string
+          minLength: 1
+      business_document_bodies_read:
+        type: boolean
+        const: false
+        description: 基线只读取结构元数据，不读取业务正文。
+  refresh_policy:
+    type: object
+    additionalProperties: false
+    required: [required_before_coordination, drift_action]
+    properties:
+      required_before_coordination:
+        type: boolean
+        const: true
+        description: 进入任何远端协调前必须重新只读采集。
+      drift_action:
+        type: string
+        const: stop_and_request_admin_confirmation
+        description: 发现正常业务漂移时停止并请求管理员确认新基线。

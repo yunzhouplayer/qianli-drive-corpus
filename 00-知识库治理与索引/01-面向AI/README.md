@@ -15,7 +15,8 @@
 |文件|用途|当前状态|
 |---|---|---|
 |[00-ai-control-manifest.yaml](./00-ai-control-manifest.yaml)|本地 AI 加载知识控制面的唯一机器入口和全局运行状态源|治理验证模式；必需文件失效时默认拒绝启动|
-|[01-knowledge-structure.yaml](./01-knowledge-structure.yaml)|完整知识库机器蓝图|主管理员已登记；部分备用管理员待任命|
+|[01-knowledge-structure.yaml](./01-knowledge-structure.yaml)|使用显式配置档的 v2 知识库机器蓝图|9 个空间、134 个目录与 v1 展开结果等价；部分备用管理员待任命|
+|[飞书外部知识树绑定](../03-平台运维/03-feishu-space-bindings.yaml)|登记 Validation&Verification 等非发布托管知识树的只读边界|2026-08-14 快照已过期；协调前必须重新只读核验|
 |[02-AI-Agent使用契约.md](./02-AI-Agent使用契约.md)|来源、权限、引用和不确定性规则|已填写通用规则|
 |[03-index-admission-rules.yaml](./03-index-admission-rules.yaml)|生产索引准入与默认拒绝条件|治理验证模式；生产索引关闭|
 |[04-索引准入与同步规范.md](./04-索引准入与同步规范.md)|分块、同步、失效和审计规则|已填写通用规则|
@@ -62,7 +63,7 @@
 本地 AI、检索服务或适配器必须从[00-ai-control-manifest.yaml](./00-ai-control-manifest.yaml)启动，不得自行扫描目录猜测配置。确定性加载顺序如下：
 
 1. 读取启动清单并核对运行模式、生产开关和失败策略。
-2. 加载目录结构、元数据 Schema 和全部受控字典。
+2. 加载目录结构、外部飞书知识树绑定、元数据 Schema 和全部受控字典。
 3. 加载索引准入、权威来源和实际语料范围。
 4. 加载索引策略和检索运行契约。
 5. 加载评测用例、运行审计和评测结果 Schema。

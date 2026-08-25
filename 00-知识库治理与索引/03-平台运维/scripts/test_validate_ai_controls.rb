@@ -15,6 +15,8 @@ VALIDATOR = File.join(__dir__, "validate_ai_controls.rb")
 AI_RELATIVE = "00-知识库治理与索引/01-面向AI"
 PROFILE_RELATIVE = "00-知识库治理与索引/03-平台运维/configs/governance-validation-indexing-profile.yaml"
 PUBLICATION_RELATIVE = "00-知识库治理与索引/03-平台运维/02-feishu-publication-manifest.json"
+BINDING_RELATIVE = "00-知识库治理与索引/03-平台运维/03-feishu-space-bindings.yaml"
+BINDING_SCHEMA_RELATIVE = "00-知识库治理与索引/03-平台运维/schemas/03-feishu-space-bindings-schema.yaml"
 
 def assert(condition, message)
   raise message unless condition
@@ -31,6 +33,11 @@ def prepare_case(base, name)
   publication_target = File.join(root, PUBLICATION_RELATIVE)
   FileUtils.mkdir_p(File.dirname(publication_target))
   FileUtils.cp(File.join(GOVERNANCE_ROOT, "03-平台运维", "02-feishu-publication-manifest.json"), publication_target)
+  [BINDING_RELATIVE, BINDING_SCHEMA_RELATIVE].each do |relative|
+    target = File.join(root, relative)
+    FileUtils.mkdir_p(File.dirname(target))
+    FileUtils.cp(File.join(PROJECT_ROOT, relative), target)
+  end
   FileUtils.cp(File.join(PROJECT_ROOT, ".gitignore"), File.join(root, ".gitignore"))
   [root, ai_root]
 end
@@ -67,6 +74,24 @@ Dir.mktmpdir("qianli-ai-controls-") do |base|
   code, report = run_validator(root, ai_root)
   assert(code.zero? && report["result"] == "passed", "正确控制面应通过")
   cases << "valid_controls"
+
+  root, ai_root = prepare_case(base, "binding-write-enabled")
+  binding_path = File.join(root, BINDING_RELATIVE)
+  binding = YAML.safe_load(File.read(binding_path, encoding: "UTF-8"), aliases: false)
+  binding["bindings"][0]["controls"]["write_allowed"] = true
+  write_yaml(binding_path, binding)
+  code, report = run_validator(root, ai_root)
+  assert(code == 1 && report["findings"].any? { |item| item["id"] == "SCHEMA_CONST" }, "外部知识树绑定不得开启写入")
+  cases << "external_binding_write_denied"
+
+  root, ai_root = prepare_case(base, "stale-binding-with-locator")
+  binding_path = File.join(root, BINDING_RELATIVE)
+  binding = YAML.safe_load(File.read(binding_path, encoding: "UTF-8"), aliases: false)
+  binding["bindings"][0]["remote_locator"] = { "space_id" => "space-test", "root_node_token" => "node-test" }
+  write_yaml(binding_path, binding)
+  code, report = run_validator(root, ai_root)
+  assert(code == 1 && report["findings"].any? { |item| item["id"] == "FEISHU_BINDING_STALE_LOCATOR" }, "过期绑定不得保留远端定位符")
+  cases << "stale_external_binding_locator_denied"
 
   root, ai_root = prepare_case(base, "missing-file")
   FileUtils.rm(File.join(ai_root, "10-indexing-policy.yaml"))

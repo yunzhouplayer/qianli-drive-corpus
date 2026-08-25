@@ -244,7 +244,15 @@ begin
         add_finding(findings, "SCHEMA_PATH_INVALID", "Schema 必须使用规范化的目录内相对路径。", control_id)
         next
       end
-      schema_path = File.join(options[:ai_root], normalized_schema)
+      schema_scope = control["validation_schema_scope"] || "ai_root"
+      schema_base = case schema_scope
+                    when "ai_root" then options[:ai_root]
+                    when "governance_root" then File.dirname(options[:ai_root])
+                    else
+                      add_finding(findings, "SCHEMA_PATH_SCOPE_INVALID", "Schema 使用了未允许的路径作用域。", control_id)
+                      next
+                    end
+      schema_path = File.join(schema_base, normalized_schema)
       unless File.file?(schema_path)
         add_finding(findings, "SCHEMA_FILE_MISSING", "控制文件引用的 Schema 不存在。", schema_relative)
         next
@@ -285,6 +293,24 @@ begin
     end
   elsif manifest["operating_mode"] == "production" && manifest["production_index_enabled"] != true
     add_finding(findings, "PRODUCTION_MODE_CONFLICT", "生产模式必须显式开启生产索引全局开关。")
+  end
+
+  Array(loaded.dig("feishu_space_bindings", "bindings")).each do |binding|
+    locator = binding["binding_id"] || "unknown-binding"
+    verified = binding["verification_status"] == "verified_readonly"
+    has_remote_locator = binding["remote_locator"].is_a?(Hash)
+    if verified && !has_remote_locator
+      add_finding(findings, "FEISHU_BINDING_LOCATOR_REQUIRED", "当前已验证绑定必须保存只读核验得到的稳定定位符。", locator)
+    elsif !verified && has_remote_locator
+      add_finding(findings, "FEISHU_BINDING_STALE_LOCATOR", "未验证或已过期绑定不得保留远端定位符。", locator)
+    end
+    binding_controls = binding["controls"] || {}
+    if binding_controls["write_allowed"] != false || binding_controls["publication_managed"] != false || binding_controls["body_copy_allowed"] != false
+      add_finding(findings, "FEISHU_BINDING_SCOPE_EXPANDED", "外部知识树绑定不得授权写入、正文发布托管或正文复制。", locator)
+    end
+    unless binding_controls["acl_authority"] == "feishu_realtime"
+      add_finding(findings, "FEISHU_BINDING_ACL_AUTHORITY", "外部知识树访问权限必须以飞书实时 ACL 为权威。", locator)
+    end
   end
 
   indexing_policy = loaded["indexing_policy"] || {}

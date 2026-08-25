@@ -94,6 +94,7 @@ $defs:
       control_id: {type: string, pattern: '^[a-z][a-z0-9_]+$', description: 控制文件稳定 ID。}
       path: {type: string, minLength: 1, description: 相对于 path_scope 指定逻辑根目录的规范化路径。}
       path_scope: {type: string, enum: [ai_root, governance_root], description: 可选路径根；省略时使用 path_policy.default_scope。}
+      validation_schema_scope: {type: string, enum: [ai_root, governance_root], description: 可选 Schema 路径根；省略时使用 ai_root，避免因实例跨目录而隐式改变 Schema 来源。}
       format: {type: string, enum: [yaml, json, json_schema, markdown], description: 文件机器格式。}
       validation_schema:
         description: 实例文件使用的 Schema；Schema 或 Markdown 文件可为 null。

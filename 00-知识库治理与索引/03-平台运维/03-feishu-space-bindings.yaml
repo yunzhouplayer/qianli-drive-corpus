@@ -1,0 +1,35 @@
+# 用途：登记 Git 稳定结构与飞书现有外部知识树之间的绑定边界。
+# 安全：不保存凭证、成员ACL或业务正文；未完成新一轮只读核验时不保存或猜测远端定位符。
+schema_version: "1.0"
+updated_at: "2026-08-19"
+bindings:
+  - binding_id: FEISHU-EXTERNAL-VV
+    stable_external_id: EXT-VALIDATION-VERIFICATION
+    display_name_cn: 验证与确认（Validation&Verification）
+    feishu_physical_name: Validation&Verification
+    binding_type: external_existing_tree
+    verification_status: stale_readonly_snapshot
+    governance_directory_id: null
+    controls:
+      admission_allowed: false
+      write_allowed: false
+      publication_managed: false
+      body_copy_allowed: false
+      acl_authority: feishu_realtime
+    snapshot:
+      captured_at: "2026-08-14"
+      total_nodes: 301
+      top_level_branches:
+        - 00_团队管理
+        - 01_运管平台测试
+        - 02_移动端测试
+        - 03_整车验收测试
+        - 04_测试自动化
+        - 05_测试工具及手顺
+        - 06_会议纪要及分享
+        - 07_AI专项
+      business_document_bodies_read: false
+    refresh_policy:
+      required_before_coordination: true
+      drift_action: stop_and_request_admin_confirmation
+    notes_cn: 当前物理名称和下划线序号保持不变；改名必须另行完成影响评估、只读计划和管理员确认。

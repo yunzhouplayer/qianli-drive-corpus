@@ -52,6 +52,13 @@ load_sequence:
     format: yaml
     validation_schema: schemas/01-knowledge-structure-schema.yaml
     phase: structure
+  - control_id: feishu_space_bindings
+    path: 03-平台运维/03-feishu-space-bindings.yaml
+    path_scope: governance_root
+    format: yaml
+    validation_schema: 03-平台运维/schemas/03-feishu-space-bindings-schema.yaml
+    validation_schema_scope: governance_root
+    phase: structure
   - control_id: metadata_schema
     path: schemas/02-metadata-schema.yaml
     format: json_schema

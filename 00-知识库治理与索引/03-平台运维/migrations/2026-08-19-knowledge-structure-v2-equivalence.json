@@ -1,0 +1,13 @@
+{
+  "result": "passed",
+  "source_schema_version": "1.0",
+  "target_schema_version": "2.0",
+  "target_updated_at": "2026-08-19",
+  "spaces": 9,
+  "directories": 134,
+  "directory_profiles": 7,
+  "source_normalized_sha256": "0df072d285bb6d020a32386abbf01cf9873234a98543929629cb7728112015d0",
+  "target_normalized_sha256": "0df072d285bb6d020a32386abbf01cf9873234a98543929629cb7728112015d0",
+  "equivalent": true,
+  "description_cn": "v2 仅压缩重复字段并增加中文展示名；空间与目录稳定ID、物理路径、父子关系和控制属性逐项等价。"
+}

@@ -8,6 +8,7 @@ require "json"
 require "optparse"
 require "pathname"
 require "yaml"
+require_relative "lib/knowledge-structure"
 
 def load_yaml(path)
   content = File.read(path, encoding: "UTF-8")
@@ -59,9 +60,25 @@ begin
   raise "知识结构文件不存在：#{options[:structure]}" unless File.file?(options[:structure])
   raise "项目根目录不存在：#{options[:project_root]}" unless File.directory?(options[:project_root])
 
-  structure = load_yaml(options[:structure])
-  spaces = Array(structure["spaces"])
+  source_structure = load_yaml(options[:structure])
   findings = []
+  begin
+    structure = KnowledgeStructure.normalize(source_structure)
+  rescue StandardError => error
+    add_finding(findings, "STRUCTURE_NORMALIZATION", error.message, options[:structure])
+    puts JSON.pretty_generate(
+      "result" => "failed",
+      "structure" => options[:structure],
+      "schema_version" => source_structure["schema_version"],
+      "project_root" => options[:project_root],
+      "filesystem_checked" => options[:check_filesystem],
+      "spaces" => 0,
+      "directories" => 0,
+      "findings" => findings
+    )
+    exit 1
+  end
+  spaces = Array(structure["spaces"])
 
   duplicate_values(spaces, "space_id").each do |value|
     add_finding(findings, "SPACE_ID_DUPLICATE", "空间 ID 重复：#{value}", value)
@@ -164,6 +181,7 @@ begin
   result = {
     "result" => findings.empty? ? "passed" : "failed",
     "structure" => options[:structure],
+    "schema_version" => source_structure["schema_version"],
     "project_root" => options[:project_root],
     "filesystem_checked" => options[:check_filesystem],
     "spaces" => spaces.length,
