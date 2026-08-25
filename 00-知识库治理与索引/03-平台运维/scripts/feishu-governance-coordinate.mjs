@@ -160,6 +160,7 @@ function redirectProposal(legacyPath, replacementPath, targetUrl, managedLinkIde
     git_sha256: item.hash,
     proposal_block_signature_sha256: signatureForBlocks(blocks, managedLinkIdentities),
     resolved_links_sha256: resolvedLinksDigest({ ...item, linkScan }, new Map()),
+    blocks,
   };
 }
 
@@ -454,7 +455,7 @@ async function runCli(argv = process.argv.slice(2)) {
 
 export {
   actionSourceMapping, buildLivePlan, gitBaseline, parseArguments, redirectProposal,
-  signatureForBlocks,
+  normalizedBlockSignature, signatureForBlocks,
 };
 
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);

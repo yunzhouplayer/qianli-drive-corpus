@@ -11,6 +11,7 @@
 |[feishu-governance-core.mjs](./scripts/lib/feishu-governance-core.mjs)|哈希、脱敏、配置、tenant 认证、只读 API 客户端和状态原子读写|共享客户端只允许 GET，不包含内容写入方法|
 |[正文协调计划库](./scripts/lib/feishu-body-reconciliation.mjs)|生成计划摘要并校验 revision、正文、父节点和身份范围漂移|不访问网络；任一页面漂移使整份计划失效|
 |[正文协调只读入口](./scripts/feishu-governance-coordinate.mjs)|读取飞书精确版本并生成 17→12 正文协调计划|只发送 GET；计划仅保存到 `.runtime`|
+|[正文协调执行器](./scripts/feishu-governance-coordinate-apply.mjs)|按已确认摘要执行精确 revision 正文协调和断点恢复|必须同时提供完整摘要与 `--execute`；不创建、删除、移动或改 ACL|
 |[validate_governance.rb](./scripts/validate_governance.rb)|统一编排结构、AI 控制面、可选候选元数据和评测校验|只读；空评测不允许生产就绪声明|
 |[validate_knowledge_structure.rb](./scripts/validate_knowledge_structure.rb)|检查知识空间、目录编号、父子关系和物理目录|只读|
 |[migrate_knowledge_structure_v2.rb](./scripts/migrate_knowledge_structure_v2.rb)|将 v1 蓝图迁移为显式配置档 v2，并比较规范化树摘要|只有显式 `--output` 才写本地目标；不访问飞书|
@@ -63,6 +64,15 @@ node '00-知识库治理与索引/03-平台运维/scripts/feishu-governance-coor
 命令会从 Git 历史按旧发布状态中的正文哈希恢复原始基线；任一页面的受控标记或块签名与基线不同，整份计划阻塞，不会把飞书人工修改自动覆盖为 Git 提案。
 若管理员已明确确认接受“文字、块数和块类型均一致，仅链接目标属性不同”的当前飞书状态，必须在重新读取全部页面时显式追加 `--accept-link-only-baseline`；该决定会逐页写入协调计划，不能用于接受正文文字或结构差异。
 
+真实执行必须遵循[执行器设计](./04-飞书正文协调执行器设计.md)，并显式提供计划与完整摘要：
+
+```bash
+node '00-知识库治理与索引/03-平台运维/scripts/feishu-governance-coordinate-apply.mjs' apply \
+  --plan '00-知识库治理与索引/.runtime/feishu-body-reconciliation-plan.json' \
+  --confirm-plan-digest '<完整 SHA-256>' \
+  --execute
+```
+
 `01-面向AI/scripts/` 中的旧 `feishu-governance-import.mjs`、`feishu-governance-retire.mjs` 和 Ruby 入口仅保留一个治理周期，负责参数转发并输出弃用提示；实现与测试只在本目录维护。
 
 ## 本地回归
@@ -81,6 +91,7 @@ node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_markdown_links.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_body_reconciliation.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance_coordinate.mjs'
+node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance_coordinate_apply.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance_publish.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance_retire.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_legacy_script_wrappers.mjs'
