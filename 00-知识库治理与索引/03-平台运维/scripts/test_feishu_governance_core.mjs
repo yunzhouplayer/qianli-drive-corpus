@@ -85,6 +85,17 @@ try {
   writeBlocked = /只允许只读 GET/.test(error.message);
 }
 assert(writeBlocked, '共享 FeishuClient 必须拒绝写方法');
+const originalFetch = globalThis.fetch;
+let requestedRevision = null;
+globalThis.fetch = async (url) => {
+  requestedRevision = new URL(url).searchParams.get('document_revision_id');
+  return new Response(JSON.stringify({ code: 0, data: { items: [], has_more: false } }), {
+    status: 200, headers: { 'content-type': 'application/json' },
+  });
+};
+await client.listDocumentChildren('document-test-only', 17);
+globalThis.fetch = originalFetch;
+assert(requestedRevision === '17', '正文协调读取必须透传精确 revision');
 assert(!safe('Bearer t-exampletoken123456 wikExampleToken').includes('exampletoken'), '脱敏函数必须隐藏访问令牌');
 
 console.log(JSON.stringify({
@@ -92,7 +103,7 @@ console.log(JSON.stringify({
   cases: [
     'new_keychain_pair_preferred', 'legacy_pair_fallback', 'partial_new_pair_blocks_fallback',
     'publication_state_1_1_migration', 'state_digest_drift_blocked', 'readonly_client_write_rejected',
-    'sensitive_values_redacted',
+    'exact_revision_read', 'sensitive_values_redacted',
   ],
   network: 'none',
   keychain_access: 'injected_reader_only',

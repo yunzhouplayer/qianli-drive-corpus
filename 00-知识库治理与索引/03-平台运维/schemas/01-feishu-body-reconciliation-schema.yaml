@@ -140,10 +140,9 @@ $defs:
         description: 正文权威协调结论；发现未处理的飞书人工修改时不得生成可执行动作。
       allowed_action:
         type: string
-        enum: [keep, update_body, rename_in_place, merge_into_target, write_legacy_redirect]
+        enum: [keep, update_body, rename_in_place, rename_and_update, merge_into_target, write_legacy_redirect]
         description: 管理员可确认的唯一页面动作，不包含移动或删除。
       idempotency_key:
         type: string
         pattern: "^[A-Za-z0-9_-]{16,64}$"
         description: 页面级确定性幂等键。
-

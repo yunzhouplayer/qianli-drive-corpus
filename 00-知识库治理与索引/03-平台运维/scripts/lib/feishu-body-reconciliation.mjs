@@ -4,7 +4,8 @@
 import { planDigest, sha256 } from './feishu-governance-core.mjs';
 
 const ACTIONS = new Set([
-  'keep', 'update_body', 'rename_in_place', 'merge_into_target', 'write_legacy_redirect',
+  'keep', 'update_body', 'rename_in_place', 'rename_and_update',
+  'merge_into_target', 'write_legacy_redirect',
 ]);
 const DECISIONS = new Set(['remote_unchanged', 'manual_merge_approved', 'no_write']);
 
@@ -60,6 +61,10 @@ function actionFor(page) {
   if (page.authority_decision === 'no_write') return 'keep';
   if (page.legacy_redirect) return 'write_legacy_redirect';
   if (page.merge_into_target) return 'merge_into_target';
+  if (page.source_path !== page.target_path
+      && page.remote_block_signature_sha256 !== page.proposal_block_signature_sha256) {
+    return 'rename_and_update';
+  }
   if (page.source_path !== page.target_path) return 'rename_in_place';
   if (page.remote_block_signature_sha256 === page.proposal_block_signature_sha256) return 'keep';
   return 'update_body';
@@ -174,4 +179,3 @@ function assertWholePlanFresh(plan, current) {
 export {
   assertWholePlanFresh, buildReconciliationPlan, normalizedRevision, validatePlanDigest,
 };
-

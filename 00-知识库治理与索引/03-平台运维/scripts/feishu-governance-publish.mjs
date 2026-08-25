@@ -1246,8 +1246,8 @@ async function verifyImport(scan, options, client, parentNode) {
 }
 
 export {
-  blockSignature, blocksFor, blocksForContent, canonicalWikiUrl, elementsForTokens,
-  loadPublicationManifest, managedMarker, markerFor, parseArguments, parseInlineMarkdown,
+  blockContent, blockSignature, blocksFor, blocksForContent, canonicalWikiUrl, elementsForTokens,
+  loadPublicationManifest, loadRenameMap, managedMarker, markerFor, parseArguments, parseInlineMarkdown,
   planSummary, resolveMarkdownTarget, resolvedLinksDigest, runCli, scanMarkdownLinks,
   scanProject, scopeDiagnostic,
 };

@@ -24,7 +24,7 @@ const page = {
   target_node_ref: h('source').slice(0, 10), revision_id: 7, body_sha256: h('body'),
   title_sha256: h('old title'), parent_node_ref: h('parent').slice(0, 10),
   marker_sha256: h('marker'), scope_sha256: h('scope'), git_sha256: h('git'),
-  proposal_block_signature_sha256: h('proposal'), resolved_links_sha256: h('links'),
+  proposal_block_signature_sha256: h('last'), resolved_links_sha256: h('links'),
   remote_block_signature_sha256: h('last'), last_synced_block_signature_sha256: h('last'),
   authority_decision: 'remote_unchanged',
 };
@@ -36,6 +36,11 @@ const input = {
 };
 const plan = buildReconciliationPlan(input);
 assert(plan.actions[0].allowed_action === 'rename_in_place', '路径变化应生成原位重命名动作');
+const renameAndUpdate = buildReconciliationPlan({
+  ...input,
+  pages: [{ ...page, proposal_block_signature_sha256: h('changed proposal') }],
+});
+assert(renameAndUpdate.actions[0].allowed_action === 'rename_and_update', '路径和正文同时变化应生成复合动作');
 assert(validatePlanDigest(plan, plan.plan_digest) === plan.plan_digest, '计划摘要应通过');
 expectFailure(() => validatePlanDigest({ ...plan, generated_at: 'changed' }), /摘要/);
 expectFailure(() => normalizedRevision(-1), /禁止使用 -1/);
@@ -63,7 +68,7 @@ expectFailure(() => assertWholePlanFresh(plan, scopeDrift), /整份协调计划�
 console.log(JSON.stringify({
   result: 'passed',
   cases: [
-    'deterministic_digest', 'digest_confirmation', 'exact_revision_required',
+    'deterministic_digest', 'digest_confirmation', 'exact_revision_required', 'rename_and_update',
     'remote_edit_requires_merge', 'whole_plan_revision_drift', 'whole_plan_scope_drift',
   ],
   network: 'none',

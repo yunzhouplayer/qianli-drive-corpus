@@ -207,13 +207,16 @@ class FeishuClient {
     return items;
   }
 
-  async listDocumentChildren(documentId) {
+  async listDocumentChildren(documentId, revisionId = -1) {
+    if (revisionId === null || revisionId === undefined || revisionId === '') {
+      fail('读取文档子块时必须提供有效 revision。', 6);
+    }
     const items = [];
     let pageToken;
     do {
       const url = new URL(`/open-apis/docx/v1/documents/${encodeURIComponent(documentId)}/blocks/${encodeURIComponent(documentId)}/children`, this.baseUrl);
       url.searchParams.set('page_size', '50');
-      url.searchParams.set('document_revision_id', '-1');
+      url.searchParams.set('document_revision_id', String(revisionId));
       if (pageToken) url.searchParams.set('page_token', pageToken);
       const data = await this.request('读取文档子块', url);
       items.push(...(data.items || []));
