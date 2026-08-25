@@ -32,7 +32,7 @@ const OUTPUT_RELATIVE = '00-知识库治理与索引/.runtime/feishu-body-reconc
 function parseArguments(argv) {
   const mode = argv[0] || 'plan';
   if (mode !== 'plan') fail('正文协调命令当前只支持只读 plan 模式。', 2);
-  const options = { mode, projectRoot: PROJECT_ROOT };
+  const options = { mode, projectRoot: PROJECT_ROOT, acceptLinkOnlyBaseline: false };
   for (let index = 1; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--project-root') options.projectRoot = resolve(argv[++index] || '');
@@ -40,6 +40,7 @@ function parseArguments(argv) {
     else if (argument === '--publication-manifest') options.manifestPath = resolve(argv[++index] || '');
     else if (argument === '--rename-map') options.renamePath = resolve(argv[++index] || '');
     else if (argument === '--output') options.outputPath = resolve(argv[++index] || '');
+    else if (argument === '--accept-link-only-baseline') options.acceptLinkOnlyBaseline = true;
     else fail(`未知参数：${argument}`, 2);
   }
   options.statePath ||= resolve(options.projectRoot, STATE_RELATIVE);
@@ -215,6 +216,8 @@ async function readRemotePage({
   const remoteTextSignature = textSignatureForBlocks(blocks);
   const matchedTextBaseline = baselineSignatures.find((candidate) => candidate.text_digest === remoteTextSignature);
   const remoteStructureSignature = structureSignatureForBlocks(blocks);
+  const structureMatches = baselineSignatures
+    .some((candidate) => candidate.structure_digest === remoteStructureSignature);
   const title = remoteNode.title || metadata.title;
   if (typeof title !== 'string' || !title) fail(`飞书页面缺少可核验标题：${path}`, 8);
   const remoteParent = remoteNode.parent_node_token || parent.node_token;
@@ -232,10 +235,12 @@ async function readRemotePage({
     baseline_commit_ref: shortHash(baseline.commit),
     baseline_render_mode: matchedBaseline?.mode || 'none',
     text_only_match: Boolean(matchedTextBaseline),
-    structure_match: baselineSignatures.some((candidate) => candidate.structure_digest === remoteStructureSignature),
+    structure_match: structureMatches,
     remote_block_count: blocks.length,
     baseline_block_counts: [...new Set(baselineSignatures.map((candidate) => candidate.block_count))],
     remote_unchanged: markerMatches && Boolean(matchedBaseline),
+    link_only_difference: markerMatches && !matchedBaseline
+      && Boolean(matchedTextBaseline) && structureMatches,
     marker_matches: markerMatches,
   };
 }
@@ -307,7 +312,11 @@ async function buildLivePlan(options) {
   }
   client.token = undefined;
   const drifted = [...remoteByPath.values()].filter((item) => !item.remote_unchanged);
-  if (drifted.length) {
+  const acceptedLinkOnly = drifted.filter((item) => item.link_only_difference);
+  const blockingDrift = drifted.filter((item) => (
+    !options.acceptLinkOnlyBaseline || !item.link_only_difference
+  ));
+  if (blockingDrift.length) {
     return {
       result: 'blocked', mode: 'plan', reason: 'remote_body_changed_since_baseline',
       checked_pages: remoteByPath.size, drifted_pages: drifted.map((item) => ({
@@ -315,6 +324,7 @@ async function buildLivePlan(options) {
         baseline_commit_ref: item.baseline_commit_ref, baseline_render_mode: item.baseline_render_mode,
         text_only_match: item.text_only_match, remote_block_count: item.remote_block_count,
         structure_match: item.structure_match,
+        link_only_difference: item.link_only_difference,
         baseline_block_counts: item.baseline_block_counts,
         matches_current_proposal: [...sourceByTarget]
           .some(([target, source]) => source === item.path
@@ -339,7 +349,8 @@ async function buildLivePlan(options) {
       git_sha256: item.hash,
       proposal_block_signature_sha256: signatureForBlocks(blocks, managedLinkIdentities),
       resolved_links_sha256: item.linkScan ? resolvedLinksDigest(item, registry) : sha256(''),
-      authority_decision: 'remote_unchanged',
+      authority_decision: remote.remote_unchanged
+        ? 'remote_unchanged' : 'link_only_remote_accepted',
       merge_into_target: replacementCounts.has(targetPath),
     });
   }
@@ -355,7 +366,9 @@ async function buildLivePlan(options) {
       source_node_ref: remote.source_node_ref,
       target_node_ref: shortHash(state.nodes[targetSource].node_token),
       ...remote, ...proposal,
-      authority_decision: 'remote_unchanged', legacy_redirect: true,
+      authority_decision: remote.remote_unchanged
+        ? 'remote_unchanged' : 'link_only_remote_accepted',
+      legacy_redirect: true,
     });
   }
   const plan = buildReconciliationPlan({
@@ -377,6 +390,7 @@ async function buildLivePlan(options) {
     plan_actions: plan.actions.length, action_counts: actions,
     plan_digest: plan.plan_digest, output: relativeOutput(options.projectRoot, options.outputPath),
     exact_revisions_frozen: true, remote_edits_detected: false,
+    accepted_link_only_pages: acceptedLinkOnly.map((item) => item.path),
     plan_gitignored: true, write_request_sent: false,
   };
 }

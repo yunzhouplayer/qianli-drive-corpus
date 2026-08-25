@@ -7,7 +7,9 @@ const ACTIONS = new Set([
   'keep', 'update_body', 'rename_in_place', 'rename_and_update',
   'merge_into_target', 'write_legacy_redirect',
 ]);
-const DECISIONS = new Set(['remote_unchanged', 'manual_merge_approved', 'no_write']);
+const DECISIONS = new Set([
+  'remote_unchanged', 'link_only_remote_accepted', 'manual_merge_approved', 'no_write',
+]);
 
 function fail(message) {
   const error = new Error(message);

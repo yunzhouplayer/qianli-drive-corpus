@@ -136,8 +136,10 @@ $defs:
             $ref: "#/$defs/sha256"
       authority_decision:
         type: string
-        enum: [remote_unchanged, manual_merge_approved, no_write]
-        description: 正文权威协调结论；发现未处理的飞书人工修改时不得生成可执行动作。
+        enum: [remote_unchanged, link_only_remote_accepted, manual_merge_approved, no_write]
+        description: >-
+          正文权威协调结论；link_only_remote_accepted 仅允许管理员明确接受文字和块结构均未变化的
+          远端链接属性差异，计划仍须冻结精确 revision 与原始正文哈希。
       allowed_action:
         type: string
         enum: [keep, update_body, rename_in_place, rename_and_update, merge_into_target, write_legacy_redirect]

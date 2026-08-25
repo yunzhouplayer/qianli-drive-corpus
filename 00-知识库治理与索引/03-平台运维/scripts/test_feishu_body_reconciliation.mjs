@@ -41,6 +41,15 @@ const renameAndUpdate = buildReconciliationPlan({
   pages: [{ ...page, proposal_block_signature_sha256: h('changed proposal') }],
 });
 assert(renameAndUpdate.actions[0].allowed_action === 'rename_and_update', '路径和正文同时变化应生成复合动作');
+const linkOnlyAccepted = buildReconciliationPlan({
+  ...input,
+  pages: [{
+    ...page,
+    remote_block_signature_sha256: h('remote link form'),
+    authority_decision: 'link_only_remote_accepted',
+  }],
+});
+assert(linkOnlyAccepted.actions[0].authority_decision === 'link_only_remote_accepted', '链接属性基线必须显式记录');
 assert(validatePlanDigest(plan, plan.plan_digest) === plan.plan_digest, '计划摘要应通过');
 expectFailure(() => validatePlanDigest({ ...plan, generated_at: 'changed' }), /摘要/);
 expectFailure(() => normalizedRevision(-1), /禁止使用 -1/);
@@ -69,6 +78,7 @@ console.log(JSON.stringify({
   result: 'passed',
   cases: [
     'deterministic_digest', 'digest_confirmation', 'exact_revision_required', 'rename_and_update',
+    'link_only_remote_accepted',
     'remote_edit_requires_merge', 'whole_plan_revision_drift', 'whole_plan_scope_drift',
   ],
   network: 'none',

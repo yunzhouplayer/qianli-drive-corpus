@@ -61,6 +61,7 @@ node '00-知识库治理与索引/03-平台运维/scripts/feishu-governance-coor
 ```
 
 命令会从 Git 历史按旧发布状态中的正文哈希恢复原始基线；任一页面的受控标记或块签名与基线不同，整份计划阻塞，不会把飞书人工修改自动覆盖为 Git 提案。
+若管理员已明确确认接受“文字、块数和块类型均一致，仅链接目标属性不同”的当前飞书状态，必须在重新读取全部页面时显式追加 `--accept-link-only-baseline`；该决定会逐页写入协调计划，不能用于接受正文文字或结构差异。
 
 `01-面向AI/scripts/` 中的旧 `feishu-governance-import.mjs`、`feishu-governance-retire.mjs` 和 Ruby 入口仅保留一个治理周期，负责参数转发并输出弃用提示；实现与测试只在本目录维护。
 
