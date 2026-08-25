@@ -12,6 +12,7 @@
 |[正文协调计划库](./scripts/lib/feishu-body-reconciliation.mjs)|生成计划摘要并校验 revision、正文、父节点和身份范围漂移|不访问网络；任一页面漂移使整份计划失效|
 |[正文协调只读入口](./scripts/feishu-governance-coordinate.mjs)|读取飞书精确版本并生成 17→12 正文协调计划|只发送 GET；计划仅保存到 `.runtime`|
 |[正文协调执行器](./scripts/feishu-governance-coordinate-apply.mjs)|按已确认摘要执行精确 revision 正文协调和断点恢复|必须同时提供完整摘要与 `--execute`；不创建、删除、移动或改 ACL|
+|[本地 AI 只读烟测](./scripts/feishu-local-ai-readonly-smoke.mjs)|验证一个授权节点可读、一个未授权节点被拒绝|资源请求只允许 GET；结果不保存正文、节点 token 或成员 ACL|
 |[validate_governance.rb](./scripts/validate_governance.rb)|统一编排结构、AI 控制面、可选候选元数据和评测校验|只读；空评测不允许生产就绪声明|
 |[validate_knowledge_structure.rb](./scripts/validate_knowledge_structure.rb)|检查知识空间、目录编号、父子关系和物理目录|只读|
 |[migrate_knowledge_structure_v2.rb](./scripts/migrate_knowledge_structure_v2.rb)|将 v1 蓝图迁移为显式配置档 v2，并比较规范化树摘要|只有显式 `--output` 才写本地目标；不访问飞书|
@@ -73,6 +74,16 @@ node '00-知识库治理与索引/03-平台运维/scripts/feishu-governance-coor
   --execute
 ```
 
+本地 AI 只读试点使用现有应用身份时，必须同时提供授权节点与未授权对照节点。认证端点按飞书协议发送一次 POST 获取租户令牌；其余资源请求全部为 GET：
+
+```bash
+node '00-知识库治理与索引/03-平台运维/scripts/feishu-local-ai-readonly-smoke.mjs' smoke \
+  --authorized-node '<已授权 Wiki URL>' \
+  --unauthorized-node '<未授权 Wiki URL>'
+```
+
+脱敏结果仅保存到 `.runtime/feishu-local-ai-readonly-smoke.json`，不得据此宣称已经实现员工个人 ACL 或生产检索。
+
 `01-面向AI/scripts/` 中的旧 `feishu-governance-import.mjs`、`feishu-governance-retire.mjs` 和 Ruby 入口仅保留一个治理周期，负责参数转发并输出弃用提示；实现与测试只在本目录维护。
 
 ## 本地回归
@@ -92,6 +103,7 @@ node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_markdown_l
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_body_reconciliation.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance_coordinate.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance_coordinate_apply.mjs'
+node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_local_ai_readonly_smoke.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance_publish.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_feishu_governance_retire.mjs'
 node '00-知识库治理与索引/03-平台运维/scripts/test_legacy_script_wrappers.mjs'

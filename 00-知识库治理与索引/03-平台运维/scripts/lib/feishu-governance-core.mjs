@@ -174,7 +174,11 @@ class FeishuClient {
       return this.request(label, url, options, attempt + 1);
     }
     if (!response.ok || body?.code !== 0) {
-      fail(`${label} 失败：http=${response.status}, code=${body?.code ?? 'unknown'}, msg=${safe(body?.msg)}`, 6);
+      fail(
+        `${label} 失败：http=${response.status}, code=${body?.code ?? 'unknown'}, msg=${safe(body?.msg)}`,
+        6,
+        { httpStatus: response.status, apiCode: body?.code },
+      );
     }
     return body.data || {};
   }
