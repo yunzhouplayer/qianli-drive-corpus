@@ -7,7 +7,7 @@ import {
   FeishuClient, GovernanceToolError,
 } from './lib/feishu-governance-core.mjs';
 import {
-  parseArguments, probeNodes,
+  localAiScopeDiagnostic, parseArguments, probeNodes,
 } from './feishu-local-ai-readonly-smoke.mjs';
 
 function assert(condition, message) {
@@ -59,6 +59,15 @@ const options = parseArguments([
 ]);
 assert(options.authorizedToken === 'authorized-node-test'
   && options.unauthorizedToken === 'unauthorized-node-test', '必须从 Wiki URL 解析两个不同节点');
+
+const requiredScopes = [
+  'wiki:node:read', 'wiki:node:retrieve', 'docx:document:readonly', 'drive:drive:readonly',
+].map((scope_name) => ({ scope_name, scope_type: 'tenant', grant_status: 1 }));
+assert(localAiScopeDiagnostic(requiredScopes).passed, '四项租户级只读能力齐全时必须通过');
+const missingDrive = localAiScopeDiagnostic(requiredScopes.filter((item) => !item.scope_name.startsWith('drive:')));
+assert(!missingDrive.passed
+  && missingDrive.checks.find((item) => item.capability === 'read_drive_content')?.status === 'missing',
+  '缺少云空间正文只读权限时必须在真实正文请求前阻断');
 
 const passed = await probeNodes({
   client: new FakeClient(), authorizedToken: options.authorizedToken,
@@ -116,6 +125,7 @@ console.log(JSON.stringify({
     'authorized_exact_revision_read', 'unauthorized_access_denied', 'result_redaction',
     'unexpected_access_blocked', 'non_permission_error_propagated', 'write_blocked_before_network',
     'distinct_node_gate', 'wiki_node_not_visible_denied',
+    'drive_read_scope_gate',
   ],
   network: 'none', keychain_access: 'none',
 }, null, 2));
