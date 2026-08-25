@@ -397,6 +397,71 @@ async function executeDirectoryAction({ client, state, action, entry, persist })
   return true;
 }
 
+async function readExactDirectoryBody(client, record, identities = new Map()) {
+  const metadata = await client.getDocumentMetadata(record.obj_token);
+  const revisionId = metadata.revision_id;
+  if (revisionId === -1 || revisionId === '-1' || revisionId === undefined || revisionId === null) {
+    fail('目录正文未返回精确 revision。', 8);
+  }
+  const blocks = await client.listDocumentChildren(record.obj_token, revisionId);
+  const confirmed = await client.getDocumentMetadata(record.obj_token);
+  if (confirmed.revision_id !== revisionId) fail('读取期间目录正文 revision 已变化。', 8);
+  return { revision_id: revisionId, blocks, hashes: executionBlockHashes(blocks, identities) };
+}
+
+async function reconcileFinalizedDirectoryMarker({
+  client, state, statePath, action, item, entry, persist, saveLocalState = true,
+}) {
+  const record = state.nodes[action.target_path] || state.nodes[action.source_path];
+  const parent = state.nodes[item.parentPath];
+  if (record?.kind !== 'directory' || !record.node_token || !record.obj_token || !parent?.node_token) {
+    fail(`目录标记补偿缺少受控状态：${action.action_id}`, 8);
+  }
+  const node = await client.resolveNode(record.node_token);
+  if (shortHash(node.node_token) !== action.node_ref
+      || shortHash(node.parent_node_token || parent.node_token) !== action.expected_remote.parent_node_ref
+      || node.title !== basename(action.target_path)) {
+    fail(`目录标记补偿的节点身份、父节点或标题不一致：${action.action_id}`, 8);
+  }
+  const oldBlocks = blocksForContent({
+    kind: 'directory', path: action.source_path, hash: record.source_hash,
+  });
+  const targetBlocks = blocksForContent(item);
+  const oldHashes = executionBlockHashes(oldBlocks, new Map());
+  const targetHashes = executionBlockHashes(targetBlocks, new Map());
+  let snapshot = await readExactDirectoryBody(client, record);
+  if (arrayEqual(snapshot.hashes, oldHashes)) {
+    entry.marker_status = 'target_appending';
+    entry.marker_client_tokens ||= {};
+    entry.marker_client_tokens.append ||= randomUUID();
+    persist();
+    await client.appendExact(record.obj_token, snapshot.revision_id, targetBlocks, entry.marker_client_tokens.append);
+    snapshot = await readExactDirectoryBody(client, record);
+  }
+  if (arrayEqual(snapshot.hashes, [...oldHashes, ...targetHashes])) {
+    entry.marker_status = 'old_deleting';
+    entry.marker_client_tokens ||= {};
+    entry.marker_client_tokens.delete_old ||= randomUUID();
+    persist();
+    await client.deleteExact(
+      record.obj_token, snapshot.revision_id, 0, oldBlocks.length,
+      entry.marker_client_tokens.delete_old,
+    );
+    snapshot = await readExactDirectoryBody(client, record);
+  }
+  if (!arrayEqual(snapshot.hashes, targetHashes)) {
+    fail(`目录受控标记不处于旧、组合或目标状态：${action.action_id}`, 8);
+  }
+  record.source_hash = item.hash;
+  record.block_count = targetBlocks.length;
+  record.block_signature_sha256 = signatureForBlocks(targetBlocks);
+  record.revision_id = snapshot.revision_id;
+  entry.marker_status = 'complete';
+  if (saveLocalState) saveStateAtomic(statePath, state);
+  persist();
+  return true;
+}
+
 function finalizeState({ state, plan, payloads, scan, journal }) {
   const updated = structuredClone(state);
   for (const action of plan.actions) {
@@ -460,13 +525,45 @@ async function execute(options) {
     try { currentState = JSON.parse(stateRaw); } catch { fail('本地发布状态必须是合法 JSON。', 7); }
     if (['remote_complete_state_pending', 'complete'].includes(journal.status)
         && currentState.last_reconciliation?.plan_digest === plan.plan_digest) {
+      const rootRecord = currentState.nodes?.['.'];
+      if (!rootRecord?.node_token
+          || sha256(APP_ID) !== plan.scope.app_id_sha256
+          || sha256(currentState.space_id) !== plan.scope.space_id_sha256
+          || sha256(rootRecord.node_token) !== plan.scope.managed_root_node_sha256) {
+        fail('已完成事务恢复时的应用身份、空间或受管根不一致。', 8);
+      }
+      const scan = scanProject(options.projectRoot, options.manifestPath);
+      const scanByPath = new Map(scan.items.map((item) => [item.path, item]));
+      const { client, config } = await authenticateWriter();
+      const scopeReport = scopeDiagnostic(await client.listGrantedScopes(), 'apply');
+      if (!scopeReport.passed) fail('应用身份缺少目录标记补偿所需的租户级读写权限。', 9);
+      const authorizedParent = await client.resolveNode(wikiToken(config.node));
+      config.node = undefined;
+      if (authorizedParent.space_id !== currentState.space_id
+          || shortHash(authorizedParent.node_token) !== currentState.parent_node_ref) {
+        fail('目录标记补偿时的授权父节点与本地发布状态不一致。', 8);
+      }
+      const priorWriteRequests = journal.write_requests;
+      const persistWithClient = () => {
+        journal.write_requests = priorWriteRequests + client.writeRequests;
+        saveJournal(options.journalPath, journal);
+      };
+      for (const action of plan.directory_actions) {
+        const item = scanByPath.get(action.target_path);
+        if (!item || item.kind !== 'directory') fail(`目录标记补偿缺少本地目标：${action.action_id}`, 8);
+        await reconcileFinalizedDirectoryMarker({
+          client, state: currentState, statePath: options.statePath, action, item,
+          entry: journal.directory_actions[action.action_id], persist: persistWithClient,
+        });
+      }
       journal.status = 'complete';
       journal.completed_at ||= new Date().toISOString();
-      saveJournal(options.journalPath, journal);
+      persistWithClient();
+      client.token = undefined;
       return {
         result: 'passed', mode: 'apply', resumed: true,
         write_requests: journal.write_requests, plan_digest: plan.plan_digest,
-        state_already_finalized: true,
+        state_already_finalized: true, directory_markers_verified: plan.directory_actions.length,
       };
     }
     fail('本地发布状态与计划摘要不一致。', 8);
@@ -524,6 +621,12 @@ async function execute(options) {
   for (const action of plan.directory_actions) {
     const entry = journal.directory_actions[action.action_id];
     await executeDirectoryAction({ client, state, action, entry, persist: persistWithClient });
+    const item = scan.items.find((candidate) => candidate.path === action.target_path);
+    if (!item || item.kind !== 'directory') fail(`目录标记更新缺少本地目标：${action.action_id}`, 8);
+    await reconcileFinalizedDirectoryMarker({
+      client, state, statePath: options.statePath, action, item, entry, persist: persistWithClient,
+      saveLocalState: false,
+    });
   }
   journal.status = 'remote_complete_state_pending';
   persistWithClient();
@@ -553,6 +656,7 @@ async function runCli(argv = process.argv.slice(2)) {
 export {
   CoordinateWriter, arrayEqual, blockHashes, buildPayloads, classifySnapshot, executionBlockHashes,
   executeDirectoryAction, executePageAction, finalizeState, loadPlan, parseArguments, prefixEqual,
+  reconcileFinalizedDirectoryMarker,
 };
 
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);

@@ -5,8 +5,10 @@
 
 import {
   CoordinateWriter, blockHashes, executeDirectoryAction, executePageAction, finalizeState, parseArguments,
+  reconcileFinalizedDirectoryMarker,
 } from './feishu-governance-coordinate-apply.mjs';
 import { canonicalJson, sha256, shortHash } from './lib/feishu-governance-core.mjs';
+import { blocksForContent } from './feishu-governance-publish.mjs';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -166,6 +168,32 @@ await executeDirectoryAction({
 });
 assert(directoryEntry.status === 'complete' && directoryClient.title === '11-模板', '目录必须原位改名并核验');
 
+const oldDirectoryHash = sha256('old-directory');
+const targetDirectoryItem = {
+  kind: 'directory', path: 'parent/11-模板', parentPath: 'parent', title: '11-模板', hash: sha256('target-directory'),
+};
+const oldDirectoryBlocks = blocksForContent({
+  kind: 'directory', path: 'parent/模板', hash: oldDirectoryHash,
+});
+const directoryMarkerClient = new FakeClient({ blocks: oldDirectoryBlocks, title: '11-模板', revision: 11 });
+const finalizedDirectoryState = {
+  space_id: 'space-test', nodes: {
+    parent: { kind: 'directory', node_token: 'parent-node-test' },
+    'parent/11-模板': {
+      kind: 'directory', node_token: 'directory-node-test', obj_token: 'directory-document-test',
+      title: '11-模板', parent_path: 'parent', source_hash: oldDirectoryHash,
+    },
+  },
+};
+await reconcileFinalizedDirectoryMarker({
+  client: directoryMarkerClient, state: finalizedDirectoryState, statePath: '/unused',
+  action: directoryAction, item: targetDirectoryItem, entry: directoryEntry,
+  persist: () => {}, saveLocalState: false,
+});
+assert(directoryMarkerClient.writeRequests === 2
+  && finalizedDirectoryState.nodes['parent/11-模板'].source_hash === targetDirectoryItem.hash,
+  '目录改名后必须按精确 revision 更新受控标记并同步状态哈希');
+
 const finalized = finalizeState({
   state: {
     schema_version: '1.1', nodes: {
@@ -213,6 +241,7 @@ console.log(JSON.stringify({
     'exact_revision_batches', 'append_interruption_resume', 'remote_drift_zero_write',
     'directory_rename_readback', 'atomic_state_projection', 'full_digest_gate',
     'exact_revision_write_request', 'code_block_text_run_normalization',
+    'directory_marker_reconciliation',
   ],
   network: 'none', keychain_access: 'none',
 }, null, 2));
