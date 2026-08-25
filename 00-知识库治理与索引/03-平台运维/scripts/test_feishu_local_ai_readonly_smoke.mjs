@@ -7,7 +7,7 @@ import {
   FeishuClient, GovernanceToolError,
 } from './lib/feishu-governance-core.mjs';
 import {
-  localAiScopeDiagnostic, parseArguments, probeNodes,
+  parseArguments, probeNodes,
 } from './feishu-local-ai-readonly-smoke.mjs';
 
 function assert(condition, message) {
@@ -21,9 +21,10 @@ async function expectFailure(callback, pattern) {
 }
 
 class FakeClient {
-  constructor({ unauthorizedReadable = false, deniedError = null } = {}) {
+  constructor({ unauthorizedReadable = false, deniedError = null, revisionChanges = false } = {}) {
     this.unauthorizedReadable = unauthorizedReadable;
     this.deniedError = deniedError;
+    this.revisionChanges = revisionChanges;
     this.metadataReads = 0;
   }
 
@@ -44,11 +45,11 @@ class FakeClient {
 
   async getDocumentMetadata() {
     this.metadataReads += 1;
-    return { revision_id: 17 };
+    return { revision_id: this.revisionChanges && this.metadataReads > 1 ? 18 : 17 };
   }
 
   async listDocumentChildren(_documentId, revisionId) {
-    assert(revisionId === 17, '正文读取必须使用精确 revision');
+    assert(revisionId === -1, '只读身份必须使用 -1 读取最新正文');
     return [{ block_type: 2, text: { elements: [{ text_run: { content: 'private-test-body' } }] } }];
   }
 }
@@ -59,15 +60,6 @@ const options = parseArguments([
 ]);
 assert(options.authorizedToken === 'authorized-node-test'
   && options.unauthorizedToken === 'unauthorized-node-test', '必须从 Wiki URL 解析两个不同节点');
-
-const requiredScopes = [
-  'wiki:node:read', 'wiki:node:retrieve', 'docx:document:readonly', 'drive:drive:readonly',
-].map((scope_name) => ({ scope_name, scope_type: 'tenant', grant_status: 1 }));
-assert(localAiScopeDiagnostic(requiredScopes).passed, '四项租户级只读能力齐全时必须通过');
-const missingDrive = localAiScopeDiagnostic(requiredScopes.filter((item) => !item.scope_name.startsWith('drive:')));
-assert(!missingDrive.passed
-  && missingDrive.checks.find((item) => item.capability === 'read_drive_content')?.status === 'missing',
-  '缺少云空间正文只读权限时必须在真实正文请求前阻断');
 
 const passed = await probeNodes({
   client: new FakeClient(), authorizedToken: options.authorizedToken,
@@ -89,6 +81,11 @@ const hiddenAsNotFound = await probeNodes({
 });
 assert(hiddenAsNotFound.unauthorized.result === 'access_denied',
   '飞书以 131006 隐藏未授权 Wiki 节点时必须判定为不可访问');
+
+await expectFailure(() => probeNodes({
+  client: new FakeClient({ revisionChanges: true }),
+  authorizedToken: options.authorizedToken, unauthorizedToken: options.unauthorizedToken,
+}), /revision 已变化/);
 
 await expectFailure(() => probeNodes({
   client: new FakeClient({ unauthorizedReadable: true }),
@@ -124,8 +121,7 @@ console.log(JSON.stringify({
   cases: [
     'authorized_exact_revision_read', 'unauthorized_access_denied', 'result_redaction',
     'unexpected_access_blocked', 'non_permission_error_propagated', 'write_blocked_before_network',
-    'distinct_node_gate', 'wiki_node_not_visible_denied',
-    'drive_read_scope_gate',
+    'distinct_node_gate', 'wiki_node_not_visible_denied', 'latest_revision_consistency_gate',
   ],
   network: 'none', keychain_access: 'none',
 }, null, 2));

@@ -76,7 +76,7 @@ node '00-知识库治理与索引/03-平台运维/scripts/feishu-governance-coor
 
 本地 AI 只读试点使用现有应用身份时，必须同时提供授权节点与未授权对照节点。认证端点按飞书协议发送一次 POST 获取租户令牌；其余资源请求全部为 GET：
 
-应用必须以租户身份具备 `wiki:node:read`、`wiki:node:retrieve`、`docx:document:readonly` 和 `drive:drive:readonly`（或对应完整权限）；仅有云空间元数据或版本只读权限不能读取外部知识空间正文。
+应用必须以租户身份具备 `wiki:node:read`、`wiki:node:retrieve` 和 `docx:document:readonly`（或对应完整权限）。只读身份使用 `revision=-1` 读取最新正文，并以前后两次文档元数据 revision 一致作为稳定快照门禁；不得为此额外申请云空间全量下载权限。
 
 ```bash
 node '00-知识库治理与索引/03-平台运维/scripts/feishu-local-ai-readonly-smoke.mjs' smoke \

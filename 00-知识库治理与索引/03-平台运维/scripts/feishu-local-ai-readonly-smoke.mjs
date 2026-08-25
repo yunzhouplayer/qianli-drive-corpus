@@ -42,35 +42,20 @@ function isAccessDenied(error) {
     && ([401, 403, 404].includes(error.httpStatus) || [131006, 99991663].includes(error.apiCode));
 }
 
-function localAiScopeDiagnostic(scopes) {
-  const base = scopeDiagnostic(scopes, 'verify');
-  const granted = scopes.filter((scope) => scope.grant_status === 1);
-  const tenant = new Set(granted.filter((scope) => scope.scope_type === 'tenant').map((scope) => scope.scope_name));
-  const user = new Set(granted.filter((scope) => scope.scope_type === 'user').map((scope) => scope.scope_name));
-  const accepted = ['drive:drive:readonly', 'drive:drive'];
-  const tenantMatches = accepted.filter((scope) => tenant.has(scope));
-  const userMatches = accepted.filter((scope) => user.has(scope));
-  const driveCheck = {
-    capability: 'read_drive_content',
-    status: tenantMatches.length ? 'pass' : (userMatches.length ? 'wrong_identity' : 'missing'),
-    accepted_scopes: accepted, tenant_matches: tenantMatches, user_matches: userMatches,
-  };
-  return { ...base, checks: [...base.checks, driveCheck], passed: base.passed && driveCheck.status === 'pass' };
-}
-
 async function readAuthorizedNode(client, nodeToken) {
   const node = await client.resolveNode(nodeToken);
   if (node.obj_type !== 'docx' || !node.obj_token) {
     fail('授权试点节点不是可读取正文的新版文档节点。', 8);
   }
-  const metadata = await client.getDocumentMetadata(node.obj_token);
-  const revisionId = metadata.revision_id;
+  const before = await client.getDocumentMetadata(node.obj_token);
+  const revisionId = before.revision_id;
   if (revisionId === -1 || revisionId === '-1' || revisionId === undefined || revisionId === null) {
     fail('授权节点未返回精确 revision。', 8);
   }
-  const blocks = await client.listDocumentChildren(node.obj_token, revisionId);
-  const confirmed = await client.getDocumentMetadata(node.obj_token);
-  if (confirmed.revision_id !== revisionId) fail('授权节点读取期间 revision 已变化。', 8);
+  // 飞书只读身份读取最新正文必须使用 -1；显式历史 revision 可能要求编辑权限。
+  const blocks = await client.listDocumentChildren(node.obj_token, -1);
+  const after = await client.getDocumentMetadata(node.obj_token);
+  if (after.revision_id !== revisionId) fail('授权节点读取期间 revision 已变化。', 8);
   return {
     result: 'readable', node_ref: shortHash(node.node_token), space_ref: shortHash(node.space_id),
     object_type: node.obj_type, revision_id: revisionId, block_count: blocks.length,
@@ -107,8 +92,8 @@ async function runSmoke(options) {
   const client = new FeishuClient(API_BASE, token, {
     minimumDelay: Number(process.env.FEISHU_IMPORT_MIN_DELAY_MS ?? (TEST_MODE ? 0 : 650)),
   });
-  const scopes = localAiScopeDiagnostic(await client.listGrantedScopes());
-  if (!scopes.passed) fail('现有应用缺少节点、目录、Docx 或云空间正文的租户级只读能力。', 9);
+  const scopes = scopeDiagnostic(await client.listGrantedScopes(), 'verify');
+  if (!scopes.passed) fail('现有应用缺少节点、目录或 Docx 正文的租户级只读能力。', 9);
   const probe = await probeNodes({
     client, authorizedToken: options.authorizedToken, unauthorizedToken: options.unauthorizedToken,
   });
@@ -135,8 +120,7 @@ async function runCli(argv = process.argv.slice(2)) {
 }
 
 export {
-  assertUnauthorizedNode, isAccessDenied, localAiScopeDiagnostic, parseArguments, probeNodes,
-  readAuthorizedNode, runSmoke,
+  assertUnauthorizedNode, isAccessDenied, parseArguments, probeNodes, readAuthorizedNode, runSmoke,
 };
 
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
