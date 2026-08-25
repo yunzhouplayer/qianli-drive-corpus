@@ -27,7 +27,7 @@ Dir.mktmpdir("qianli-structure-validator-") do |root|
   human_path = "#{space_path}/00-面向人员/02-公司知识库空间与目录蓝图.md"
   directory_paths = [
     "#{space_path}/00-面向人员",
-    "#{space_path}/00-面向人员/模板"
+    "#{space_path}/00-面向人员/11-模板"
   ]
   directory_paths.each { |path| FileUtils.mkdir_p(File.join(root, path)) }
   File.write(File.join(root, human_path), "# 测试蓝图\n", encoding: "UTF-8")
@@ -46,7 +46,7 @@ Dir.mktmpdir("qianli-structure-validator-") do |root|
           "path" => directory_paths[0], "parent_directory_id" => nil
         },
         {
-          "directory_id" => "DIR-00-002", "name" => "模板",
+          "directory_id" => "DIR-00-002", "name" => "11-模板",
           "path" => directory_paths[1], "parent_directory_id" => "DIR-00-001"
         }
       ]

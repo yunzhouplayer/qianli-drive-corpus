@@ -151,7 +151,7 @@ findings:
       - maintaining_team 和 approver 无确认记录
   - id: PREP-CONTENT-001
     severity: suggestion
-    rule_source: 00-面向人员/09-AI友好内容写作规范.md
+    rule_source: 00-面向人员/05-AI友好内容写作规范.md
     message: 后续可补充执行时间戳和调用主体版本，以便精确计算权限变更传播时延。
     evidence:
       - 源文件 6.3 未验证范围
@@ -167,4 +167,4 @@ handoff:
   next_workflow: review-knowledge-admission
   artifacts:
     - 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md
-    - 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md.knowledge-preparation.yaml
+    - 00-知识库治理与索引/00-面向人员/10-验证记录/附件/2026-08-13-单节点权限验证/01-准备结果.yaml

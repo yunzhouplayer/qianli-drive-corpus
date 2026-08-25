@@ -3,7 +3,7 @@ workflow: review-knowledge-admission
 status: failed
 source:
   locator: 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md
-  metadata_locator: 00-知识库治理与索引/00-面向人员/10-验证记录/2026-08-13-飞书知识库单节点只读与权限变更验证报告.md.metadata-candidate.yaml
+  metadata_locator: 00-知识库治理与索引/00-面向人员/10-验证记录/附件/2026-08-13-单节点权限验证/02-元数据候选.yaml
   content_hash: sha256:7f8581de1c61d9996f108dcebeefd899f8d2c92651210ac11b7da49c39895a5b
 governance:
   root: 00-知识库治理与索引

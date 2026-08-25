@@ -1,18 +1,5 @@
-# 用途：为检索系统、AI Agent 和校验程序提供完整的知识空间与目录蓝图。
-# 权威边界：本文件是机器路径、稳定ID和目录级索引策略的权威来源；人员蓝图是可读视图。
-# 维护规则：新增目录使用未占用目录ID，不重排已有ID；管理员未任命时保持 null。
-# 人员标识：当前使用飞书通讯录姓名，实际成员与权限由飞书管理；出现同名人员时改用飞书用户ID。
-# kind：governance=治理目录，content=业务内容目录，archive=归档目录，project_template=项目模板。
-# access_policy：inherit=继承父级，restricted=按目录授权，strictly_restricted=严格授权。
-# index_policy：evaluate_document_rules=继续校验文档规则，require_explicit_approval=需专项审批，deny=禁止索引。
-# 顶层字段：schema_version=结构版本，updated_at=更新时间，source_human_blueprint=人员蓝图路径，spaces=知识空间列表。
-# 空间字段：space_id=稳定空间ID，name=显示名称，path=物理路径，purpose=定位，owners=主备管理员。
-# 空间策略：default_access=默认访问方式，security_default=默认安全等级，acl_inheritance=是否继承权限，default_index_policy=默认索引策略。
-# 目录字段：directory_id=稳定目录ID，parent_directory_id=父目录ID，active_knowledge_allowed=是否允许作为当前有效知识。
-# status：active=有效，planned=规划中，deprecated=已废弃。
-# owners.primary=主管理员，owners.backup=备用管理员；未任命时使用 null。
 schema_version: '1.0'
-updated_at: '2026-08-13'
+updated_at: '2026-08-19'
 source_human_blueprint: 00-知识库治理与索引/00-面向人员/02-公司知识库空间与目录蓝图.md
 spaces:
 - space_id: SPACE-KNOWLEDGE-GOVERNANCE
@@ -38,8 +25,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-00-002
-    name: 模板
-    path: 00-知识库治理与索引/00-面向人员/模板
+    name: 11-模板
+    path: 00-知识库治理与索引/00-面向人员/11-模板
     parent_directory_id: DIR-00-001
     kind: governance
     access_policy: inherit
@@ -1237,8 +1224,8 @@ spaces:
     status: active
     notes: 仅用于历史追溯，不作为当前有效知识来源。
 - space_id: SPACE-CROSS-FUNCTION
-  name: 08-跨部门协作空间
-  path: 08-跨部门协作空间
+  name: '08-跨部门协作空间'
+  path: '08-跨部门协作空间'
   purpose: 专项项目、联席会议和公司级协作过程资料。
   owners:
     primary: 凌棋峰
@@ -1251,7 +1238,7 @@ spaces:
   directories:
   - directory_id: DIR-08-001
     name: 00-专项项目
-    path: 08-跨部门协作空间/00-专项项目
+    path: '08-跨部门协作空间/00-专项项目'
     parent_directory_id: null
     kind: content
     access_policy: inherit
@@ -1259,8 +1246,8 @@ spaces:
     active_knowledge_allowed: true
     status: active
   - directory_id: DIR-08-002
-    name: '[项目名称]'
-    path: 08-跨部门协作空间/00-专项项目/[项目名称]
+    name: "[项目名称]"
+    path: '08-跨部门协作空间/00-专项项目/[项目名称]'
     parent_directory_id: DIR-08-001
     kind: project_template
     access_policy: inherit
@@ -1270,7 +1257,7 @@ spaces:
     notes: 目录模板，不作为实际业务知识来源。
   - directory_id: DIR-08-003
     name: 项目章程
-    path: 08-跨部门协作空间/00-专项项目/[项目名称]/项目章程
+    path: '08-跨部门协作空间/00-专项项目/[项目名称]/项目章程'
     parent_directory_id: DIR-08-002
     kind: project_template
     access_policy: inherit
@@ -1280,7 +1267,7 @@ spaces:
     notes: 目录模板，不作为实际业务知识来源。
   - directory_id: DIR-08-004
     name: 项目计划
-    path: 08-跨部门协作空间/00-专项项目/[项目名称]/项目计划
+    path: '08-跨部门协作空间/00-专项项目/[项目名称]/项目计划'
     parent_directory_id: DIR-08-002
     kind: project_template
     access_policy: inherit
@@ -1290,7 +1277,7 @@ spaces:
     notes: 目录模板，不作为实际业务知识来源。
   - directory_id: DIR-08-005
     name: 会议纪要
-    path: 08-跨部门协作空间/00-专项项目/[项目名称]/会议纪要
+    path: '08-跨部门协作空间/00-专项项目/[项目名称]/会议纪要'
     parent_directory_id: DIR-08-002
     kind: project_template
     access_policy: inherit
@@ -1300,7 +1287,7 @@ spaces:
     notes: 目录模板，不作为实际业务知识来源。
   - directory_id: DIR-08-006
     name: 交付物
-    path: 08-跨部门协作空间/00-专项项目/[项目名称]/交付物
+    path: '08-跨部门协作空间/00-专项项目/[项目名称]/交付物'
     parent_directory_id: DIR-08-002
     kind: project_template
     access_policy: inherit
@@ -1310,7 +1297,7 @@ spaces:
     notes: 目录模板，不作为实际业务知识来源。
   - directory_id: DIR-08-007
     name: 项目复盘
-    path: 08-跨部门协作空间/00-专项项目/[项目名称]/项目复盘
+    path: '08-跨部门协作空间/00-专项项目/[项目名称]/项目复盘'
     parent_directory_id: DIR-08-002
     kind: project_template
     access_policy: inherit
@@ -1320,7 +1307,7 @@ spaces:
     notes: 目录模板，不作为实际业务知识来源。
   - directory_id: DIR-08-008
     name: 01-联席会议纪要
-    path: 08-跨部门协作空间/01-联席会议纪要
+    path: '08-跨部门协作空间/01-联席会议纪要'
     parent_directory_id: null
     kind: content
     access_policy: inherit
@@ -1329,7 +1316,7 @@ spaces:
     status: active
   - directory_id: DIR-08-009
     name: 02-公司级流程
-    path: 08-跨部门协作空间/02-公司级流程
+    path: '08-跨部门协作空间/02-公司级流程'
     parent_directory_id: null
     kind: content
     access_policy: inherit
@@ -1338,7 +1325,7 @@ spaces:
     status: active
   - directory_id: DIR-08-010
     name: 03-知识分享
-    path: 08-跨部门协作空间/03-知识分享
+    path: '08-跨部门协作空间/03-知识分享'
     parent_directory_id: null
     kind: content
     access_policy: inherit
@@ -1347,7 +1334,7 @@ spaces:
     status: active
   - directory_id: DIR-08-011
     name: 99-归档
-    path: 08-跨部门协作空间/99-归档
+    path: '08-跨部门协作空间/99-归档'
     parent_directory_id: null
     kind: archive
     access_policy: inherit
