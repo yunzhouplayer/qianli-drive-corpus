@@ -17,7 +17,7 @@ import {
   redirectProposal, signatureForBlocks,
 } from './feishu-governance-coordinate.mjs';
 import {
-  blocksForContent, canonicalWikiUrl, resolvedLinksDigest,
+  blockContent, blocksForContent, canonicalWikiUrl, resolvedLinksDigest,
   scanProject, scopeDiagnostic,
 } from './feishu-governance-publish.mjs';
 
@@ -109,6 +109,12 @@ function blockHashes(blocks, identities) {
   return blocks.map((block) => sha256(normalizedBlockSignature(block, identities)));
 }
 
+function executionBlockHashes(blocks, identities) {
+  return blocks.map((block) => sha256(block.block_type === 14
+    ? `14:${blockContent(block)}`
+    : normalizedBlockSignature(block, identities)));
+}
+
 function prefixEqual(values, prefix) {
   return values.length >= prefix.length && prefix.every((value, index) => values[index] === value);
 }
@@ -153,7 +159,8 @@ function buildPayloads({ projectRoot, state, plan, manifestPath }) {
       fail(`当前 Git 提案与已确认计划不一致：${action.action_id}`, 8);
     }
     payloads.set(action.action_id, {
-      action, record, blocks, block_hashes: blockHashes(blocks, identities), identities,
+      action, record, blocks, block_hashes: blockHashes(blocks, identities),
+      execution_block_hashes: executionBlockHashes(blocks, identities), identities,
       parent_node_token: state.nodes[record.parent_path]?.node_token,
       git_sha256: gitSha256, resolved_links_sha256: resolvedLinksSha256,
       target_title: action.allowed_action === 'write_legacy_redirect'
@@ -236,6 +243,7 @@ async function readPageSnapshot(client, payload) {
   const node = await client.resolveNode(payload.record.node_token);
   return {
     revision_id: revisionId, blocks, block_hashes: blockHashes(blocks, payload.identities),
+    execution_block_hashes: executionBlockHashes(blocks, payload.identities),
     body_sha256: sha256(canonicalJson(blocks)), title: node.title || metadata.title,
     parent_node_ref: shortHash(node.parent_node_token || payload.parent_node_token || ''),
     node_ref: shortHash(node.node_token),
@@ -247,8 +255,10 @@ function classifySnapshot(snapshot, action, payload, entry) {
   if (snapshot.parent_node_ref !== action.expected_remote.parent_node_ref) {
     fail(`页面父节点已变化：${action.action_id}`, 8);
   }
-  const proposal = payload.block_hashes;
-  if (arrayEqual(snapshot.block_hashes, proposal)) return { state: 'final', appended: proposal.length };
+  const proposal = payload.execution_block_hashes || executionBlockHashes(payload.blocks, payload.identities);
+  if (arrayEqual(snapshot.execution_block_hashes, proposal)) {
+    return { state: 'final', appended: proposal.length };
+  }
   if (!entry.old_block_hashes) {
     if (snapshot.body_sha256 !== action.expected_remote.body_sha256
         || snapshot.revision_id !== action.expected_remote.revision_id
@@ -261,8 +271,27 @@ function classifySnapshot(snapshot, action, payload, entry) {
   }
   const old = entry.old_block_hashes;
   if (!prefixEqual(snapshot.block_hashes, old)) fail(`页面旧正文前缀已变化：${action.action_id}`, 8);
-  const suffix = snapshot.block_hashes.slice(old.length);
-  if (!prefixEqual(proposal, suffix)) fail(`页面新正文追加前缀未知：${action.action_id}`, 8);
+  const suffix = snapshot.execution_block_hashes.slice(old.length);
+  if (!prefixEqual(proposal, suffix)) {
+    const mismatch = suffix.findIndex((value, index) => proposal[index] !== value);
+    const actualBlock = snapshot.blocks[old.length + mismatch];
+    const expectedBlock = payload.blocks[mismatch];
+    const actualText = blockContent(actualBlock || {});
+    const expectedText = blockContent(expectedBlock || {});
+    let textMismatch = 0;
+    while (textMismatch < actualText.length && textMismatch < expectedText.length
+      && actualText[textMismatch] === expectedText[textMismatch]) textMismatch += 1;
+    fail(
+      `页面新正文追加前缀未知：${action.action_id}; `
+      + `suffix_blocks=${suffix.length}, proposal_blocks=${proposal.length}, mismatch_index=${mismatch}, `
+      + `actual_type=${actualBlock?.block_type ?? 'missing'}, expected_type=${expectedBlock?.block_type ?? 'missing'}, `
+      + `actual_hash_ref=${shortHash(suffix[mismatch] || '')}, expected_hash_ref=${shortHash(proposal[mismatch] || '')}, `
+      + `actual_text_length=${actualText.length}, expected_text_length=${expectedText.length}, `
+      + `text_mismatch_index=${textMismatch}, actual_codepoint=${actualText.codePointAt(textMismatch) ?? 'end'}, `
+      + `expected_codepoint=${expectedText.codePointAt(textMismatch) ?? 'end'}`,
+      8,
+    );
+  }
   return { state: suffix.length === proposal.length ? 'combined' : 'partial', appended: suffix.length };
 }
 
@@ -322,7 +351,9 @@ async function executePageAction({ client, state, payload, entry, persist }) {
   persist();
   await ensurePageTitle(client, state, payload, entry, persist);
   const final = await readPageSnapshot(client, payload);
-  if (!arrayEqual(final.block_hashes, payload.block_hashes) || final.title !== payload.target_title) {
+  const finalExpected = payload.execution_block_hashes
+    || executionBlockHashes(payload.blocks, payload.identities);
+  if (!arrayEqual(final.execution_block_hashes, finalExpected) || final.title !== payload.target_title) {
     fail(`页面最终读回失败：${action.action_id}`, 8);
   }
   entry.status = 'complete';
@@ -520,7 +551,7 @@ async function runCli(argv = process.argv.slice(2)) {
 }
 
 export {
-  CoordinateWriter, arrayEqual, blockHashes, buildPayloads, classifySnapshot,
+  CoordinateWriter, arrayEqual, blockHashes, buildPayloads, classifySnapshot, executionBlockHashes,
   executeDirectoryAction, executePageAction, finalizeState, loadPlan, parseArguments, prefixEqual,
 };
 

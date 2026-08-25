@@ -22,6 +22,12 @@ function textBlock(content) {
   return { block_type: 2, text: { elements: [{ text_run: { content, text_element_style: {} } }], style: {} } };
 }
 
+function codeBlock(elements) {
+  return { block_type: 14, code: { elements: elements.map((content) => ({
+    text_run: { content, text_element_style: {} },
+  })), style: { language: 39, wrap: true } } };
+}
+
 class FakeClient {
   constructor({ blocks, title = 'old.md', revision = 7 } = {}) {
     this.blocks = structuredClone(blocks || []);
@@ -114,6 +120,22 @@ await executePageAction({
 assert(resumedClient.blocks.length === proposalBlocks.length && resumedClient.writeRequests === 2,
   '追加后恢复只能删除旧正文并改名，不得重复追加');
 
+const codeProposal = [textBlock('marker'), codeBlock(['same code text'])];
+const splitCodeProposal = [textBlock('marker'), codeBlock(['same ', 'code ', 'text'])];
+const codePayload = {
+  ...payload, blocks: codeProposal, block_hashes: blockHashes(codeProposal, identities),
+};
+const splitCodeClient = new FakeClient({ blocks: [...oldBlocks, ...splitCodeProposal], revision: 8 });
+const splitCodeEntry = {
+  status: 'new_body_appending', old_block_hashes: blockHashes(oldBlocks, identities),
+  old_block_count: oldBlocks.length, old_body_sha256: sha256(canonicalJson(oldBlocks)),
+};
+await executePageAction({
+  client: splitCodeClient, state, payload: codePayload, entry: splitCodeEntry, persist: () => {},
+});
+assert(splitCodeClient.blocks.length === codeProposal.length && splitCodeClient.writeRequests === 2,
+  '飞书拆分同一代码块 text_run 时必须按连续文本恢复，不得重复追加');
+
 const driftClient = new FakeClient({ blocks: [textBlock('changed')] });
 await expectFailure(() => executePageAction({
   client: driftClient, state, payload, entry: { status: 'pending' }, persist: () => {},
@@ -190,7 +212,7 @@ console.log(JSON.stringify({
   cases: [
     'exact_revision_batches', 'append_interruption_resume', 'remote_drift_zero_write',
     'directory_rename_readback', 'atomic_state_projection', 'full_digest_gate',
-    'exact_revision_write_request',
+    'exact_revision_write_request', 'code_block_text_run_normalization',
   ],
   network: 'none', keychain_access: 'none',
 }, null, 2));
