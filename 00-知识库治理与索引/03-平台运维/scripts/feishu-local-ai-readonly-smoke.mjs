@@ -39,7 +39,7 @@ function parseArguments(argv) {
 
 function isAccessDenied(error) {
   return error instanceof GovernanceToolError
-    && ([401, 403, 404].includes(error.httpStatus) || [131006, 99991663].includes(error.apiCode));
+    && ([401, 403, 404].includes(error.httpStatus) || [131006, 1770032, 99991663].includes(error.apiCode));
 }
 
 async function readAuthorizedNode(client, nodeToken) {
@@ -64,15 +64,34 @@ async function readAuthorizedNode(client, nodeToken) {
 }
 
 async function assertUnauthorizedNode(client, nodeToken) {
+  let node;
   try {
-    await client.resolveNode(nodeToken);
+    node = await client.resolveNode(nodeToken);
   } catch (error) {
     if (isAccessDenied(error)) {
-      return { result: 'access_denied', node_ref: shortHash(nodeToken), existence_exposed: false };
+      return {
+        result: 'access_denied', node_ref: shortHash(nodeToken), node_metadata_visible: false,
+        body_readable: false, existence_exposed_to_ai: false,
+      };
     }
     throw error;
   }
-  fail('未授权对照节点可被应用读取，拒绝通过烟测。', 8);
+  if (node.obj_type !== 'docx' || !node.obj_token) {
+    fail('未授权对照节点元数据可见，但无法验证其正文访问边界。', 8);
+  }
+  try {
+    await client.getDocumentMetadata(node.obj_token);
+    await client.listDocumentChildren(node.obj_token, -1);
+  } catch (error) {
+    if (isAccessDenied(error)) {
+      return {
+        result: 'access_denied', node_ref: shortHash(nodeToken), node_metadata_visible: true,
+        body_readable: false, existence_exposed_to_ai: false,
+      };
+    }
+    throw error;
+  }
+  fail('未授权对照节点正文可被应用读取，拒绝通过烟测。', 8);
 }
 
 async function probeNodes({ client, authorizedToken, unauthorizedToken }) {

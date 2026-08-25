@@ -21,9 +21,13 @@ async function expectFailure(callback, pattern) {
 }
 
 class FakeClient {
-  constructor({ unauthorizedReadable = false, deniedError = null, revisionChanges = false } = {}) {
+  constructor({
+    unauthorizedReadable = false, unauthorizedBodyDenied = false,
+    deniedError = null, revisionChanges = false,
+  } = {}) {
     this.unauthorizedReadable = unauthorizedReadable;
     this.deniedError = deniedError;
+    this.unauthorizedBodyDenied = unauthorizedBodyDenied;
     this.revisionChanges = revisionChanges;
     this.metadataReads = 0;
   }
@@ -43,12 +47,16 @@ class FakeClient {
     throw new GovernanceToolError('拒绝访问', 6, { httpStatus: 403, apiCode: 99991663 });
   }
 
-  async getDocumentMetadata() {
+  async getDocumentMetadata(documentId) {
     this.metadataReads += 1;
+    if (documentId === 'document-other' && this.unauthorizedBodyDenied) return { revision_id: 3 };
     return { revision_id: this.revisionChanges && this.metadataReads > 1 ? 18 : 17 };
   }
 
-  async listDocumentChildren(_documentId, revisionId) {
+  async listDocumentChildren(documentId, revisionId) {
+    if (documentId === 'document-other' && this.unauthorizedBodyDenied) {
+      throw new GovernanceToolError('正文拒绝访问', 6, { httpStatus: 403, apiCode: 1770032 });
+    }
     assert(revisionId === -1, '只读身份必须使用 -1 读取最新正文');
     return [{ block_type: 2, text: { elements: [{ text_run: { content: 'private-test-body' } }] } }];
   }
@@ -67,7 +75,8 @@ const passed = await probeNodes({
 });
 assert(passed.authorized.result === 'readable' && passed.authorized.revision_id === 17,
   '授权节点必须读取精确版本正文');
-assert(passed.unauthorized.result === 'access_denied' && passed.unauthorized.existence_exposed === false,
+assert(passed.unauthorized.result === 'access_denied'
+  && passed.unauthorized.existence_exposed_to_ai === false,
   '未授权节点必须拒绝并隐藏存在性');
 const serialized = JSON.stringify(passed);
 assert(!serialized.includes('authorized-node-test') && !serialized.includes('private-test-body'),
@@ -82,6 +91,15 @@ const hiddenAsNotFound = await probeNodes({
 assert(hiddenAsNotFound.unauthorized.result === 'access_denied',
   '飞书以 131006 隐藏未授权 Wiki 节点时必须判定为不可访问');
 
+const metadataOnly = await probeNodes({
+  client: new FakeClient({ unauthorizedReadable: true, unauthorizedBodyDenied: true }),
+  authorizedToken: options.authorizedToken, unauthorizedToken: options.unauthorizedToken,
+});
+assert(metadataOnly.unauthorized.result === 'access_denied'
+  && metadataOnly.unauthorized.node_metadata_visible === true
+  && metadataOnly.unauthorized.body_readable === false,
+  '节点元数据可见但正文被拒绝时必须按正文不可访问处理');
+
 await expectFailure(() => probeNodes({
   client: new FakeClient({ revisionChanges: true }),
   authorizedToken: options.authorizedToken, unauthorizedToken: options.unauthorizedToken,
@@ -90,7 +108,7 @@ await expectFailure(() => probeNodes({
 await expectFailure(() => probeNodes({
   client: new FakeClient({ unauthorizedReadable: true }),
   authorizedToken: options.authorizedToken, unauthorizedToken: options.unauthorizedToken,
-}), /可被应用读取/);
+}), /正文可被应用读取/);
 
 await expectFailure(() => probeNodes({
   client: new FakeClient({
@@ -119,9 +137,10 @@ await expectFailure(async () => parseArguments([
 console.log(JSON.stringify({
   result: 'passed',
   cases: [
-    'authorized_exact_revision_read', 'unauthorized_access_denied', 'result_redaction',
+    'authorized_stable_latest_read', 'unauthorized_access_denied', 'result_redaction',
     'unexpected_access_blocked', 'non_permission_error_propagated', 'write_blocked_before_network',
     'distinct_node_gate', 'wiki_node_not_visible_denied', 'latest_revision_consistency_gate',
+    'metadata_visible_body_denied',
   ],
   network: 'none', keychain_access: 'none',
 }, null, 2));
