@@ -39,7 +39,7 @@ function parseArguments(argv) {
 
 function isAccessDenied(error) {
   return error instanceof GovernanceToolError
-    && ([401, 403, 404].includes(error.httpStatus) || error.apiCode === 99991663);
+    && ([401, 403, 404].includes(error.httpStatus) || [131006, 99991663].includes(error.apiCode));
 }
 
 async function readAuthorizedNode(client, nodeToken) {

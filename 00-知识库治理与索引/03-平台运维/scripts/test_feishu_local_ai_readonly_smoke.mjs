@@ -72,6 +72,15 @@ const serialized = JSON.stringify(passed);
 assert(!serialized.includes('authorized-node-test') && !serialized.includes('private-test-body'),
   '烟测结果不得包含节点 token 或正文');
 
+const hiddenAsNotFound = await probeNodes({
+  client: new FakeClient({
+    deniedError: new GovernanceToolError('节点不可见', 6, { httpStatus: 400, apiCode: 131006 }),
+  }),
+  authorizedToken: options.authorizedToken, unauthorizedToken: options.unauthorizedToken,
+});
+assert(hiddenAsNotFound.unauthorized.result === 'access_denied',
+  '飞书以 131006 隐藏未授权 Wiki 节点时必须判定为不可访问');
+
 await expectFailure(() => probeNodes({
   client: new FakeClient({ unauthorizedReadable: true }),
   authorizedToken: options.authorizedToken, unauthorizedToken: options.unauthorizedToken,
@@ -106,7 +115,7 @@ console.log(JSON.stringify({
   cases: [
     'authorized_exact_revision_read', 'unauthorized_access_denied', 'result_redaction',
     'unexpected_access_blocked', 'non_permission_error_propagated', 'write_blocked_before_network',
-    'distinct_node_gate',
+    'distinct_node_gate', 'wiki_node_not_visible_denied',
   ],
   network: 'none', keychain_access: 'none',
 }, null, 2));
