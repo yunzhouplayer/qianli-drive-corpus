@@ -731,9 +731,9 @@
           <table class="catalog-table" aria-label="知识文档列表">
             <thead><tr><th style="width:34%">文档名称</th><th style="width:13%">负责人</th><th style="width:13%">源版本</th><th style="width:22%">最近校验</th><th>治理状态</th></tr></thead>
             <tbody id="catalogRows">
-              <tr class="selected" data-title="测试功能点提取准出标准" data-owner="张伟" data-version="v3.2" data-state="需重新校验"><td><i class="ph ph-file-text"></i>测试功能点提取准出标准</td><td>张伟</td><td>v3.2</td><td>2026-08-26 11:23</td><td class="status-attention">需重新校验</td></tr>
-              <tr data-title="需求评审与跟踪规范" data-owner="李四" data-version="v2.5" data-state="已通过"><td><i class="ph ph-file-text"></i>需求评审与跟踪规范</td><td>李四</td><td>v2.5</td><td>2026-08-25 16:40</td><td>已通过</td></tr>
-              <tr data-title="测试用例设计规范" data-owner="王五" data-version="v4.1" data-state="已通过"><td><i class="ph ph-file-text"></i>测试用例设计规范</td><td>王五</td><td>v4.1</td><td>2026-08-24 15:18</td><td>已通过</td></tr>
+              <tr class="selected" data-title="测试功能点提取准出标准" data-owner="张伟" data-version="v3.2" data-state="需重新校验" data-resource-ref="wiki-node:governance-validation-vv-001" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>测试功能点提取准出标准</td><td>张伟</td><td>v3.2</td><td>2026-08-26 11:23</td><td class="status-attention">需重新校验</td></tr>
+              <tr data-title="需求评审与跟踪规范" data-owner="李四" data-version="v2.5" data-state="已通过" data-resource-ref="wiki-node:governance-validation-requirement-002" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>需求评审与跟踪规范</td><td>李四</td><td>v2.5</td><td>2026-08-25 16:40</td><td>已通过</td></tr>
+              <tr data-title="测试用例设计规范" data-owner="王五" data-version="v4.1" data-state="已通过" data-resource-ref="wiki-node:governance-validation-testcase-002" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>测试用例设计规范</td><td>王五</td><td>v4.1</td><td>2026-08-24 15:18</td><td>已通过</td></tr>
               <tr data-title="缺陷管理流程" data-owner="赵六" data-version="v1.8" data-state="已通过"><td><i class="ph ph-file-text"></i>缺陷管理流程</td><td>赵六</td><td>v1.8</td><td>2026-08-23 10:05</td><td>已通过</td></tr>
               <tr data-title="发布管理规范" data-owner="孙七" data-version="v2.2" data-state="已通过"><td><i class="ph ph-file-text"></i>发布管理规范</td><td>孙七</td><td>v2.2</td><td>2026-08-22 09:30</td><td>已通过</td></tr>
               <tr data-title="接口变更管理规范" data-owner="周八" data-version="v1.6" data-state="已通过"><td><i class="ph ph-file-text"></i>接口变更管理规范</td><td>周八</td><td>v1.6</td><td>2026-08-21 14:12</td><td>已通过</td></tr>
@@ -878,6 +878,10 @@
       <h2 id="permissionChangeTitle">发起飞书权限变更</h2>
       <p>此处只创建本地原型申请与影响预览；真实权限仍由飞书保存和执行，当前原型不会发送任何网络写入。</p>
       <section class="dialog-section">
+        <h3>当前目标</h3>
+        <dl class="detail-grid"><dt>资源</dt><dd id="permissionTargetLabel">测试功能点提取准出标准</dd><dt>稳定引用</dt><dd id="permissionTargetRef">wiki-node:governance-validation-vv-001</dd></dl>
+      </section>
+      <section class="dialog-section">
         <h3>目标与申请内容</h3>
         <div class="dialog-grid">
           <div class="dialog-field"><label for="permissionSubjectType">授权对象类型</label><select id="permissionSubjectType" name="subjectType"><option value="user">人员</option><option value="group">群组</option><option value="department">部门</option><option value="role">角色</option></select></div>
@@ -892,8 +896,8 @@
       </section>
       <section class="dialog-section">
         <h3>继承来源与前后差异</h3>
-        <div class="inheritance-guard"><strong>当前授权来源：继承自父目录</strong><span>继承权限不能在文档层伪造覆盖；当前文档级权限编辑已禁用。</span><button id="permissionDocumentLevelEditing" type="button" class="secondary-btn" disabled>文档层直接修改不可用</button><button id="permissionSourceContext" type="button" class="text-btn">前往父目录授权来源</button></div>
-        <dl class="impact-preview" style="margin-top:10px"><div><dt>变更前</dt><dd>继承自父目录 / 可编辑</dd></div><div><dt>变更后</dt><dd id="permissionAfterDiff">新增直接授权 / 可阅读</dd></div><div><dt>授权来源</dt><dd>02-测试与质量</dd></div><div><dt>AI 影响</dt><dd id="permissionImpactCopy">待规则预检</dd></div></dl>
+        <div class="inheritance-guard"><strong id="permissionInheritedSource">当前授权来源：继承自父目录</strong><span id="permissionScopeNotice">继承权限不能在文档层伪造覆盖；当前文档级权限编辑与提交已禁用。</span><button id="permissionDocumentLevelEditing" type="button" class="secondary-btn" disabled>文档层直接修改不可用</button><button id="permissionSourceContext" type="button" class="text-btn">前往父目录授权来源</button></div>
+        <dl class="impact-preview" style="margin-top:10px"><div><dt>变更前</dt><dd>继承自父目录 / 可编辑</dd></div><div><dt>变更后</dt><dd id="permissionAfterDiff">新增直接授权 / 可阅读</dd></div><div><dt>授权来源</dt><dd id="permissionImpactSource">02-测试与质量</dd></div><div><dt>AI 影响</dt><dd id="permissionImpactCopy">待规则预检</dd></div></dl>
       </section>
       <section class="dialog-section">
         <h3>风险预检（原型条件）</h3>
@@ -986,6 +990,14 @@
     const cacheVersion = document.getElementById('cacheVersion');
     const detailTabs = [...document.querySelectorAll('[data-detail-tab]')];
     const detailPanels = [...document.querySelectorAll('[data-detail-panel]')];
+    const initialCatalogRow = catalogRows[0];
+    let selectedCatalogResource = {
+      label: initialCatalogRow?.dataset.title || inspectorTitle.textContent,
+      ref: initialCatalogRow?.dataset.resourceRef || 'wiki-node:governance-validation-vv-001',
+      permissionSource: initialCatalogRow?.dataset.permissionSource || '02-测试与质量 / Validation & Verification',
+      permissionSourceRef: initialCatalogRow?.dataset.permissionSourceRef || 'wiki-directory:validation-quality',
+    };
+    let permissionTargetContext = { scope: 'document', ...selectedCatalogResource };
 
     function showDetailTab(tabName) {
       detailTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.detailTab === tabName));
@@ -1002,6 +1014,13 @@
       sourceVersion.textContent = row.dataset.state === '需重新校验' ? `${row.dataset.version}（最新：v3.3）` : row.dataset.version;
       cacheVersion.textContent = row.dataset.version;
       revisionAlert.style.display = row.dataset.state === '需重新校验' ? 'flex' : 'none';
+      selectedCatalogResource = {
+        label: row.dataset.title,
+        ref: row.dataset.resourceRef,
+        permissionSource: row.dataset.permissionSource,
+        permissionSourceRef: row.dataset.permissionSourceRef,
+      };
+      setPermissionTargetScope('document');
     }));
 
     document.getElementById('catalogSearch').addEventListener('input', event => {
@@ -1017,8 +1036,8 @@
     document.getElementById('retireDocument').addEventListener('click', () => openPrototypeDialog('documentRetireDialog'));
     document.getElementById('maintainDirectory').addEventListener('click', () => openPrototypeDialog('directoryMaintenanceDialog'));
 
-    const localPrototypeState = { lifecycleEvents: [] };
-    const localPermissionPrototypeState = { changeEvents: [] };
+    const localPrototypeState = { lifecycleEvents: [], permissionChangeEvents: [] };
+    window.knowledgeGovernancePrototypeState = localPrototypeState;
     document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => closePrototypeDialog(button.closest('dialog'))));
     document.getElementById('documentChangeForm').addEventListener('submit', event => {
       event.preventDefault();
@@ -1069,11 +1088,53 @@
       }[risk];
       document.querySelector('[data-permission-risk]').textContent = risk;
       document.querySelector('[data-permission-treatment]').textContent = treatment;
-      document.querySelector('[data-permission-submit]').disabled = risk === 'blocked';
+      document.querySelector('[data-permission-submit]').disabled = risk === 'blocked' || isInheritedDocumentContext();
       const afterDiff = document.getElementById('permissionAfterDiff');
       const impactCopy = document.getElementById('permissionImpactCopy');
       if (afterDiff) afterDiff.textContent = `${change.action === 'revoke' ? '撤销' : '申请'} ${change.permission === 'edit' ? '可编辑' : change.permission === 'manage' ? '可管理' : '可阅读'} 权限`;
       if (impactCopy) impactCopy.textContent = risk === 'blocked' ? '保持拒绝，等待飞书原生处理' : '审批后按飞书 ACL 回读结果失效或重建';
+    }
+
+    function isInheritedDocumentContext() {
+      return permissionTargetContext.scope === 'document';
+    }
+
+    function setPermissionTargetScope(scope) {
+      permissionTargetContext = scope === 'source-directory'
+        ? {
+            scope,
+            label: selectedCatalogResource.permissionSource,
+            ref: selectedCatalogResource.permissionSourceRef,
+            inheritedSource: selectedCatalogResource.permissionSource,
+          }
+        : {
+            scope: 'document',
+            label: selectedCatalogResource.label,
+            ref: selectedCatalogResource.ref,
+            inheritedSource: selectedCatalogResource.permissionSource,
+          };
+      const inheritedDocument = isInheritedDocumentContext();
+      const targetLabel = document.getElementById('permissionTargetLabel');
+      const targetRef = document.getElementById('permissionTargetRef');
+      const inheritedSource = document.getElementById('permissionInheritedSource');
+      const scopeNotice = document.getElementById('permissionScopeNotice');
+      const impactSource = document.getElementById('permissionImpactSource');
+      const sourceContextButton = document.getElementById('permissionSourceContext');
+      const documentLevelEditing = document.getElementById('permissionDocumentLevelEditing');
+      const action = document.getElementById('permissionAction');
+      const requestedPermission = document.getElementById('permissionRequested');
+      if (targetLabel) targetLabel.textContent = permissionTargetContext.label;
+      if (targetRef) targetRef.textContent = permissionTargetContext.ref;
+      if (inheritedSource) inheritedSource.textContent = inheritedDocument ? '当前授权来源：继承自父目录' : `当前变更上下文：${permissionTargetContext.label}`;
+      if (scopeNotice) scopeNotice.textContent = inheritedDocument
+        ? '继承权限不能在文档层伪造覆盖；当前文档级权限编辑与提交已禁用。'
+        : '已切换至父目录授权来源；申请将针对该目录创建，真实执行仍以飞书 ACL 回读为准。';
+      if (impactSource) impactSource.textContent = permissionTargetContext.inheritedSource;
+      if (documentLevelEditing) documentLevelEditing.disabled = true;
+      if (action) action.disabled = inheritedDocument;
+      if (requestedPermission) requestedPermission.disabled = inheritedDocument;
+      if (sourceContextButton) sourceContextButton.textContent = inheritedDocument ? '前往父目录授权来源' : '已在父目录授权来源';
+      renderPermissionImpact(readPermissionChange());
     }
 
     function readPermissionChange() {
@@ -1089,6 +1150,15 @@
         permission: document.getElementById('permissionRequested')?.value || 'read',
         action: document.getElementById('permissionAction')?.value || 'grant',
         subjectType: document.getElementById('permissionSubjectType')?.value || 'user',
+        subject: document.getElementById('permissionSubject')?.value || '匿名化对象（示例）',
+        effectiveAt: document.getElementById('permissionEffectiveAt')?.value || '',
+        expiryAt: document.getElementById('permissionExpiryAt')?.value || '',
+        reason: document.getElementById('permissionReason')?.value || '',
+        approvalRoute: document.getElementById('permissionApprovalRoute')?.value || '',
+        targetLabel: permissionTargetContext.label,
+        targetRef: permissionTargetContext.ref,
+        inheritedSource: permissionTargetContext.inheritedSource,
+        context: permissionTargetContext.scope,
       };
     }
 
@@ -1096,6 +1166,7 @@
     const permissionChangeForm = document.getElementById('permissionChangeForm');
     const requestPermissionChange = document.getElementById('requestPermissionChange');
     requestPermissionChange?.addEventListener('click', () => {
+      setPermissionTargetScope('document');
       renderPermissionImpact(readPermissionChange());
       openPrototypeDialog('permissionChangeDrawer');
     });
@@ -1103,19 +1174,23 @@
       document.getElementById(id)?.addEventListener('change', () => renderPermissionImpact(readPermissionChange()));
     });
     document.getElementById('permissionSourceContext')?.addEventListener('click', () => {
-      closePrototypeDialog(permissionChangeDrawer);
-      showToast('已切换至父目录授权来源；请在该来源发起权限变更（原型演示）');
+      setPermissionTargetScope('source-directory');
+      showToast('已切换至父目录授权来源；现在可为该目录提交申请（原型演示）');
     });
     permissionChangeForm?.addEventListener('submit', event => {
       event.preventDefault();
       if (!event.currentTarget.reportValidity()) return;
       const change = readPermissionChange();
+      if (isInheritedDocumentContext()) {
+        showToast('当前权限继承自父目录，不能在文档层提交；请先切换授权来源（原型演示）');
+        return;
+      }
       const risk = classifyPermissionRisk(change);
       if (risk === 'blocked') {
         showToast('该申请必须在飞书原生权限页处理（原型演示）');
         return;
       }
-      localPermissionPrototypeState.changeEvents.push({ type: 'permission-change-request', risk, ...change });
+      localPrototypeState.permissionChangeEvents.push({ type: 'permission-change-request', ...change, risk });
       closePrototypeDialog(permissionChangeDrawer);
       showToast(`已记录 ${risk} 风险权限变更申请；真实执行需飞书审批与 ACL 回读（原型演示）`);
     });
