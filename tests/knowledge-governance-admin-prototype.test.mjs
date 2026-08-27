@@ -30,3 +30,19 @@ test('prototype uses only the approved Qianli palette', () => {
     assert.ok(approved.has(color.toLowerCase()), `unapproved color literal: ${color}`);
   }
 });
+
+test('lifecycle dialogs are present and retirement is non-destructive', () => {
+  for (const id of ['documentChangeDialog', 'documentRetireDialog', 'directoryMaintenanceDialog']) {
+    assert.match(html, new RegExp(`id=[\"']${id}[\"']`));
+  }
+  assert.match(html, /受控退役/);
+  assert.match(html, /不会删除飞书原文/);
+});
+
+test('directory maintenance previews inheritance impact', () => {
+  assert.match(html, /新建目录/);
+  assert.match(html, /重命名目录/);
+  assert.match(html, /移动目录/);
+  assert.match(html, /停用目录/);
+  assert.match(html, /权限继承影响/);
+});

@@ -465,6 +465,37 @@
     }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+    .prototype-dialog {
+      width: min(680px, calc(100vw - 32px));
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      padding: 0;
+      color: var(--ink);
+      background: var(--white);
+      box-shadow: 0 18px 48px var(--gray-300);
+    }
+    .prototype-dialog::backdrop { background: var(--gray-300); }
+    .dialog-form { padding: 24px; }
+    .dialog-form h2 { margin: 0; color: var(--black); font-size: 19px; }
+    .dialog-form > p { margin: 9px 0 0; color: var(--gray-700); font-size: 13px; line-height: 1.6; }
+    .dialog-section { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--gray-200); }
+    .dialog-section h3 { margin: 0 0 10px; color: var(--gray-900); font-size: 14px; }
+    .dialog-options { display: grid; gap: 10px; }
+    .dialog-options label, .confirmation-check { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 1.45; }
+    .dialog-options input, .confirmation-check input { accent-color: var(--red); }
+    .impact-list { margin: 0; padding-left: 20px; color: var(--gray-700); font-size: 13px; line-height: 1.8; }
+    .dialog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .dialog-field { display: grid; gap: 7px; }
+    .dialog-field label { color: var(--gray-900); font-size: 13px; font-weight: 700; }
+    .dialog-field input, .dialog-field select { min-height: 38px; border: 1px solid var(--gray-300); border-radius: 4px; padding: 0 10px; color: var(--ink); background: var(--white); }
+    .safety-copy { margin: 0; padding: 12px; border-left: 3px solid var(--red); background: var(--red-soft); color: var(--ink) !important; }
+    .impact-preview { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0; }
+    .impact-preview div { padding: 10px; border: 1px solid var(--gray-200); background: var(--gray-100); }
+    .impact-preview dt { color: var(--gray-700); font-size: 11px; }
+    .impact-preview dd { margin: 4px 0 0; color: var(--gray-900); font-size: 13px; font-weight: 700; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    .dialog-actions button:disabled { cursor: not-allowed; opacity: 0.5; }
+
     @media (max-width: 1180px) {
       :root { --sidebar-w: 182px; }
       .brand { padding-left: 16px; padding-right: 16px; }
@@ -730,6 +761,75 @@
     </div>
   </section>
 
+  <dialog id="documentChangeDialog" class="prototype-dialog" aria-labelledby="documentChangeTitle">
+    <form id="documentChangeForm" class="dialog-form">
+      <h2 id="documentChangeTitle">登记文档变更</h2>
+      <p>将为当前选中文档创建本地治理变更记录，不修改飞书原文。</p>
+      <section class="dialog-section">
+        <h3>变更类型</h3>
+        <div class="dialog-options">
+          <label><input type="radio" name="changeType" value="source_revision" checked>飞书正文版本变化</label>
+          <label><input type="radio" name="changeType" value="metadata">治理元数据变更</label>
+          <label><input type="radio" name="changeType" value="directory_move">目录位置变更</label>
+        </div>
+      </section>
+      <section class="dialog-section">
+        <h3>影响预览</h3>
+        <ul class="impact-list">
+          <li>源版本重新校验</li>
+          <li>审批状态过期</li>
+          <li>原始缓存失效</li>
+          <li>LLM Wiki 重新编译</li>
+          <li>MCP 可用性更新</li>
+        </ul>
+      </section>
+      <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button type="submit" class="primary-btn">保存变更</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="documentRetireDialog" class="prototype-dialog" aria-labelledby="documentRetireTitle">
+    <form id="documentRetireForm" class="dialog-form">
+      <h2 id="documentRetireTitle">受控退役</h2>
+      <p>为当前选中文档登记受控退役，并保留可审计的治理记录。</p>
+      <section class="dialog-section">
+        <div class="dialog-grid">
+          <div class="dialog-field"><label for="retireReason">退役原因</label><input id="retireReason" required placeholder="请说明退役原因"></div>
+          <div class="dialog-field"><label for="retireEffectiveAt">生效时间</label><input id="retireEffectiveAt" type="datetime-local" required></div>
+        </div>
+      </section>
+      <section class="dialog-section"><p class="safety-copy">退役将停止准入状态、快照、索引与 MCP 使用，不会删除飞书原文；飞书原文删除需在其权威来源中另行确认。</p></section>
+      <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button type="submit" class="primary-btn">确认受控退役</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="directoryMaintenanceDialog" class="prototype-dialog" aria-labelledby="directoryMaintenanceTitle">
+    <form id="directoryMaintenanceForm" class="dialog-form">
+      <h2 id="directoryMaintenanceTitle">目录维护</h2>
+      <p>目录操作仅更新本地原型状态；权限域仍以飞书权威来源为准。</p>
+      <section class="dialog-section">
+        <h3>操作</h3>
+        <div class="dialog-options">
+          <label><input type="radio" name="directoryOperation" value="create" checked>新建目录</label>
+          <label><input type="radio" name="directoryOperation" value="rename">重命名目录</label>
+          <label><input type="radio" name="directoryOperation" value="move">移动目录</label>
+          <label><input type="radio" name="directoryOperation" value="disable">停用目录</label>
+        </div>
+      </section>
+      <section class="dialog-section">
+        <h3>影响预览</h3>
+        <dl class="impact-preview">
+          <div><dt>受影响文档数</dt><dd>18 份</dd></div>
+          <div><dt>继承权限域</dt><dd>产品与技术管理中心</dd></div>
+          <div><dt>待准入记录</dt><dd>3 条</dd></div>
+          <div><dt>已编译代际</dt><dd>2 个</dd></div>
+          <div><dt>MCP 来源</dt><dd>18 个</dd></div>
+        </dl>
+      </section>
+      <section class="dialog-section"><label class="confirmation-check"><input id="directoryImpactConfirmed" type="checkbox">我已确认权限继承影响</label></section>
+      <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button id="directoryMaintenanceConfirm" type="submit" class="primary-btn" disabled>确认目录维护</button></div>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
@@ -749,6 +849,15 @@
       screens.forEach(screen => screen.classList.toggle('active', screen.id === id));
       tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.target === id));
       window.location.hash = id;
+    }
+
+    function openPrototypeDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      if (dialog instanceof HTMLDialogElement) dialog.showModal();
+    }
+
+    function closePrototypeDialog(dialog) {
+      if (dialog instanceof HTMLDialogElement) dialog.close();
     }
 
     tabs.forEach(tab => tab.addEventListener('click', () => showScreen(tab.dataset.target)));
@@ -804,6 +913,38 @@
       });
     });
     document.getElementById('filterButton').addEventListener('click', () => showToast('筛选条件：当前目录 · 全部治理状态'));
+    document.getElementById('createDocument').addEventListener('click', () => showScreen('wizard'));
+    document.getElementById('changeDocument').addEventListener('click', () => openPrototypeDialog('documentChangeDialog'));
+    document.getElementById('retireDocument').addEventListener('click', () => openPrototypeDialog('documentRetireDialog'));
+    document.getElementById('maintainDirectory').addEventListener('click', () => openPrototypeDialog('directoryMaintenanceDialog'));
+
+    const localPrototypeState = { lifecycleEvents: [] };
+    document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => closePrototypeDialog(button.closest('dialog'))));
+    document.getElementById('documentChangeForm').addEventListener('submit', event => {
+      event.preventDefault();
+      localPrototypeState.lifecycleEvents.push({ type: 'document-change', changeType: new FormData(event.currentTarget).get('changeType') });
+      closePrototypeDialog(event.currentTarget.closest('dialog'));
+      showToast('文档变更已记录到本地原型状态（原型演示）');
+    });
+    document.getElementById('documentRetireForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      localPrototypeState.lifecycleEvents.push({ type: 'document-retire', reason: document.getElementById('retireReason').value, effectiveAt: document.getElementById('retireEffectiveAt').value });
+      closePrototypeDialog(event.currentTarget.closest('dialog'));
+      showToast('受控退役已记录到本地原型状态（原型演示）');
+    });
+    const directoryImpactConfirmed = document.getElementById('directoryImpactConfirmed');
+    const directoryMaintenanceConfirm = document.getElementById('directoryMaintenanceConfirm');
+    directoryImpactConfirmed.addEventListener('change', () => {
+      directoryMaintenanceConfirm.disabled = !directoryImpactConfirmed.checked;
+    });
+    document.getElementById('directoryMaintenanceForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!directoryImpactConfirmed.checked) return;
+      localPrototypeState.lifecycleEvents.push({ type: 'directory-maintenance', operation: new FormData(event.currentTarget).get('directoryOperation') });
+      closePrototypeDialog(event.currentTarget.closest('dialog'));
+      showToast('目录维护已记录到本地原型状态（原型演示）');
+    });
     document.getElementById('openSource').addEventListener('click', () => showToast('真实系统将在权限校验后打开飞书原文'));
     document.getElementById('revalidate').addEventListener('click', event => {
       event.currentTarget.disabled = true;
