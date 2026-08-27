@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>千里智行知识库管理后台原型</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+  <style>
+    :root {
+      --red: #db0052;
+      --red-soft: #fff2f6;
+      --red-border: #f4b7cc;
+      --black: #000;
+      --ink: #202020;
+      --gray-900: #404040;
+      --gray-700: #666;
+      --gray-500: #7f7f7f;
+      --gray-300: #bfbfbf;
+      --gray-200: #dedede;
+      --gray-100: #f2f2f2;
+      --white: #fff;
+      --switcher-h: 46px;
+      --header-h: 68px;
+      --sidebar-w: 218px;
+      font-family: "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--white);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 2px;
+    }
+
+    .prototype-switcher {
+      height: var(--switcher-h);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+      position: relative;
+      z-index: 20;
+    }
+    .prototype-switcher__label {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-right: 5px;
+    }
+    .view-tab {
+      height: 30px;
+      padding: 0 14px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--gray-700);
+      background: transparent;
+      font-size: 13px;
+    }
+    .view-tab:hover { background: var(--gray-100); color: var(--black); }
+    .view-tab.active {
+      border-color: var(--red);
+      color: var(--red);
+      background: var(--red-soft);
+      font-weight: 700;
+    }
+    .prototype-badge {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .prototype-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: calc(100vh - var(--switcher-h));
+      background: var(--white);
+    }
+    .screen.active { display: block; }
+
+    .product-header {
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+    .brand {
+      width: var(--sidebar-w);
+      height: 100%;
+      padding: 8px 22px;
+      display: flex;
+      align-items: center;
+      border-right: 1px solid var(--gray-200);
+      flex: 0 0 auto;
+    }
+    .brand img { width: 136px; height: 50px; object-fit: contain; object-position: left center; }
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      padding-left: 22px;
+      color: var(--black);
+      white-space: nowrap;
+    }
+    .header-actions {
+      margin-left: auto;
+      padding-right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: var(--gray-700);
+      font-size: 13px;
+    }
+    .header-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .header-chip i { font-size: 19px; color: var(--black); }
+    .user-chip {
+      border-left: 1px solid var(--gray-200);
+      padding-left: 20px;
+      display: grid;
+      grid-template-columns: auto auto;
+      align-items: center;
+      gap: 2px 10px;
+    }
+    .user-chip strong { color: var(--black); font-size: 14px; }
+    .user-chip small { color: var(--gray-500); font-size: 11px; }
+
+    .workspace { height: calc(100% - var(--header-h)); display: flex; min-height: 0; }
+    .sidebar {
+      width: var(--sidebar-w);
+      flex: 0 0 auto;
+      border-right: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      background: var(--white);
+      overflow-y: auto;
+    }
+    .sidebar-section-title {
+      padding: 24px 24px 11px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .nav-item, .subnav-item {
+      position: relative;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--gray-900);
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-item { min-height: 52px; padding: 0 23px; font-size: 15px; }
+    .nav-item i { width: 20px; font-size: 20px; color: var(--gray-900); }
+    .nav-item:hover, .subnav-item:hover { background: var(--gray-100); }
+    .nav-item.active, .subnav-item.active { color: var(--red); font-weight: 700; }
+    .nav-item.active::before, .subnav-item.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 9px;
+      bottom: 9px;
+      width: 3px;
+      background: var(--red);
+    }
+    .nav-bottom { margin-top: auto; padding-bottom: 12px; }
+    .subnav { margin-left: 36px; border-left: 1px solid var(--gray-200); }
+    .subnav-item { height: 42px; padding-left: 27px; font-size: 14px; }
+
+    .content { flex: 1; min-width: 0; overflow: auto; padding: 20px; background: #fafafa; }
+    .panel { background: var(--white); border: 1px solid var(--gray-200); border-radius: 5px; }
+    .panel-title { font-size: 17px; font-weight: 700; color: var(--black); }
+    .primary-btn, .secondary-btn, .text-btn {
+      min-height: 38px;
+      border-radius: 4px;
+      padding: 0 20px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .primary-btn { color: var(--white); background: var(--red); border-color: var(--red); }
+    .primary-btn:hover { background: #bd0047; }
+    .secondary-btn { color: var(--ink); background: var(--white); border-color: var(--gray-300); }
+    .secondary-btn:hover { background: var(--gray-100); }
+    .text-btn { color: var(--red); background: transparent; padding-left: 8px; padding-right: 8px; }
+    .text-btn:hover { background: var(--red-soft); }
+
+    /* Dashboard */
+    .dashboard-content { display: grid; grid-template-rows: auto minmax(330px, 1fr) auto; gap: 16px; }
+    .metric-panel { padding: 17px 20px 13px; }
+    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 14px; }
+    .metric {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 17px;
+      min-height: 74px;
+      border-right: 1px solid var(--gray-200);
+    }
+    .metric:last-child { border-right: 0; }
+    .metric i { font-size: 34px; color: var(--gray-900); }
+    .metric-label { color: var(--gray-700); font-size: 14px; }
+    .metric-value { color: var(--red); font-size: 28px; margin-top: 3px; line-height: 1; }
+    .queue-panel { overflow: hidden; display: flex; flex-direction: column; }
+    .panel-toolbar {
+      height: 57px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .panel-toolbar .primary-btn { margin-left: auto; }
+    .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+    .data-table th {
+      height: 40px;
+      color: var(--gray-700);
+      background: #fbfbfb;
+      text-align: left;
+      font-weight: 400;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 15px;
+    }
+    .data-table td {
+      height: 44px;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--gray-900);
+    }
+    .data-table tbody tr { cursor: pointer; }
+    .data-table tbody tr:hover { background: #fafafa; }
+    .data-table tbody tr.selected { background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); }
+    .status-attention { color: var(--red) !important; font-weight: 700; }
+    .status-normal { color: var(--gray-900); }
+    .table-footer {
+      margin-top: auto;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      gap: 12px;
+      color: var(--gray-700);
+      font-size: 13px;
+    }
+    .page-current { border: 1px solid var(--red); color: var(--red); border-radius: 3px; padding: 3px 8px; }
+    .pipeline-panel { padding: 17px 20px 15px; }
+    .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 17px; }
+    .pipeline-step { position: relative; display: flex; gap: 12px; min-height: 76px; align-items: flex-start; }
+    .pipeline-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 20px;
+      left: 74%;
+      right: 6%;
+      height: 2px;
+      background: var(--red);
+    }
+    .step-icon {
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--gray-200);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+    .step-icon i { font-size: 21px; }
+    .pipeline-copy strong { display: block; font-size: 14px; color: var(--gray-900); }
+    .pipeline-copy b { display: block; margin-top: 3px; font-size: 21px; color: var(--gray-900); }
+    .pipeline-copy small { display: block; margin-top: 5px; color: var(--gray-500); }
+
+    /* Wizard */
+    .wizard-workspace { flex-direction: column; }
+    .wizard-progress {
+      height: 94px;
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 0 34px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+    .wizard-step {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      color: var(--gray-500);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .wizard-step::after {
+      content: "";
+      position: absolute;
+      right: -30%;
+      width: 60%;
+      height: 1px;
+      top: 50%;
+      background: var(--gray-300);
+    }
+    .wizard-step:last-child::after { display: none; }
+    .wizard-step.done, .wizard-step.active { color: var(--black); }
+    .wizard-step.active::before {
+      content: "";
+      position: absolute;
+      left: 23%;
+      right: 23%;
+      bottom: 0;
+      height: 3px;
+      background: var(--red);
+    }
+    .step-number {
+      width: 35px;
+      height: 35px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--gray-300);
+      border-radius: 50%;
+      background: var(--white);
+      color: var(--gray-500);
+    }
+    .wizard-step.done .step-number { border-color: var(--black); color: var(--black); }
+    .wizard-step.active .step-number { border-color: var(--red); background: var(--red); color: var(--white); }
+    .wizard-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1.06fr; gap: 18px; padding: 18px 22px; overflow: auto; background: #fafafa; }
+    .wizard-card { padding: 20px; }
+    .wizard-card h2 { margin: 0 0 18px; font-size: 17px; }
+    .source-box { border: 1px solid var(--gray-200); padding: 18px; display: grid; grid-template-columns: 75px 1fr; gap: 16px; }
+    .source-icon { border-right: 1px solid var(--gray-200); display: grid; place-items: center; }
+    .source-icon i { font-size: 47px; color: var(--gray-900); }
+    .source-meta h3 { margin: 0 0 7px; font-size: 17px; color: var(--black); }
+    .source-meta p { margin: 5px 0; color: var(--gray-700); font-size: 12px; }
+    .source-meta .tag { display: inline-block; padding: 3px 7px; background: var(--gray-100); color: var(--gray-700); font-size: 11px; }
+    .check-title { margin: 20px 0 9px; font-weight: 700; }
+    .check-list { border: 1px solid var(--gray-200); }
+    .check-row { min-height: 62px; display: grid; grid-template-columns: 32px 125px 1fr; align-items: center; padding: 9px 15px; border-bottom: 1px solid var(--gray-200); }
+    .check-row:last-child { border-bottom: 0; }
+    .check-row i { font-size: 22px; color: var(--gray-900); }
+    .check-row.warning i, .check-row.warning strong { color: var(--red); }
+    .check-row strong { font-size: 13px; }
+    .check-row small { color: var(--gray-500); line-height: 1.55; }
+    .footnote { margin: 14px 0 0; font-size: 12px; color: var(--gray-500); }
+    .form-note { margin-left: 7px; color: var(--gray-500); font-size: 11px; font-weight: 400; }
+    .form-grid { display: grid; gap: 13px; }
+    .form-field { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 10px; }
+    .form-field label { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+    .required { color: var(--red); }
+    .form-field select, .form-field input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--gray-200);
+      border-radius: 3px;
+      color: var(--gray-700);
+      background: var(--white);
+      padding: 0 12px;
+    }
+    .form-field input[readonly] { background: var(--gray-100); }
+    .route-box { border: 1px solid var(--gray-200); padding: 13px; display: flex; align-items: center; gap: 11px; color: var(--gray-900); }
+    .route-box i { font-size: 23px; }
+    .permission-note { margin-top: 14px; border: 1px solid var(--gray-200); padding: 13px 15px; display: grid; grid-template-columns: 28px 1fr; gap: 10px; }
+    .permission-note i { font-size: 24px; }
+    .permission-note strong { display: block; font-size: 13px; }
+    .permission-note small { display: block; margin-top: 4px; color: var(--gray-500); }
+    .wizard-footer { height: 76px; flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 24px; border-top: 1px solid var(--gray-200); background: var(--white); }
+    .wizard-footer button { min-width: 140px; height: 44px; }
+
+    /* Catalog */
+    .catalog-workspace { display: grid; grid-template-columns: 310px minmax(500px, 1fr) 450px; height: calc(100% - var(--header-h)); }
+    .catalog-pane { min-width: 0; overflow: auto; border-right: 1px solid var(--gray-200); background: var(--white); }
+    .catalog-pane:last-child { border-right: 0; }
+    .pane-header { min-height: 66px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--gray-200); }
+    .pane-header strong { font-size: 14px; }
+    .space-tree { padding: 12px 0 40px; }
+    .tree-group { margin-bottom: 10px; }
+    .tree-space, .tree-child { display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: transparent; color: var(--gray-900); text-align: left; }
+    .tree-space { height: 42px; padding: 0 16px; font-size: 13px; font-weight: 700; }
+    .tree-child { min-height: 39px; padding: 0 12px 0 49px; font-size: 12px; }
+    .tree-space:hover, .tree-child:hover { background: var(--gray-100); }
+    .tree-child.active { color: var(--red); background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); font-weight: 700; }
+    .tree-space i, .tree-child i { font-size: 17px; }
+    .list-toolbar { height: 66px; display: flex; align-items: center; gap: 15px; padding: 0 18px; border-bottom: 1px solid var(--gray-200); }
+    .search-wrap { flex: 1; position: relative; }
+    .search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--gray-500); font-size: 18px; }
+    .search-wrap input { width: 100%; height: 40px; border: 1px solid var(--gray-200); border-radius: 3px; padding: 0 12px 0 39px; color: var(--gray-900); }
+    .filter-btn { border: 0; background: transparent; color: var(--gray-700); padding: 9px 4px; display: flex; gap: 6px; align-items: center; }
+    .filter-btn i { font-size: 19px; }
+    .lifecycle-actions { height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 18px; border-bottom: 1px solid var(--gray-200); }
+    .lifecycle-actions .primary-btn, .lifecycle-actions .secondary-btn { min-height: 32px; padding: 0 13px; font-size: 12px; }
+    .lifecycle-actions .primary-btn { display: inline-flex; align-items: center; gap: 5px; }
+    .danger-outline { color: var(--ink); border-color: var(--gray-300); }
+    .catalog-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+    .catalog-table th { height: 44px; text-align: left; font-weight: 400; color: var(--gray-700); padding: 0 11px; border-bottom: 1px solid var(--gray-200); }
+    .catalog-table td { height: 52px; padding: 0 11px; border-bottom: 1px solid var(--gray-200); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .catalog-table tbody tr { cursor: pointer; }
+    .catalog-table tbody tr:hover { background: #fafafa; }
+    .catalog-table tbody tr.selected { background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); }
+    .catalog-table td:first-child i { margin-right: 7px; color: var(--gray-700); }
+    .catalog-footer { height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-top: 1px solid var(--gray-200); color: var(--gray-700); font-size: 12px; }
+    .pages { display: flex; gap: 13px; align-items: center; }
+    .inspector { padding: 18px 22px 34px; }
+    .inspector h2 { margin: 0 0 16px; font-size: 20px; line-height: 1.35; color: var(--black); }
+    .detail-tabs { display: flex; align-items: center; gap: 16px; margin: 0 0 16px; border-bottom: 1px solid var(--gray-200); }
+    .detail-tab { min-height: 34px; padding: 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--gray-700); font-size: 12px; }
+    .detail-tab:hover { color: var(--black); }
+    .detail-tab.active { color: var(--red); border-bottom-color: var(--red); font-weight: 700; }
+    .revision-alert { border: 1px solid var(--red); background: var(--red-soft); color: var(--red); padding: 12px 14px; display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; }
+    .revision-alert i { font-size: 20px; }
+    .inspector-actions { margin: 12px 0 6px; display: flex; align-items: center; gap: 16px; }
+    .inspector-actions .primary-btn { min-width: 132px; }
+    .permission-caption { color: var(--gray-500); font-size: 11px; margin: 8px 0 16px; }
+    .detail-section { border-top: 1px solid var(--gray-200); padding-top: 15px; margin-top: 15px; }
+    .detail-section h3 { margin: 0 0 13px; font-size: 14px; }
+    .detail-grid { display: grid; grid-template-columns: 112px 1fr; row-gap: 10px; font-size: 12px; }
+    .detail-grid dt { color: var(--gray-700); }
+    .detail-grid dd { margin: 0; color: var(--gray-900); }
+    .audit-list { position: relative; display: grid; gap: 17px; }
+    .audit-list::before { content: ""; position: absolute; top: 5px; bottom: 8px; left: 4px; width: 1px; background: var(--gray-300); }
+    .audit-item { position: relative; display: grid; grid-template-columns: 112px 45px 1fr; gap: 8px; padding-left: 17px; font-size: 11px; line-height: 1.45; }
+    .audit-item::before { content: ""; position: absolute; left: 0; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--gray-500); }
+    .audit-item.urgent::before { background: var(--red); }
+    .audit-item time, .audit-item .actor { color: var(--gray-700); }
+    .audit-item strong { display: block; font-size: 11px; }
+    .audit-item small { color: var(--gray-500); }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 16px);
+      min-width: 280px;
+      max-width: 560px;
+      padding: 12px 16px;
+      border: 1px solid var(--gray-300);
+      background: var(--black);
+      color: var(--white);
+      font-size: 13px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: 180ms ease;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 1180px) {
+      :root { --sidebar-w: 182px; }
+      .brand { padding-left: 16px; padding-right: 16px; }
+      .brand img { width: 120px; }
+      .catalog-workspace { grid-template-columns: 240px minmax(430px, 1fr) 370px; }
+      .metric { gap: 10px; }
+      .wizard-body { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="prototype-switcher" aria-label="原型视图切换">
+    <span class="prototype-switcher__label">原型视图</span>
+    <button class="view-tab active" data-target="dashboard">治理态势工作台</button>
+    <button class="view-tab" data-target="wizard">入库申请向导</button>
+    <button class="view-tab" data-target="catalog">知识目录控制台</button>
+    <span class="prototype-badge">静态交互原型 · 不连接真实飞书数据</span>
+  </nav>
+
+  <section id="dashboard" class="screen active" aria-label="治理态势工作台">
+    <header class="product-header">
+      <div class="brand"><img src="prototype-assets/qianli-logo.png" alt="千里科技 AFARI"></div>
+      <div class="header-title">知识库治理工作台</div>
+      <div class="header-actions">
+        <span class="header-chip">governance_validation <i class="ph ph-caret-down"></i></span>
+        <span class="header-chip"><i class="ph ph-user-circle"></i>郎文 <i class="ph ph-caret-down"></i></span>
+      </div>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar">
+        <button class="nav-item active"><i class="ph ph-squares-four"></i>总览</button>
+        <button class="nav-item" data-jump="wizard"><i class="ph ph-file-plus"></i>入库申请</button>
+        <button class="nav-item" data-jump="catalog"><i class="ph ph-shield-check"></i>文档治理</button>
+        <button class="nav-item"><i class="ph ph-git-branch"></i>审批跟踪</button>
+        <button class="nav-item"><i class="ph ph-database"></i>编译与索引</button>
+        <button class="nav-item"><i class="ph ph-clipboard-text"></i>审计记录</button>
+        <div class="nav-bottom">
+          <button class="nav-item"><i class="ph ph-gear"></i>系统设置</button>
+          <button class="nav-item"><i class="ph ph-sign-out"></i>退出登录</button>
+        </div>
+      </aside>
+      <main class="content dashboard-content">
+        <section class="panel metric-panel">
+          <div class="panel-title">今日待处理</div>
+          <div class="metric-grid">
+            <div class="metric"><i class="ph ph-file-text"></i><div><div class="metric-label">待审批</div><div class="metric-value">12</div></div></div>
+            <div class="metric"><i class="ph ph-warning-octagon"></i><div><div class="metric-label">规则异常</div><div class="metric-value">3</div></div></div>
+            <div class="metric"><i class="ph ph-cube"></i><div><div class="metric-label">待编译</div><div class="metric-value">5</div></div></div>
+            <div class="metric"><i class="ph ph-lock-key"></i><div><div class="metric-label">权限失效</div><div class="metric-value">1</div></div></div>
+          </div>
+        </section>
+
+        <section class="panel queue-panel">
+          <div class="panel-toolbar">
+            <div class="panel-title">入库申请待审批（12）</div>
+            <button id="reviewNext" class="primary-btn">审查下一份</button>
+          </div>
+          <table class="data-table" aria-label="入库申请待审批列表">
+            <thead><tr><th style="width:27%">文档名称</th><th style="width:24%">来源空间</th><th style="width:10%">申请人</th><th style="width:17%">变更时间</th><th style="width:14%">治理状态</th><th>风险</th></tr></thead>
+            <tbody>
+              <tr class="selected"><td>测试功能点提取准出标准</td><td>产品与技术管理中心/测试平台组</td><td>张伟</td><td>2026-08-27 09:41</td><td class="status-attention">待审批</td><td class="status-attention">高</td></tr>
+              <tr><td>接口自动化测试规范说明书</td><td>产品与技术管理中心/测试平台组</td><td>李四</td><td>2026-08-27 09:16</td><td class="status-attention">待审批</td><td>中</td></tr>
+              <tr><td>QRoad 自动驾驶数据标注规范 v1.2</td><td>数据智能中心/数据平台组</td><td>王五</td><td>2026-08-27 08:52</td><td class="status-attention">规则异常</td><td class="status-attention">高</td></tr>
+              <tr><td>数据脱敏与隐私保护指引</td><td>信息安全中心/合规组</td><td>赵六</td><td>2026-08-27 08:21</td><td class="status-attention">待审批</td><td>中</td></tr>
+              <tr><td>仿真平台场景库管理规范</td><td>智能驾驶中心/仿真平台组</td><td>孙七</td><td>2026-08-27 08:03</td><td class="status-attention">待编译</td><td>中</td></tr>
+              <tr><td>代码提交与评审规范</td><td>研发效能中心/研发工具组</td><td>周八</td><td>2026-08-27 07:44</td><td class="status-attention">待审批</td><td>低</td></tr>
+            </tbody>
+          </table>
+          <div class="table-footer"><span>共 12 条</span><span class="page-current">1</span><span>2</span><i class="ph ph-caret-right"></i></div>
+        </section>
+
+        <section class="panel pipeline-panel">
+          <div class="panel-title">治理流程进展（最近 7 天）</div>
+          <div class="pipeline">
+            <div class="pipeline-step"><span class="step-icon"><i class="ph ph-file-text"></i></span><span class="pipeline-copy"><strong>来源空间修订</strong><b>48</b><small>较上周 ↑ 12</small></span></div>
+            <div class="pipeline-step"><span class="step-icon"><i class="ph ph-shield-warning"></i></span><span class="pipeline-copy"><strong>自动化检查</strong><b>48</b><small>较上周 ↑ 10</small></span></div>
+            <div class="pipeline-step"><span class="step-icon"><i class="ph ph-user-circle-check"></i></span><span class="pipeline-copy"><strong>飞书审批</strong><b>26</b><small>较上周 ↑ 6</small></span></div>
+            <div class="pipeline-step"><span class="step-icon"><i class="ph ph-cube"></i></span><span class="pipeline-copy"><strong>快照编译入库</strong><b>21</b><small>较上周 ↑ 5</small></span></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <section id="wizard" class="screen" aria-label="入库申请向导">
+    <header class="product-header">
+      <div class="brand"><img src="prototype-assets/qianli-logo.png" alt="千里科技 AFARI"></div>
+      <div class="header-title">知识入库申请</div>
+      <div class="header-actions">
+        <span class="header-chip"><i class="ph ph-bell"></i>消息</span>
+        <span class="user-chip"><strong>张伟</strong><i class="ph ph-caret-down"></i><small>文档所有者｜产品部</small></span>
+      </div>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-section-title">知识治理</div>
+        <button class="nav-item" data-jump="dashboard"><i class="ph ph-squares-four"></i>总览</button>
+        <button class="nav-item active"><i class="ph ph-tray-arrow-down"></i>入库管理</button>
+        <div class="subnav">
+          <button class="subnav-item active">入库申请</button>
+          <button class="subnav-item">我的申请</button>
+          <button class="subnav-item">待我处理</button>
+          <button class="subnav-item">已处理</button>
+        </div>
+        <button class="nav-item" data-jump="catalog"><i class="ph ph-notebook"></i>知识资产</button>
+        <button class="nav-item"><i class="ph ph-book-open-text"></i>标准与规范</button>
+        <button class="nav-item"><i class="ph ph-list-bullets"></i>受控字典</button>
+        <button class="nav-item"><i class="ph ph-file-search"></i>审计日志</button>
+        <button class="nav-item"><i class="ph ph-gear"></i>设置</button>
+      </aside>
+      <div class="workspace wizard-workspace">
+        <div class="wizard-progress">
+          <div class="wizard-step done"><span class="step-number">1</span><span>选择飞书文档</span></div>
+          <div class="wizard-step done"><span class="step-number">2</span><span>自动检查</span></div>
+          <div class="wizard-step active"><span class="step-number">3</span><span>填写元数据</span></div>
+          <div class="wizard-step"><span class="step-number">4</span><span>发起审批</span></div>
+        </div>
+        <form id="admissionForm" class="workspace wizard-workspace">
+          <div class="wizard-body">
+            <section class="panel wizard-card">
+              <h2>文档来源</h2>
+              <div class="source-box">
+                <div class="source-icon"><i class="ph ph-file-text"></i></div>
+                <div class="source-meta">
+                  <h3>Validation &amp; Verification</h3>
+                  <span class="tag">飞书知识库</span>
+                  <p><i class="ph ph-link"></i> https://qianli-drive.feishu.cn/wiki/DFJawf…</p>
+                  <p>版本：v12　　最后更新：2026-08-27 09:32</p>
+                </div>
+              </div>
+              <div class="check-title">检查摘要</div>
+              <div class="check-list">
+                <div class="check-row"><i class="ph ph-check-circle"></i><strong>命名规范<br>通过</strong><small>符合知识库命名规则</small></div>
+                <div class="check-row"><i class="ph ph-check-circle"></i><strong>正文结构<br>通过</strong><small>正文结构完整</small></div>
+                <div class="check-row"><i class="ph ph-check-circle"></i><strong>敏感信息<br>通过</strong><small>未检测到敏感信息</small></div>
+                <div class="check-row warning"><i class="ph ph-warning-circle"></i><strong>受控字典<br>需确认</strong><small>检测到 3 处未命中受控字典项，请在右侧确认业务域和系统平台</small></div>
+              </div>
+              <p class="footnote">以上为自动检查结果，提交后将由人工进一步审核。</p>
+            </section>
+            <section class="panel wizard-card">
+              <h2>填写元数据 <span class="form-note"><span class="required">*</span> 为必填项</span></h2>
+              <div class="form-grid">
+                <div class="form-field"><label for="businessDomain">业务域 <span class="required">*</span></label><select id="businessDomain" required><option value="">请选择业务域</option><option>测试与质量</option><option>产品研发</option><option>数据智能</option></select></div>
+                <div class="form-field"><label for="platform">系统与平台 <span class="required">*</span></label><select id="platform" required><option value="">请选择系统与平台</option><option>Validation &amp; Verification</option><option>运营管理系统</option><option>移动出行客户端</option></select></div>
+                <div class="form-field"><label for="retention">保留期限 <span class="required">*</span></label><select id="retention" required><option value="">请选择保留期限</option><option>有效期内持续保留</option><option>三年</option><option>永久</option></select></div>
+                <div class="form-field"><label for="aiScope">AI 使用范围 <span class="required">*</span></label><select id="aiScope" required><option value="">请选择 AI 使用范围</option><option>继承飞书权限后可用于检索</option><option>仅人工检索</option><option>禁止用于 AI</option></select></div>
+                <div class="form-field"><label for="owner">文档所有者 <span class="required">*</span></label><input id="owner" value="张伟（产品部）" required></div>
+                <div class="form-field"><label>权限来源 <span class="required">*</span></label><input value="访问权限以飞书源文档为准" readonly></div>
+                <div class="form-field"><label>审批人 <span class="required">*</span></label><div class="route-box"><i class="ph ph-user"></i>空间管理员 <i class="ph ph-arrow-right"></i><i class="ph ph-user"></i>知识治理负责人</div></div>
+              </div>
+              <div class="permission-note"><i class="ph ph-shield-check"></i><div><strong>访问权限以飞书源文档为准</strong><small>入库后不会改变源文档的可见范围与协作权限。</small></div></div>
+            </section>
+          </div>
+          <footer class="wizard-footer">
+            <button id="saveDraft" type="button" class="secondary-btn">保存草稿</button>
+            <button type="submit" class="primary-btn">下一步</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="catalog" class="screen" aria-label="知识目录控制台">
+    <header class="product-header">
+      <div class="brand" style="width:310px"><img src="prototype-assets/qianli-logo.png" alt="千里科技 AFARI"></div>
+      <div class="header-title">知识目录控制台</div>
+      <div class="header-actions">
+        <span class="header-chip">governance_validation <i class="ph ph-caret-down"></i></span>
+        <span class="header-chip">知识空间管理员 <i class="ph ph-caret-down"></i></span>
+      </div>
+    </header>
+    <div class="catalog-workspace">
+      <aside class="catalog-pane">
+        <div class="pane-header"><strong>知识空间</strong></div>
+        <div class="space-tree">
+          <div class="tree-group">
+            <button class="tree-space"><i class="ph ph-folder"></i>00-知识库治理与索引</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>00-治理制度与规范</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>01-索引与元数据规范</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>02-质量评估与校验规范</button>
+          </div>
+          <div class="tree-group">
+            <button class="tree-space"><i class="ph ph-folder"></i>01-公司公共知识库</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>00-公司介绍</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>01-制度流程</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>02-人力资源</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>03-财务与法务</button>
+          </div>
+          <div class="tree-group">
+            <button class="tree-space"><i class="ph ph-folder-open"></i>02-产品与技术管理中心知识库</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>00-产品管理</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>01-需求管理</button>
+            <button class="tree-child active"><i class="ph ph-folder-open"></i>02-测试与质量 / Validation &amp; Verification</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>03-技术与架构</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>04-研发效能</button>
+          </div>
+        </div>
+      </aside>
+      <main class="catalog-pane" style="display:flex;flex-direction:column">
+        <div class="list-toolbar">
+          <label class="search-wrap"><i class="ph ph-magnifying-glass"></i><input id="catalogSearch" aria-label="搜索文档" placeholder="搜索文档、空间或负责人"></label>
+          <button id="filterButton" class="filter-btn"><i class="ph ph-funnel"></i>筛选</button>
+        </div>
+        <div class="lifecycle-actions" aria-label="文档生命周期操作">
+          <button id="createDocument" class="primary-btn"><i class="ph ph-plus"></i>新增</button>
+          <button id="changeDocument" class="secondary-btn">变更</button>
+          <button id="retireDocument" class="secondary-btn danger-outline">退役</button>
+          <button id="maintainDirectory" class="secondary-btn">目录维护</button>
+        </div>
+        <div style="flex:1;overflow:auto">
+          <table class="catalog-table" aria-label="知识文档列表">
+            <thead><tr><th style="width:34%">文档名称</th><th style="width:13%">负责人</th><th style="width:13%">源版本</th><th style="width:22%">最近校验</th><th>治理状态</th></tr></thead>
+            <tbody id="catalogRows">
+              <tr class="selected" data-title="测试功能点提取准出标准" data-owner="张伟" data-version="v3.2" data-state="需重新校验"><td><i class="ph ph-file-text"></i>测试功能点提取准出标准</td><td>张伟</td><td>v3.2</td><td>2026-08-26 11:23</td><td class="status-attention">需重新校验</td></tr>
+              <tr data-title="需求评审与跟踪规范" data-owner="李四" data-version="v2.5" data-state="已通过"><td><i class="ph ph-file-text"></i>需求评审与跟踪规范</td><td>李四</td><td>v2.5</td><td>2026-08-25 16:40</td><td>已通过</td></tr>
+              <tr data-title="测试用例设计规范" data-owner="王五" data-version="v4.1" data-state="已通过"><td><i class="ph ph-file-text"></i>测试用例设计规范</td><td>王五</td><td>v4.1</td><td>2026-08-24 15:18</td><td>已通过</td></tr>
+              <tr data-title="缺陷管理流程" data-owner="赵六" data-version="v1.8" data-state="已通过"><td><i class="ph ph-file-text"></i>缺陷管理流程</td><td>赵六</td><td>v1.8</td><td>2026-08-23 10:05</td><td>已通过</td></tr>
+              <tr data-title="发布管理规范" data-owner="孙七" data-version="v2.2" data-state="已通过"><td><i class="ph ph-file-text"></i>发布管理规范</td><td>孙七</td><td>v2.2</td><td>2026-08-22 09:30</td><td>已通过</td></tr>
+              <tr data-title="接口变更管理规范" data-owner="周八" data-version="v1.6" data-state="已通过"><td><i class="ph ph-file-text"></i>接口变更管理规范</td><td>周八</td><td>v1.6</td><td>2026-08-21 14:12</td><td>已通过</td></tr>
+              <tr data-title="性能测试规范" data-owner="吴九" data-version="v2.0" data-state="已通过"><td><i class="ph ph-file-text"></i>性能测试规范</td><td>吴九</td><td>v2.0</td><td>2026-08-20 17:45</td><td>已通过</td></tr>
+              <tr data-title="自动化测试规范" data-owner="郑十" data-version="v3.0" data-state="已通过"><td><i class="ph ph-file-text"></i>自动化测试规范</td><td>郑十</td><td>v3.0</td><td>2026-08-19 11:02</td><td>已通过</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="catalog-footer"><span>共 128 条</span><span class="pages"><span>10 条/页</span><i class="ph ph-caret-left"></i><span class="page-current">1</span><span>2</span><span>3</span><span>…</span><span>13</span><i class="ph ph-caret-right"></i></span></div>
+      </main>
+      <aside class="catalog-pane inspector">
+        <h2 id="inspectorTitle">测试功能点提取准出标准</h2>
+        <div class="detail-tabs" role="tablist" aria-label="文档治理详情">
+          <button class="detail-tab active" data-detail-tab="overview">治理概览</button>
+          <button class="detail-tab" data-detail-tab="permissions">飞书权限</button>
+          <button class="detail-tab" data-detail-tab="changes">变更记录</button>
+          <button class="detail-tab" data-detail-tab="audit">审计轨迹</button>
+        </div>
+        <div id="revisionAlert" class="revision-alert"><i class="ph ph-warning-circle"></i><span>源文档有新版本</span></div>
+        <div class="inspector-actions"><button id="revalidate" class="primary-btn">重新校验</button><button id="openSource" class="text-btn">查看飞书原文</button></div>
+        <p class="permission-caption">访问权限继承飞书源文档</p>
+        <section class="detail-section">
+          <h3>治理概览</h3>
+          <dl class="detail-grid">
+            <dt>权威来源</dt><dd>飞书知识库</dd>
+            <dt>来源版本</dt><dd id="sourceVersion">v3.2（最新：v3.3）</dd>
+            <dt>缓存版本</dt><dd id="cacheVersion">v3.2</dd>
+            <dt>飞书权限域</dt><dd>千里智行 / 产品与技术管理中心</dd>
+            <dt>准入状态</dt><dd id="admissionState">需重新校验</dd>
+            <dt>审批记录</dt><dd>AP-20260820-0017</dd>
+            <dt>元数据完整度</dt><dd>92%（23/25）</dd>
+            <dt>快照状态</dt><dd>已生成（2026-08-26 11:23）</dd>
+            <dt>LLM Wiki 编译</dt><dd>已完成（2026-08-26 11:30）</dd>
+            <dt>MCP 可用性</dt><dd>不可用（因源文档版本变更）</dd>
+          </dl>
+        </section>
+        <section class="detail-section">
+          <h3>审计轨迹</h3>
+          <div class="audit-list">
+            <div class="audit-item urgent"><time>2026-08-26 11:30</time><span class="actor">系统</span><div><strong class="status-attention">检测到源文档有新版本（v3.3）</strong><small>触发重新校验</small></div></div>
+            <div class="audit-item"><time>2026-08-26 11:23</time><span class="actor">系统</span><div><strong>完成校验：需重新校验</strong><small>缓存版本 v3.2</small></div></div>
+            <div class="audit-item"><time>2026-08-20 14:10</time><span class="actor">张伟</span><div><strong>审批通过</strong><small>审批单号：AP-20260820-0017</small></div></div>
+            <div class="audit-item"><time>2026-08-20 13:55</time><span class="actor">系统</span><div><strong>提交审批</strong><small>发起人：张伟</small></div></div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const screens = [...document.querySelectorAll('.screen')];
+    const tabs = [...document.querySelectorAll('.view-tab')];
+    const toast = document.getElementById('toast');
+    let toastTimer;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2300);
+    }
+
+    function showScreen(id) {
+      screens.forEach(screen => screen.classList.toggle('active', screen.id === id));
+      tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.target === id));
+      window.location.hash = id;
+    }
+
+    tabs.forEach(tab => tab.addEventListener('click', () => showScreen(tab.dataset.target)));
+    document.querySelectorAll('[data-jump]').forEach(button => button.addEventListener('click', () => showScreen(button.dataset.jump)));
+    const initial = window.location.hash.slice(1);
+    if (screens.some(screen => screen.id === initial)) showScreen(initial);
+
+    document.querySelectorAll('#dashboard tbody tr').forEach(row => {
+      row.addEventListener('click', () => {
+        document.querySelectorAll('#dashboard tbody tr').forEach(item => item.classList.remove('selected'));
+        row.classList.add('selected');
+      });
+    });
+    document.getElementById('reviewNext').addEventListener('click', () => {
+      const selected = document.querySelector('#dashboard tbody tr.selected');
+      const title = selected?.cells[0]?.textContent || '下一份文档';
+      showToast(`已打开“${title}”的准入审查工作区（原型演示）`);
+    });
+
+    document.getElementById('saveDraft').addEventListener('click', () => showToast('草稿已保存到本地原型状态'));
+    document.getElementById('admissionForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      const steps = document.querySelectorAll('#wizard .wizard-step');
+      steps[2].classList.remove('active');
+      steps[2].classList.add('done');
+      steps[3].classList.add('active');
+      showToast('元数据校验通过，可以发起飞书审批（原型演示）');
+    });
+
+    const catalogRows = [...document.querySelectorAll('#catalogRows tr')];
+    const inspectorTitle = document.getElementById('inspectorTitle');
+    const revisionAlert = document.getElementById('revisionAlert');
+    const admissionState = document.getElementById('admissionState');
+    const sourceVersion = document.getElementById('sourceVersion');
+    const cacheVersion = document.getElementById('cacheVersion');
+
+    catalogRows.forEach(row => row.addEventListener('click', () => {
+      catalogRows.forEach(item => item.classList.remove('selected'));
+      row.classList.add('selected');
+      inspectorTitle.textContent = row.dataset.title;
+      admissionState.textContent = row.dataset.state;
+      sourceVersion.textContent = row.dataset.state === '需重新校验' ? `${row.dataset.version}（最新：v3.3）` : row.dataset.version;
+      cacheVersion.textContent = row.dataset.version;
+      revisionAlert.style.display = row.dataset.state === '需重新校验' ? 'flex' : 'none';
+    }));
+
+    document.getElementById('catalogSearch').addEventListener('input', event => {
+      const query = event.target.value.trim().toLowerCase();
+      catalogRows.forEach(row => {
+        const haystack = `${row.dataset.title} ${row.dataset.owner}`.toLowerCase();
+        row.style.display = haystack.includes(query) ? '' : 'none';
+      });
+    });
+    document.getElementById('filterButton').addEventListener('click', () => showToast('筛选条件：当前目录 · 全部治理状态'));
+    document.getElementById('openSource').addEventListener('click', () => showToast('真实系统将在权限校验后打开飞书原文'));
+    document.getElementById('revalidate').addEventListener('click', event => {
+      event.currentTarget.disabled = true;
+      event.currentTarget.textContent = '校验中…';
+      revisionAlert.querySelector('span').textContent = '校验任务已启动';
+      showToast('已创建只读重新校验任务（原型演示）');
+      setTimeout(() => {
+        event.currentTarget.disabled = false;
+        event.currentTarget.textContent = '重新校验';
+      }, 1800);
+    });
+  </script>
+</body>
+</html>
