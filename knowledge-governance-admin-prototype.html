@@ -853,7 +853,10 @@
 
     function openPrototypeDialog(dialogId) {
       const dialog = document.getElementById(dialogId);
-      if (dialog instanceof HTMLDialogElement) dialog.showModal();
+      if (dialog instanceof HTMLDialogElement) {
+        if (dialogId === 'directoryMaintenanceDialog') resetDirectoryMaintenanceConfirmation();
+        dialog.showModal();
+      }
     }
 
     function closePrototypeDialog(dialog) {
@@ -935,6 +938,12 @@
     });
     const directoryImpactConfirmed = document.getElementById('directoryImpactConfirmed');
     const directoryMaintenanceConfirm = document.getElementById('directoryMaintenanceConfirm');
+    const directoryMaintenanceDialog = document.getElementById('directoryMaintenanceDialog');
+    function resetDirectoryMaintenanceConfirmation() {
+      directoryImpactConfirmed.checked = false;
+      directoryMaintenanceConfirm.disabled = true;
+    }
+    directoryMaintenanceDialog.addEventListener('close', resetDirectoryMaintenanceConfirmation);
     directoryImpactConfirmed.addEventListener('change', () => {
       directoryMaintenanceConfirm.disabled = !directoryImpactConfirmed.checked;
     });

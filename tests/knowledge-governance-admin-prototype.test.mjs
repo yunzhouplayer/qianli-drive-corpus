@@ -1,8 +1,77 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 
 const html = readFileSync(new URL('../knowledge-governance-admin-prototype.html', import.meta.url), 'utf8');
+
+function createBrowserFreePrototype() {
+  class FakeElement {
+    constructor() {
+      this.listeners = new Map();
+      this.classList = { add() {}, remove() {}, toggle() {} };
+      this.style = {};
+      this.dataset = {};
+      this.value = '';
+      this.checked = false;
+      this.disabled = false;
+      this.textContent = '';
+      this.formData = {};
+    }
+
+    addEventListener(type, handler) {
+      this.listeners.set(type, [...(this.listeners.get(type) ?? []), handler]);
+    }
+
+    dispatch(type) {
+      let prevented = false;
+      const event = { currentTarget: this, preventDefault: () => { prevented = true; } };
+      for (const handler of this.listeners.get(type) ?? []) handler(event);
+      return { prevented };
+    }
+
+    closest(selector) {
+      return selector === 'dialog' ? this.dialog : null;
+    }
+
+    querySelector() {
+      return new FakeElement();
+    }
+
+    reportValidity() {
+      return true;
+    }
+  }
+
+  class FakeDialog extends FakeElement {
+    showModal() { this.showModalCalls = (this.showModalCalls ?? 0) + 1; }
+    close() { this.closeCalls = (this.closeCalls ?? 0) + 1; this.dispatch('close'); }
+  }
+
+  class FakeFormData {
+    constructor(form) { this.form = form; }
+    get(name) { return this.form.formData[name] ?? null; }
+  }
+
+  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate'];
+  const elements = Object.fromEntries(ids.map(id => [id, new FakeElement()]));
+  for (const id of ['documentChangeDialog', 'documentRetireDialog', 'directoryMaintenanceDialog']) elements[id] = new FakeDialog();
+  elements.documentChangeForm.dialog = elements.documentChangeDialog;
+  elements.documentRetireForm.dialog = elements.documentRetireDialog;
+  elements.directoryMaintenanceForm.dialog = elements.directoryMaintenanceDialog;
+  elements.documentChangeForm.formData.changeType = 'source_revision';
+  elements.directoryMaintenanceForm.formData.directoryOperation = 'create';
+
+  const window = { location: { hash: '' } };
+  const document = {
+    getElementById(id) { return elements[id]; },
+    querySelectorAll() { return []; },
+  };
+  const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1];
+  assert.ok(script, 'prototype script must be present');
+  vm.runInNewContext(script, { document, window, HTMLDialogElement: FakeDialog, FormData: FakeFormData, clearTimeout() {}, setTimeout() { return 1; } });
+  return { elements, window };
+}
 
 test('prototype keeps the three approved views', () => {
   for (const id of ['dashboard', 'wizard', 'catalog']) {
@@ -45,4 +114,47 @@ test('directory maintenance previews inheritance impact', () => {
   assert.match(html, /移动目录/);
   assert.match(html, /停用目录/);
   assert.match(html, /权限继承影响/);
+});
+
+test('lifecycle actions are wired to the wizard and their local dialogs', () => {
+  assert.match(html, /getElementById\('createDocument'\)\.addEventListener\('click', \(\) => showScreen\('wizard'\)\)/);
+  assert.match(html, /getElementById\('changeDocument'\)\.addEventListener\('click', \(\) => openPrototypeDialog\('documentChangeDialog'\)\)/);
+  assert.match(html, /getElementById\('retireDocument'\)\.addEventListener\('click', \(\) => openPrototypeDialog\('documentRetireDialog'\)\)/);
+  assert.match(html, /getElementById\('maintainDirectory'\)\.addEventListener\('click', \(\) => openPrototypeDialog\('directoryMaintenanceDialog'\)\)/);
+});
+
+test('lifecycle dialog submits are local-only and notify the operator', () => {
+  assert.match(html, /const localPrototypeState = \{ lifecycleEvents: \[\] \}/);
+  assert.match(html, /localPrototypeState\.lifecycleEvents\.push/g);
+  assert.match(html, /原型演示/);
+  assert.doesNotMatch(html, /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|<form[^>]+\baction=/i);
+});
+
+test('directory maintenance resets permission acknowledgement whenever its dialog opens or closes', () => {
+  assert.match(html, /function resetDirectoryMaintenanceConfirmation\(\)\s*\{[\s\S]*directoryImpactConfirmed\.checked = false;[\s\S]*directoryMaintenanceConfirm\.disabled = true;/);
+  assert.match(html, /if \(dialogId === 'directoryMaintenanceDialog'\) resetDirectoryMaintenanceConfirmation\(\);/);
+  assert.match(html, /directoryMaintenanceDialog\.addEventListener\('close', resetDirectoryMaintenanceConfirmation\)/);
+  assert.match(html, /directoryMaintenanceConfirm\.disabled = !directoryImpactConfirmed\.checked;/);
+});
+
+test('browser-free lifecycle interactions open dialogs, retain local-only behavior, and require fresh confirmation', () => {
+  const { elements, window } = createBrowserFreePrototype();
+  elements.createDocument.dispatch('click');
+  assert.equal(window.location.hash, 'wizard');
+  elements.changeDocument.dispatch('click');
+  elements.retireDocument.dispatch('click');
+  elements.maintainDirectory.dispatch('click');
+  assert.equal(elements.documentChangeDialog.showModalCalls, 1);
+  assert.equal(elements.documentRetireDialog.showModalCalls, 1);
+  assert.equal(elements.directoryMaintenanceDialog.showModalCalls, 1);
+  assert.equal(elements.directoryImpactConfirmed.checked, false);
+  assert.equal(elements.directoryMaintenanceConfirm.disabled, true);
+
+  elements.directoryImpactConfirmed.checked = true;
+  elements.directoryImpactConfirmed.dispatch('change');
+  assert.equal(elements.directoryMaintenanceConfirm.disabled, false);
+  assert.equal(elements.directoryMaintenanceForm.dispatch('submit').prevented, true);
+  assert.match(elements.toast.textContent, /原型演示/);
+  assert.equal(elements.directoryImpactConfirmed.checked, false);
+  assert.equal(elements.directoryMaintenanceConfirm.disabled, true);
 });
