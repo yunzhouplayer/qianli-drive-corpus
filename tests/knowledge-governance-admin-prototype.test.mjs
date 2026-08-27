@@ -53,18 +53,20 @@ function createBrowserFreePrototype() {
     get(name) { return this.form.formData[name] ?? null; }
   }
 
-  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate'];
+  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate', 'requestPermissionChange', 'permissionChangeForm', 'permissionSubjectType', 'permissionAction', 'permissionRequested', 'permissionExternal', 'permissionPublicLink', 'permissionOwnerTransfer', 'permissionSpaceAdmin', 'permissionSecureLabel', 'permissionPolicyBlocked', 'permissionInheritanceUnknown', 'permissionRemovesLastAdmin', 'permissionSourceContext', 'permissionAfterDiff', 'permissionImpactCopy'];
   const elements = Object.fromEntries(ids.map(id => [id, new FakeElement()]));
-  for (const id of ['documentChangeDialog', 'documentRetireDialog', 'directoryMaintenanceDialog']) elements[id] = new FakeDialog();
+  for (const id of ['documentChangeDialog', 'documentRetireDialog', 'directoryMaintenanceDialog', 'permissionChangeDrawer']) elements[id] = new FakeDialog();
   elements.documentChangeForm.dialog = elements.documentChangeDialog;
   elements.documentRetireForm.dialog = elements.documentRetireDialog;
   elements.directoryMaintenanceForm.dialog = elements.directoryMaintenanceDialog;
+  elements.permissionChangeForm.dialog = elements.permissionChangeDrawer;
   elements.documentChangeForm.formData.changeType = 'source_revision';
   elements.directoryMaintenanceForm.formData.directoryOperation = 'create';
 
   const window = { location: { hash: '' } };
   const document = {
     getElementById(id) { return elements[id]; },
+    querySelector() { return new FakeElement(); },
     querySelectorAll() { return []; },
   };
   const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1];
@@ -135,6 +137,46 @@ test('directory maintenance resets permission acknowledgement whenever its dialo
   assert.match(html, /if \(dialogId === 'directoryMaintenanceDialog'\) resetDirectoryMaintenanceConfirmation\(\);/);
   assert.match(html, /directoryMaintenanceDialog\.addEventListener\('close', resetDirectoryMaintenanceConfirmation\)/);
   assert.match(html, /directoryMaintenanceConfirm\.disabled = !directoryImpactConfirmed\.checked;/);
+});
+
+test('permission view preserves Feishu authority and inheritance', () => {
+  assert.match(html, /id=["']permissionPanel["']/);
+  assert.match(html, /访问权限以飞书实时 ACL 为准/);
+  assert.match(html, /直接授权/);
+  assert.match(html, /继承自父目录/);
+  assert.match(html, /最近校验时间/);
+  assert.match(html, /id=["']permissionDocumentLevelEditing["'][^>]*disabled/);
+  assert.match(html, /前往父目录授权来源/);
+});
+
+test('permission change flow includes approval, execution, and read-back states', () => {
+  assert.match(html, /id=["']permissionChangeDrawer["']/);
+  for (const label of ['规则预检', '飞书审批', '执行权限变更', '回读飞书 ACL', '派生数据处理']) {
+    assert.match(html, new RegExp(label));
+  }
+});
+
+test('permission risk classifier preserves deterministic governance routing', () => {
+  assert.match(html, /function classifyPermissionRisk\(change\)/);
+  assert.match(html, /removesLastAdmin \|\| change\.inheritanceUnknown \|\| change\.policyBlocked/);
+  assert.match(html, /审批通过后自动执行/);
+  assert.match(html, /审批通过后需管理员二次确认/);
+  assert.match(html, /必须在飞书原生权限页处理/);
+});
+
+test('prototype contains no real write transport', () => {
+  assert.doesNotMatch(html, /fetch\s*\(/);
+  assert.doesNotMatch(html, /XMLHttpRequest/);
+  assert.doesNotMatch(html, /new\s+WebSocket/);
+});
+
+test('permission change entry opens a local-only drawer and remains browser-transport free', () => {
+  const { elements } = createBrowserFreePrototype();
+  elements.requestPermissionChange.dispatch('click');
+  assert.equal(elements.permissionChangeDrawer.showModalCalls, 1);
+  assert.equal(elements.permissionChangeForm.dispatch('submit').prevented, true);
+  assert.equal(elements.permissionChangeDrawer.closeCalls, 1);
+  assert.match(elements.toast.textContent, /飞书审批与 ACL 回读/);
 });
 
 test('browser-free lifecycle interactions open dialogs, retain local-only behavior, and require fresh confirmation', () => {
