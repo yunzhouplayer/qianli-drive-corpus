@@ -9,15 +9,15 @@
   <style>
     :root {
       --red: #db0052;
-      --red-soft: #fff2f6;
-      --red-border: #f4b7cc;
+      --red-soft: #f2f2f2;
+      --red-border: #bfbfbf;
       --black: #000;
-      --ink: #202020;
+      --ink: #404040;
       --gray-900: #404040;
-      --gray-700: #666;
+      --gray-700: #7f7f7f;
       --gray-500: #7f7f7f;
       --gray-300: #bfbfbf;
-      --gray-200: #dedede;
+      --gray-200: #bfbfbf;
       --gray-100: #f2f2f2;
       --white: #fff;
       --switcher-h: 46px;
@@ -188,7 +188,7 @@
     .subnav { margin-left: 36px; border-left: 1px solid var(--gray-200); }
     .subnav-item { height: 42px; padding-left: 27px; font-size: 14px; }
 
-    .content { flex: 1; min-width: 0; overflow: auto; padding: 20px; background: #fafafa; }
+    .content { flex: 1; min-width: 0; overflow: auto; padding: 20px; background: var(--gray-100); }
     .panel { background: var(--white); border: 1px solid var(--gray-200); border-radius: 5px; }
     .panel-title { font-size: 17px; font-weight: 700; color: var(--black); }
     .primary-btn, .secondary-btn, .text-btn {
@@ -199,7 +199,7 @@
       border: 1px solid transparent;
     }
     .primary-btn { color: var(--white); background: var(--red); border-color: var(--red); }
-    .primary-btn:hover { background: #bd0047; }
+    .primary-btn:hover { background: var(--red); }
     .secondary-btn { color: var(--ink); background: var(--white); border-color: var(--gray-300); }
     .secondary-btn:hover { background: var(--gray-100); }
     .text-btn { color: var(--red); background: transparent; padding-left: 8px; padding-right: 8px; }
@@ -234,7 +234,7 @@
     .data-table th {
       height: 40px;
       color: var(--gray-700);
-      background: #fbfbfb;
+      background: var(--gray-100);
       text-align: left;
       font-weight: 400;
       border-bottom: 1px solid var(--gray-200);
@@ -250,7 +250,7 @@
       color: var(--gray-900);
     }
     .data-table tbody tr { cursor: pointer; }
-    .data-table tbody tr:hover { background: #fafafa; }
+    .data-table tbody tr:hover { background: var(--gray-100); }
     .data-table tbody tr.selected { background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); }
     .status-attention { color: var(--red) !important; font-weight: 700; }
     .status-normal { color: var(--gray-900); }
@@ -345,7 +345,7 @@
     }
     .wizard-step.done .step-number { border-color: var(--black); color: var(--black); }
     .wizard-step.active .step-number { border-color: var(--red); background: var(--red); color: var(--white); }
-    .wizard-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1.06fr; gap: 18px; padding: 18px 22px; overflow: auto; background: #fafafa; }
+    .wizard-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1.06fr; gap: 18px; padding: 18px 22px; overflow: auto; background: var(--gray-100); }
     .wizard-card { padding: 20px; }
     .wizard-card h2 { margin: 0 0 18px; font-size: 17px; }
     .source-box { border: 1px solid var(--gray-200); padding: 18px; display: grid; grid-template-columns: 75px 1fr; gap: 16px; }
@@ -415,7 +415,7 @@
     .catalog-table th { height: 44px; text-align: left; font-weight: 400; color: var(--gray-700); padding: 0 11px; border-bottom: 1px solid var(--gray-200); }
     .catalog-table td { height: 52px; padding: 0 11px; border-bottom: 1px solid var(--gray-200); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .catalog-table tbody tr { cursor: pointer; }
-    .catalog-table tbody tr:hover { background: #fafafa; }
+    .catalog-table tbody tr:hover { background: var(--gray-100); }
     .catalog-table tbody tr.selected { background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); }
     .catalog-table td:first-child i { margin-right: 7px; color: var(--gray-700); }
     .catalog-footer { height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-top: 1px solid var(--gray-200); color: var(--gray-700); font-size: 12px; }

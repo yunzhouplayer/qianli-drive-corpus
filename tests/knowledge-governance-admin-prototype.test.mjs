@@ -21,3 +21,12 @@ test('catalog exposes governance detail tabs', () => {
     assert.match(html, new RegExp(`data-detail-tab=["']${tab}["']`));
   }
 });
+
+test('prototype uses only the approved Qianli palette', () => {
+  const approved = new Set(['#db0052', '#000', '#fff', '#f2f2f2', '#bfbfbf', '#7f7f7f', '#404040']);
+  const cssHexLiterals = html.match(/#[0-9a-f]{3,8}\b/gi) ?? [];
+
+  for (const color of cssHexLiterals) {
+    assert.ok(approved.has(color.toLowerCase()), `unapproved color literal: ${color}`);
+  }
+});
