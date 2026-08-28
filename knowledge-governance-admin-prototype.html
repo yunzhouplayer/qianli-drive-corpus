@@ -1052,11 +1052,35 @@
       action: 'revoke',
       target: '测试平台组',
       mcpState: 'active',
+      transitionHistory: ['draft'],
     };
     const permissionRequestStates = new Set([
-      'draft', 'prechecking', 'approving', 'awaiting_execution', 'executing',
-      'verifying', 'propagating', 'completed', 'stale', 'reauth_required',
-      'blocked_by_feishu_policy', 'verification_failed', 'propagation_failed',
+      'draft', 'prechecking', 'ready_for_approval', 'approving', 'approved',
+      'rejected', 'stale', 'awaiting_execution', 'executing', 'verifying',
+      'propagating', 'completed', 'reauth_required', 'blocked_by_feishu_policy',
+      'permission_denied', 'partial_failure', 'verification_failed',
+      'propagation_failed', 'cancelled',
+    ]);
+    const permissionRequestTransitions = new Map([
+      ['draft', new Set(['prechecking', 'cancelled'])],
+      ['prechecking', new Set(['ready_for_approval', 'stale', 'reauth_required', 'blocked_by_feishu_policy', 'permission_denied', 'cancelled'])],
+      ['ready_for_approval', new Set(['approving', 'stale', 'cancelled'])],
+      ['approving', new Set(['approved', 'rejected', 'stale', 'reauth_required', 'cancelled'])],
+      ['approved', new Set(['awaiting_execution', 'stale', 'cancelled'])],
+      ['awaiting_execution', new Set(['executing', 'stale', 'reauth_required', 'permission_denied', 'cancelled'])],
+      ['executing', new Set(['verifying', 'reauth_required', 'blocked_by_feishu_policy', 'permission_denied', 'partial_failure'])],
+      ['verifying', new Set(['propagating', 'reauth_required', 'verification_failed'])],
+      ['propagating', new Set(['completed', 'propagation_failed'])],
+      ['stale', new Set(['prechecking'])],
+      ['reauth_required', new Set(['prechecking'])],
+      ['partial_failure', new Set(['prechecking'])],
+      ['verification_failed', new Set(['prechecking'])],
+      ['propagation_failed', new Set(['prechecking'])],
+      ['rejected', new Set()],
+      ['blocked_by_feishu_policy', new Set()],
+      ['permission_denied', new Set()],
+      ['cancelled', new Set()],
+      ['completed', new Set()],
     ]);
     window.knowledgeGovernancePermissionRequest = permissionRequest;
 
@@ -1069,18 +1093,21 @@
 
     function transitionPermissionRequest(nextState) {
       if (!permissionRequestStates.has(nextState)) throw new Error(`Unsupported permission state: ${nextState}`);
+      const allowedStates = permissionRequestTransitions.get(permissionRequest.state);
+      if (!allowedStates?.has(nextState)) throw new Error(`Illegal permission transition: ${permissionRequest.state} -> ${nextState}`);
       if (['revoke', 'modify'].includes(permissionRequest.action) && nextState === 'executing') {
         permissionRequest.mcpState = 'denied_pending_verification';
       } else if (permissionRequest.action === 'grant' && nextState !== 'completed') {
         permissionRequest.mcpState = 'unavailable_pending_completion';
-      } else if (nextState === 'completed') {
+      } else if (nextState === 'completed' && permissionRequest.state === 'propagating') {
         permissionRequest.mcpState = 'active';
       }
       permissionRequest.state = nextState;
+      permissionRequest.transitionHistory.push(nextState);
       renderPermissionRequestState();
     }
 
-    function startPermissionRequest(change, risk) {
+    function resetPermissionRequest(change, risk) {
       Object.assign(permissionRequest, {
         id: 'PCR-20260827-0001',
         state: 'draft',
@@ -1088,28 +1115,29 @@
         action: change.action,
         target: change.targetLabel,
         mcpState: 'active',
+        transitionHistory: ['draft'],
       });
+      renderPermissionRequestState();
+    }
+
+    function startPermissionRequest(change, risk) {
+      resetPermissionRequest(change, risk);
       transitionPermissionRequest('prechecking');
+      transitionPermissionRequest('ready_for_approval');
       transitionPermissionRequest('approving');
     }
 
     function runPermissionScenario() {
       const scenario = document.getElementById('permissionScenario')?.value || 'success';
-      const action = document.getElementById('permissionAction')?.value || 'revoke';
-      Object.assign(permissionRequest, {
-        id: 'PCR-20260827-0001',
-        state: 'draft',
-        risk: 'medium',
-        action,
-        target: permissionTargetContext.label,
-        mcpState: 'active',
-      });
-      renderPermissionRequestState();
+      const change = readPermissionChange();
+      resetPermissionRequest(change, classifyPermissionRisk(change));
       transitionPermissionRequest('prechecking');
       if (scenario === 'oauth_expired') return transitionPermissionRequest('reauth_required');
       if (scenario === 'feishu_policy_blocked') return transitionPermissionRequest('blocked_by_feishu_policy');
+      transitionPermissionRequest('ready_for_approval');
       transitionPermissionRequest('approving');
       if (scenario === 'acl_changed_during_approval') return transitionPermissionRequest('stale');
+      transitionPermissionRequest('approved');
       transitionPermissionRequest('awaiting_execution');
       transitionPermissionRequest('executing');
       transitionPermissionRequest('verifying');

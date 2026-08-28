@@ -97,6 +97,10 @@ function createBrowserFreePrototype() {
   return { catalogRows, elements, sandbox, window };
 }
 
+function transitionThrough(sandbox, states) {
+  for (const state of states) sandbox.transitionPermissionRequest(state);
+}
+
 test('prototype keeps the three approved views', () => {
   for (const id of ['dashboard', 'wizard', 'catalog']) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
@@ -296,11 +300,13 @@ test('permission request fails closed when a future catalog row lacks required p
   assert.match(elements.toast.textContent, /缺少稳定资源引用或权限来源/);
 });
 
-test('permission request exposes approved and failure states', () => {
+test('permission request exposes the complete approved state set', () => {
   for (const state of [
-    'draft', 'prechecking', 'approving', 'awaiting_execution', 'executing',
-    'verifying', 'propagating', 'completed', 'stale', 'reauth_required',
-    'blocked_by_feishu_policy', 'verification_failed', 'propagation_failed'
+    'draft', 'prechecking', 'ready_for_approval', 'approving', 'approved',
+    'rejected', 'stale', 'awaiting_execution', 'executing', 'verifying',
+    'propagating', 'completed', 'reauth_required', 'blocked_by_feishu_policy',
+    'permission_denied', 'partial_failure', 'verification_failed',
+    'propagation_failed', 'cancelled'
   ]) {
     assert.match(html, new RegExp(`['\"]${state}['\"]`));
   }
@@ -311,59 +317,93 @@ test('permission tightening is visibly fail-closed', () => {
   assert.match(html, /完成回读和派生数据校验后恢复/);
 });
 
-test('permission request state model rejects unsupported states and denies MCP before revoke execution', () => {
+test('permission request state model follows the legal normal path and rejects illegal completion', () => {
   const { elements, sandbox, window } = createBrowserFreePrototype();
   const request = window.knowledgeGovernancePermissionRequest;
-  request.action = 'revoke';
+  request.action = 'grant';
   request.mcpState = 'active';
-  sandbox.transitionPermissionRequest('executing');
-  assert.equal(request.state, 'executing');
-  assert.equal(request.mcpState, 'denied_pending_verification');
-  assert.equal(elements.permissionRequestState.textContent, 'executing');
-  assert.equal(elements.permissionMcpState.textContent, 'denied_pending_verification');
+  assert.throws(() => sandbox.transitionPermissionRequest('completed'), /Illegal permission transition: draft -> completed/);
+  transitionThrough(sandbox, [
+    'prechecking', 'ready_for_approval', 'approving', 'approved',
+    'awaiting_execution', 'executing', 'verifying', 'propagating', 'completed'
+  ]);
+  assert.equal(request.state, 'completed');
+  assert.equal(request.mcpState, 'active');
+  assert.deepEqual([...request.transitionHistory], [
+    'draft', 'prechecking', 'ready_for_approval', 'approving', 'approved',
+    'awaiting_execution', 'executing', 'verifying', 'propagating', 'completed'
+  ]);
+  assert.equal(elements.permissionRequestState.textContent, 'completed');
+  assert.equal(elements.permissionMcpState.textContent, 'active');
   assert.throws(() => sandbox.transitionPermissionRequest('not_a_real_state'), /Unsupported permission state/);
 });
 
-test('permission expansion remains unavailable until completion', () => {
+test('failure states cannot jump directly to completed', () => {
+  const { sandbox, window } = createBrowserFreePrototype();
+  const request = window.knowledgeGovernancePermissionRequest;
+  request.action = 'grant';
+  transitionThrough(sandbox, ['prechecking', 'reauth_required']);
+  assert.throws(() => sandbox.transitionPermissionRequest('completed'), /Illegal permission transition: reauth_required -> completed/);
+  assert.equal(request.state, 'reauth_required');
+});
+
+test('permission expansion remains unavailable until a legal propagation completion', () => {
   const { sandbox, window } = createBrowserFreePrototype();
   const request = window.knowledgeGovernancePermissionRequest;
   request.action = 'grant';
   request.mcpState = 'active';
-  sandbox.transitionPermissionRequest('executing');
-  assert.equal(request.mcpState, 'unavailable_pending_completion');
-  sandbox.transitionPermissionRequest('verifying');
-  assert.equal(request.mcpState, 'unavailable_pending_completion');
-  sandbox.transitionPermissionRequest('propagating');
+  transitionThrough(sandbox, ['prechecking', 'ready_for_approval', 'approving', 'approved', 'awaiting_execution', 'executing', 'verifying', 'propagating']);
   assert.equal(request.mcpState, 'unavailable_pending_completion');
   sandbox.transitionPermissionRequest('completed');
   assert.equal(request.mcpState, 'active');
 });
 
-test('permission downgrade denies MCP before execution when adjustment direction is conservative', () => {
-  const { sandbox, window } = createBrowserFreePrototype();
-  const request = window.knowledgeGovernancePermissionRequest;
-  request.action = 'modify';
-  request.mcpState = 'active';
-  sandbox.transitionPermissionRequest('executing');
-  assert.equal(request.mcpState, 'denied_pending_verification');
+test('revoke and conservative adjustment failures retain denied MCP after execution', () => {
+  for (const [action, failurePath] of [
+    ['revoke', ['verifying', 'verification_failed']],
+    ['modify', ['verifying', 'propagating', 'propagation_failed']],
+  ]) {
+    const { sandbox, window } = createBrowserFreePrototype();
+    const request = window.knowledgeGovernancePermissionRequest;
+    request.action = action;
+    request.mcpState = 'active';
+    transitionThrough(sandbox, ['prechecking', 'ready_for_approval', 'approving', 'approved', 'awaiting_execution', 'executing']);
+    assert.equal(request.mcpState, 'denied_pending_verification');
+    transitionThrough(sandbox, failurePath);
+    assert.equal(request.mcpState, 'denied_pending_verification');
+  }
 });
 
-test('prototype permission scenarios deterministically reach their expected terminal states', () => {
+test('prototype permission scenarios deterministically reach terminal states and MCP outcomes', () => {
   const { elements, window } = createBrowserFreePrototype();
   const expected = {
-    success: 'completed',
-    acl_changed_during_approval: 'stale',
-    oauth_expired: 'reauth_required',
-    feishu_policy_blocked: 'blocked_by_feishu_policy',
-    readback_mismatch: 'verification_failed',
-    derivative_failure: 'propagation_failed',
+    success: { action: 'grant', state: 'completed', mcpState: 'active' },
+    acl_changed_during_approval: { action: 'grant', state: 'stale', mcpState: 'unavailable_pending_completion' },
+    oauth_expired: { action: 'grant', state: 'reauth_required', mcpState: 'unavailable_pending_completion' },
+    feishu_policy_blocked: { action: 'grant', state: 'blocked_by_feishu_policy', mcpState: 'unavailable_pending_completion' },
+    readback_mismatch: { action: 'revoke', state: 'verification_failed', mcpState: 'denied_pending_verification' },
+    derivative_failure: { action: 'modify', state: 'propagation_failed', mcpState: 'denied_pending_verification' },
   };
 
-  for (const [scenario, state] of Object.entries(expected)) {
+  for (const [scenario, outcome] of Object.entries(expected)) {
     elements.permissionScenario.value = scenario;
+    elements.permissionAction.value = outcome.action;
     elements.runPermissionScenario.dispatch('click');
-    assert.equal(window.knowledgeGovernancePermissionRequest.state, state, `${scenario} should finish in ${state}`);
+    assert.equal(window.knowledgeGovernancePermissionRequest.state, outcome.state, `${scenario} should finish in ${outcome.state}`);
+    assert.equal(window.knowledgeGovernancePermissionRequest.mcpState, outcome.mcpState, `${scenario} should retain its MCP safety state`);
   }
+});
+
+test('high-risk simulation includes approval and admin reconfirmation boundary before execution', () => {
+  const { elements, window } = createBrowserFreePrototype();
+  elements.permissionAction.value = 'grant';
+  elements.permissionExternal.checked = true;
+  elements.permissionScenario.value = 'success';
+  elements.runPermissionScenario.dispatch('click');
+  const history = [...window.knowledgeGovernancePermissionRequest.transitionHistory];
+  assert.equal(window.knowledgeGovernancePermissionRequest.risk, 'high');
+  assert.ok(history.indexOf('approved') < history.indexOf('awaiting_execution'));
+  assert.ok(history.indexOf('awaiting_execution') < history.indexOf('executing'));
 });
 
 test('browser-free lifecycle interactions open dialogs, retain local-only behavior, and require fresh confirmation', () => {
