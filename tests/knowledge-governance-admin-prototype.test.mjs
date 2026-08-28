@@ -53,7 +53,7 @@ function createBrowserFreePrototype() {
     get(name) { return this.form.formData[name] ?? null; }
   }
 
-  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate', 'requestPermissionChange', 'permissionChangeForm', 'permissionSubjectType', 'permissionSubject', 'permissionAction', 'permissionRequested', 'permissionEffectiveAt', 'permissionExpiryAt', 'permissionApprovalRoute', 'permissionReason', 'permissionExternal', 'permissionPublicLink', 'permissionOwnerTransfer', 'permissionSpaceAdmin', 'permissionSecureLabel', 'permissionPolicyBlocked', 'permissionInheritanceUnknown', 'permissionRemovesLastAdmin', 'permissionSourceContext', 'permissionDocumentLevelEditing', 'permissionTargetLabel', 'permissionTargetRef', 'permissionInheritedSource', 'permissionAfterDiff', 'permissionImpactCopy', 'permissionScopeNotice', 'permissionRisk', 'permissionTreatment', 'permissionSubmit', 'permissionScenario', 'runPermissionScenario', 'permissionRequestState', 'permissionMcpState'];
+  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate', 'requestPermissionChange', 'permissionChangeForm', 'permissionSubjectType', 'permissionSubject', 'permissionAction', 'permissionRequested', 'permissionEffectiveAt', 'permissionExpiryAt', 'permissionApprovalRoute', 'permissionReason', 'permissionExternal', 'permissionPublicLink', 'permissionOwnerTransfer', 'permissionSpaceAdmin', 'permissionSecureLabel', 'permissionPolicyBlocked', 'permissionInheritanceUnknown', 'permissionRemovesLastAdmin', 'permissionSourceContext', 'permissionDocumentLevelEditing', 'permissionTargetLabel', 'permissionTargetRef', 'permissionInheritedSource', 'permissionAfterDiff', 'permissionImpactCopy', 'permissionScopeNotice', 'permissionRisk', 'permissionTreatment', 'permissionSubmit', 'permissionScenario', 'runPermissionScenario', 'permissionRequestState', 'permissionMcpState', 'permissionAdminReverified', 'permissionAdminConfirmExecution'];
   const elements = Object.fromEntries(ids.map(id => [id, new FakeElement()]));
   for (const id of ['documentChangeDialog', 'documentRetireDialog', 'directoryMaintenanceDialog', 'permissionChangeDrawer']) elements[id] = new FakeDialog();
   elements.documentChangeForm.dialog = elements.documentChangeDialog;
@@ -362,6 +362,7 @@ test('revoke and conservative adjustment failures retain denied MCP after execut
   for (const [action, failurePath] of [
     ['revoke', ['verifying', 'verification_failed']],
     ['modify', ['verifying', 'propagating', 'propagation_failed']],
+    ['revoke', ['partial_failure']],
   ]) {
     const { sandbox, window } = createBrowserFreePrototype();
     const request = window.knowledgeGovernancePermissionRequest;
@@ -370,6 +371,9 @@ test('revoke and conservative adjustment failures retain denied MCP after execut
     transitionThrough(sandbox, ['prechecking', 'ready_for_approval', 'approving', 'approved', 'awaiting_execution', 'executing']);
     assert.equal(request.mcpState, 'denied_pending_verification');
     transitionThrough(sandbox, failurePath);
+    assert.equal(request.mcpState, 'denied_pending_verification');
+    assert.equal(window.knowledgeGovernancePermissionSafety.safetyHold, true);
+    sandbox.createPermissionRequest({ action: 'grant', targetLabel: '后续测试申请' }, 'low');
     assert.equal(request.mcpState, 'denied_pending_verification');
   }
 });
@@ -394,7 +398,37 @@ test('prototype permission scenarios deterministically reach terminal states and
   }
 });
 
-test('high-risk simulation includes approval and admin reconfirmation boundary before execution', () => {
+test('a tightening failure safety hold survives new requests and only a later legal tightening completion clears it', () => {
+  const { elements, sandbox, window } = createBrowserFreePrototype();
+  elements.permissionAction.value = 'revoke';
+  elements.permissionScenario.value = 'readback_mismatch';
+  elements.runPermissionScenario.dispatch('click');
+  const failedId = window.knowledgeGovernancePermissionRequest.id;
+  assert.equal(window.knowledgeGovernancePermissionRequest.state, 'verification_failed');
+  assert.equal(window.knowledgeGovernancePermissionRequest.mcpState, 'denied_pending_verification');
+  assert.equal(window.knowledgeGovernancePermissionSafety.safetyHold, true);
+
+  sandbox.createPermissionRequest({ action: 'grant', targetLabel: '新测试目标' }, 'low');
+  assert.notEqual(window.knowledgeGovernancePermissionRequest.id, failedId);
+  assert.equal(window.knowledgeGovernancePermissionRequest.state, 'draft');
+  assert.equal(window.knowledgeGovernancePermissionRequest.mcpState, 'denied_pending_verification');
+
+  elements.permissionAction.value = 'grant';
+  elements.permissionScenario.value = 'success';
+  elements.runPermissionScenario.dispatch('click');
+  assert.equal(window.knowledgeGovernancePermissionRequest.state, 'completed');
+  assert.equal(window.knowledgeGovernancePermissionRequest.mcpState, 'denied_pending_verification');
+  assert.equal(window.knowledgeGovernancePermissionSafety.safetyHold, true);
+
+  elements.permissionAction.value = 'revoke';
+  elements.permissionScenario.value = 'success';
+  elements.runPermissionScenario.dispatch('click');
+  assert.equal(window.knowledgeGovernancePermissionRequest.state, 'completed');
+  assert.equal(window.knowledgeGovernancePermissionRequest.mcpState, 'active');
+  assert.equal(window.knowledgeGovernancePermissionSafety.safetyHold, false);
+});
+
+test('high-risk simulation pauses for independent admin reconfirmation before execution', () => {
   const { elements, window } = createBrowserFreePrototype();
   elements.permissionAction.value = 'grant';
   elements.permissionExternal.checked = true;
@@ -403,7 +437,18 @@ test('high-risk simulation includes approval and admin reconfirmation boundary b
   const history = [...window.knowledgeGovernancePermissionRequest.transitionHistory];
   assert.equal(window.knowledgeGovernancePermissionRequest.risk, 'high');
   assert.ok(history.indexOf('approved') < history.indexOf('awaiting_execution'));
-  assert.ok(history.indexOf('awaiting_execution') < history.indexOf('executing'));
+  assert.equal(window.knowledgeGovernancePermissionRequest.state, 'awaiting_execution');
+  assert.equal(history.includes('executing'), false);
+  assert.equal(elements.permissionAdminConfirmExecution.disabled, true);
+  elements.permissionAdminConfirmExecution.dispatch('click');
+  assert.equal(window.knowledgeGovernancePermissionRequest.state, 'awaiting_execution');
+
+  elements.permissionAdminReverified.checked = true;
+  elements.permissionAdminReverified.dispatch('change');
+  assert.equal(elements.permissionAdminConfirmExecution.disabled, false);
+  elements.permissionAdminConfirmExecution.dispatch('click');
+  assert.equal(window.knowledgeGovernancePermissionRequest.state, 'completed');
+  assert.ok(window.knowledgeGovernancePermissionRequest.transitionHistory.includes('executing'));
 });
 
 test('browser-free lifecycle interactions open dialogs, retain local-only behavior, and require fresh confirmation', () => {

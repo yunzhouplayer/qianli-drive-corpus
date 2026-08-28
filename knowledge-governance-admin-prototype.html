@@ -922,6 +922,7 @@
         <dl class="permission-impact"><dt>申请状态</dt><dd id="permissionRequestState" data-permission-request-state>draft</dd><dt>MCP 访问</dt><dd id="permissionMcpState" data-mcp-state>active</dd></dl>
         <p class="permission-authority"><strong>权限收紧时，先暂停 MCP 访问。</strong> 完成回读和派生数据校验后恢复；权限扩大也会保持不可用，直至飞书 ACL 已回读且派生数据处理完成。</p>
         <div class="dialog-grid" style="margin-top:12px"><div class="dialog-field"><label for="permissionScenario">原型模拟场景</label><select id="permissionScenario"><option value="success">成功</option><option value="acl_changed_during_approval">审批期间 ACL 变化</option><option value="oauth_expired">OAuth 失效</option><option value="feishu_policy_blocked">飞书策略阻止</option><option value="readback_mismatch">回读不一致</option><option value="derivative_failure">派生数据失败</option></select></div><div class="dialog-field dialog-field--action"><label>模拟控制</label><button id="runPermissionScenario" type="button" class="secondary-btn">运行本地模拟</button></div></div>
+        <div class="inheritance-guard" style="margin-top:12px"><strong>高风险管理员二次确认</strong><label><input id="permissionAdminReverified" type="checkbox"> 已重新核验当前管理员飞书身份与目标资源管理权限（原型确认）</label><button id="permissionAdminConfirmExecution" type="button" class="secondary-btn" disabled>管理员确认后继续执行</button></div>
       </section>
       <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button type="submit" class="primary-btn" data-permission-submit>提交权限变更申请</button></div>
     </form>
@@ -1045,14 +1046,20 @@
 
     const localPrototypeState = { lifecycleEvents: [], permissionChangeEvents: [] };
     window.knowledgeGovernancePrototypeState = localPrototypeState;
+    let permissionRequestSequence = 0;
+    const permissionSafety = {
+      safetyHold: false,
+      heldByRequestId: null,
+    };
     const permissionRequest = {
-      id: 'PCR-20260827-0001',
+      id: 'PCR-20260827-0000',
       state: 'draft',
       risk: 'medium',
       action: 'revoke',
       target: '测试平台组',
       mcpState: 'active',
       transitionHistory: ['draft'],
+      pendingScenario: null,
     };
     const permissionRequestStates = new Set([
       'draft', 'prechecking', 'ready_for_approval', 'approving', 'approved',
@@ -1083,6 +1090,7 @@
       ['completed', new Set()],
     ]);
     window.knowledgeGovernancePermissionRequest = permissionRequest;
+    window.knowledgeGovernancePermissionSafety = permissionSafety;
 
     function renderPermissionRequestState() {
       const requestState = document.querySelector('[data-permission-request-state]');
@@ -1096,7 +1104,17 @@
       const allowedStates = permissionRequestTransitions.get(permissionRequest.state);
       if (!allowedStates?.has(nextState)) throw new Error(`Illegal permission transition: ${permissionRequest.state} -> ${nextState}`);
       if (['revoke', 'modify'].includes(permissionRequest.action) && nextState === 'executing') {
+        permissionSafety.safetyHold = true;
+        permissionSafety.heldByRequestId = permissionRequest.id;
         permissionRequest.mcpState = 'denied_pending_verification';
+      } else if (permissionSafety.safetyHold) {
+        if (nextState === 'completed' && permissionRequest.state === 'propagating' && ['revoke', 'modify'].includes(permissionRequest.action)) {
+          permissionSafety.safetyHold = false;
+          permissionSafety.heldByRequestId = null;
+          permissionRequest.mcpState = 'active';
+        } else {
+          permissionRequest.mcpState = 'denied_pending_verification';
+        }
       } else if (permissionRequest.action === 'grant' && nextState !== 'completed') {
         permissionRequest.mcpState = 'unavailable_pending_completion';
       } else if (nextState === 'completed' && permissionRequest.state === 'propagating') {
@@ -1107,21 +1125,32 @@
       renderPermissionRequestState();
     }
 
-    function resetPermissionRequest(change, risk) {
+    function renderAdminReconfirmation() {
+      const reverified = document.getElementById('permissionAdminReverified');
+      const confirm = document.getElementById('permissionAdminConfirmExecution');
+      if (confirm) confirm.disabled = !(permissionRequest.risk === 'high' && permissionRequest.state === 'awaiting_execution' && reverified?.checked);
+    }
+
+    function createPermissionRequest(change, risk) {
+      permissionRequestSequence += 1;
+      const reverified = document.getElementById('permissionAdminReverified');
+      if (reverified) reverified.checked = false;
       Object.assign(permissionRequest, {
-        id: 'PCR-20260827-0001',
+        id: `PCR-20260827-${String(permissionRequestSequence).padStart(4, '0')}`,
         state: 'draft',
         risk,
         action: change.action,
         target: change.targetLabel,
-        mcpState: 'active',
+        mcpState: permissionSafety.safetyHold ? 'denied_pending_verification' : 'active',
         transitionHistory: ['draft'],
+        pendingScenario: null,
       });
       renderPermissionRequestState();
+      renderAdminReconfirmation();
     }
 
     function startPermissionRequest(change, risk) {
-      resetPermissionRequest(change, risk);
+      createPermissionRequest(change, risk);
       transitionPermissionRequest('prechecking');
       transitionPermissionRequest('ready_for_approval');
       transitionPermissionRequest('approving');
@@ -1130,7 +1159,7 @@
     function runPermissionScenario() {
       const scenario = document.getElementById('permissionScenario')?.value || 'success';
       const change = readPermissionChange();
-      resetPermissionRequest(change, classifyPermissionRisk(change));
+      createPermissionRequest(change, classifyPermissionRisk(change));
       transitionPermissionRequest('prechecking');
       if (scenario === 'oauth_expired') return transitionPermissionRequest('reauth_required');
       if (scenario === 'feishu_policy_blocked') return transitionPermissionRequest('blocked_by_feishu_policy');
@@ -1139,6 +1168,15 @@
       if (scenario === 'acl_changed_during_approval') return transitionPermissionRequest('stale');
       transitionPermissionRequest('approved');
       transitionPermissionRequest('awaiting_execution');
+      if (permissionRequest.risk === 'high') {
+        permissionRequest.pendingScenario = scenario;
+        renderAdminReconfirmation();
+        return;
+      }
+      continuePermissionScenario(scenario);
+    }
+
+    function continuePermissionScenario(scenario) {
       transitionPermissionRequest('executing');
       transitionPermissionRequest('verifying');
       if (scenario === 'readback_mismatch') return transitionPermissionRequest('verification_failed');
@@ -1338,6 +1376,22 @@
     document.getElementById('runPermissionScenario')?.addEventListener('click', () => {
       runPermissionScenario();
       showToast('已完成本地状态模拟；未调用飞书接口（原型演示）');
+    });
+    document.getElementById('permissionAdminReverified')?.addEventListener('change', renderAdminReconfirmation);
+    document.getElementById('permissionAdminConfirmExecution')?.addEventListener('click', () => {
+      if (permissionRequest.risk !== 'high' || permissionRequest.state !== 'awaiting_execution' || !document.getElementById('permissionAdminReverified')?.checked) {
+        showToast('请先完成管理员身份重新核验，且仅能确认待执行的高风险申请（原型演示）');
+        return;
+      }
+      const scenario = permissionRequest.pendingScenario;
+      if (!scenario) {
+        showToast('当前没有可继续执行的高风险原型申请');
+        return;
+      }
+      permissionRequest.pendingScenario = null;
+      continuePermissionScenario(scenario);
+      renderAdminReconfirmation();
+      showToast('管理员二次确认完成，已继续本地状态模拟（原型演示）');
     });
     document.getElementById('openSource').addEventListener('click', () => showToast('真实系统将在权限校验后打开飞书原文'));
     document.getElementById('revalidate').addEventListener('click', event => {
