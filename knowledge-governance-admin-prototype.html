@@ -917,6 +917,12 @@
         <ol class="permission-workflow" aria-label="权限变更工作流"><li><b>1</b>规则预检</li><li><b>2</b>飞书审批</li><li><b>3</b>执行权限变更</li><li><b>4</b>回读飞书 ACL</li><li><b>5</b>派生数据处理</li></ol>
         <dl class="permission-impact" style="margin-top:14px"><dt>风险等级</dt><dd data-permission-risk>low</dd><dt>执行策略</dt><dd data-permission-treatment>审批通过后自动执行</dd><dt>派生数据</dt><dd>按权限变化使 MCP、raw、Wiki 与索引失效或重建</dd></dl>
       </section>
+      <section class="dialog-section">
+        <h3>原型执行状态</h3>
+        <dl class="permission-impact"><dt>申请状态</dt><dd id="permissionRequestState" data-permission-request-state>draft</dd><dt>MCP 访问</dt><dd id="permissionMcpState" data-mcp-state>active</dd></dl>
+        <p class="permission-authority"><strong>权限收紧时，先暂停 MCP 访问。</strong> 完成回读和派生数据校验后恢复；权限扩大也会保持不可用，直至飞书 ACL 已回读且派生数据处理完成。</p>
+        <div class="dialog-grid" style="margin-top:12px"><div class="dialog-field"><label for="permissionScenario">原型模拟场景</label><select id="permissionScenario"><option value="success">成功</option><option value="acl_changed_during_approval">审批期间 ACL 变化</option><option value="oauth_expired">OAuth 失效</option><option value="feishu_policy_blocked">飞书策略阻止</option><option value="readback_mismatch">回读不一致</option><option value="derivative_failure">派生数据失败</option></select></div><div class="dialog-field dialog-field--action"><label>模拟控制</label><button id="runPermissionScenario" type="button" class="secondary-btn">运行本地模拟</button></div></div>
+      </section>
       <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button type="submit" class="primary-btn" data-permission-submit>提交权限变更申请</button></div>
     </form>
   </dialog>
@@ -1039,6 +1045,80 @@
 
     const localPrototypeState = { lifecycleEvents: [], permissionChangeEvents: [] };
     window.knowledgeGovernancePrototypeState = localPrototypeState;
+    const permissionRequest = {
+      id: 'PCR-20260827-0001',
+      state: 'draft',
+      risk: 'medium',
+      action: 'revoke',
+      target: '测试平台组',
+      mcpState: 'active',
+    };
+    const permissionRequestStates = new Set([
+      'draft', 'prechecking', 'approving', 'awaiting_execution', 'executing',
+      'verifying', 'propagating', 'completed', 'stale', 'reauth_required',
+      'blocked_by_feishu_policy', 'verification_failed', 'propagation_failed',
+    ]);
+    window.knowledgeGovernancePermissionRequest = permissionRequest;
+
+    function renderPermissionRequestState() {
+      const requestState = document.querySelector('[data-permission-request-state]');
+      const mcpState = document.querySelector('[data-mcp-state]');
+      if (requestState) requestState.textContent = permissionRequest.state;
+      if (mcpState) mcpState.textContent = permissionRequest.mcpState;
+    }
+
+    function transitionPermissionRequest(nextState) {
+      if (!permissionRequestStates.has(nextState)) throw new Error(`Unsupported permission state: ${nextState}`);
+      if (['revoke', 'modify'].includes(permissionRequest.action) && nextState === 'executing') {
+        permissionRequest.mcpState = 'denied_pending_verification';
+      } else if (permissionRequest.action === 'grant' && nextState !== 'completed') {
+        permissionRequest.mcpState = 'unavailable_pending_completion';
+      } else if (nextState === 'completed') {
+        permissionRequest.mcpState = 'active';
+      }
+      permissionRequest.state = nextState;
+      renderPermissionRequestState();
+    }
+
+    function startPermissionRequest(change, risk) {
+      Object.assign(permissionRequest, {
+        id: 'PCR-20260827-0001',
+        state: 'draft',
+        risk,
+        action: change.action,
+        target: change.targetLabel,
+        mcpState: 'active',
+      });
+      transitionPermissionRequest('prechecking');
+      transitionPermissionRequest('approving');
+    }
+
+    function runPermissionScenario() {
+      const scenario = document.getElementById('permissionScenario')?.value || 'success';
+      const action = document.getElementById('permissionAction')?.value || 'revoke';
+      Object.assign(permissionRequest, {
+        id: 'PCR-20260827-0001',
+        state: 'draft',
+        risk: 'medium',
+        action,
+        target: permissionTargetContext.label,
+        mcpState: 'active',
+      });
+      renderPermissionRequestState();
+      transitionPermissionRequest('prechecking');
+      if (scenario === 'oauth_expired') return transitionPermissionRequest('reauth_required');
+      if (scenario === 'feishu_policy_blocked') return transitionPermissionRequest('blocked_by_feishu_policy');
+      transitionPermissionRequest('approving');
+      if (scenario === 'acl_changed_during_approval') return transitionPermissionRequest('stale');
+      transitionPermissionRequest('awaiting_execution');
+      transitionPermissionRequest('executing');
+      transitionPermissionRequest('verifying');
+      if (scenario === 'readback_mismatch') return transitionPermissionRequest('verification_failed');
+      transitionPermissionRequest('propagating');
+      if (scenario === 'derivative_failure') return transitionPermissionRequest('propagation_failed');
+      transitionPermissionRequest('completed');
+    }
+    renderPermissionRequestState();
     document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => closePrototypeDialog(button.closest('dialog'))));
     document.getElementById('documentChangeForm').addEventListener('submit', event => {
       event.preventDefault();
@@ -1223,8 +1303,13 @@
         return;
       }
       localPrototypeState.permissionChangeEvents.push({ type: 'permission-change-request', ...change, risk });
+      startPermissionRequest(change, risk);
       closePrototypeDialog(permissionChangeDrawer);
       showToast(`已记录 ${risk} 风险权限变更申请；真实执行需飞书审批与 ACL 回读（原型演示）`);
+    });
+    document.getElementById('runPermissionScenario')?.addEventListener('click', () => {
+      runPermissionScenario();
+      showToast('已完成本地状态模拟；未调用飞书接口（原型演示）');
     });
     document.getElementById('openSource').addEventListener('click', () => showToast('真实系统将在权限校验后打开飞书原文'));
     document.getElementById('revalidate').addEventListener('click', event => {

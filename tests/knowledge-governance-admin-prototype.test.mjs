@@ -53,7 +53,7 @@ function createBrowserFreePrototype() {
     get(name) { return this.form.formData[name] ?? null; }
   }
 
-  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate', 'requestPermissionChange', 'permissionChangeForm', 'permissionSubjectType', 'permissionSubject', 'permissionAction', 'permissionRequested', 'permissionEffectiveAt', 'permissionExpiryAt', 'permissionApprovalRoute', 'permissionReason', 'permissionExternal', 'permissionPublicLink', 'permissionOwnerTransfer', 'permissionSpaceAdmin', 'permissionSecureLabel', 'permissionPolicyBlocked', 'permissionInheritanceUnknown', 'permissionRemovesLastAdmin', 'permissionSourceContext', 'permissionDocumentLevelEditing', 'permissionTargetLabel', 'permissionTargetRef', 'permissionInheritedSource', 'permissionAfterDiff', 'permissionImpactCopy', 'permissionScopeNotice', 'permissionRisk', 'permissionTreatment', 'permissionSubmit'];
+  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate', 'requestPermissionChange', 'permissionChangeForm', 'permissionSubjectType', 'permissionSubject', 'permissionAction', 'permissionRequested', 'permissionEffectiveAt', 'permissionExpiryAt', 'permissionApprovalRoute', 'permissionReason', 'permissionExternal', 'permissionPublicLink', 'permissionOwnerTransfer', 'permissionSpaceAdmin', 'permissionSecureLabel', 'permissionPolicyBlocked', 'permissionInheritanceUnknown', 'permissionRemovesLastAdmin', 'permissionSourceContext', 'permissionDocumentLevelEditing', 'permissionTargetLabel', 'permissionTargetRef', 'permissionInheritedSource', 'permissionAfterDiff', 'permissionImpactCopy', 'permissionScopeNotice', 'permissionRisk', 'permissionTreatment', 'permissionSubmit', 'permissionScenario', 'runPermissionScenario', 'permissionRequestState', 'permissionMcpState'];
   const elements = Object.fromEntries(ids.map(id => [id, new FakeElement()]));
   for (const id of ['documentChangeDialog', 'documentRetireDialog', 'directoryMaintenanceDialog', 'permissionChangeDrawer']) elements[id] = new FakeDialog();
   elements.documentChangeForm.dialog = elements.documentChangeDialog;
@@ -70,6 +70,7 @@ function createBrowserFreePrototype() {
   elements.permissionExpiryAt.value = '2026-09-27T15:00';
   elements.permissionApprovalRoute.value = '知识空间管理员审批';
   elements.permissionReason.value = '无敏感测试用途';
+  elements.permissionScenario.value = 'success';
 
   const catalogRows = [new FakeElement(), new FakeElement(), new FakeElement()];
   catalogRows[0].dataset = { title: '测试功能点提取准出标准', owner: '张伟', version: 'v3.2', state: '需重新校验', resourceRef: 'wiki-node:governance-validation-vv-001', permissionSource: '02-测试与质量 / Validation & Verification', permissionSourceRef: 'wiki-directory:validation-quality' };
@@ -83,6 +84,8 @@ function createBrowserFreePrototype() {
       if (selector === '[data-permission-risk]') return elements.permissionRisk;
       if (selector === '[data-permission-treatment]') return elements.permissionTreatment;
       if (selector === '[data-permission-submit]') return elements.permissionSubmit;
+      if (selector === '[data-permission-request-state]') return elements.permissionRequestState;
+      if (selector === '[data-mcp-state]') return elements.permissionMcpState;
       return new FakeElement();
     },
     querySelectorAll(selector) { return selector === '#catalogRows tr' ? catalogRows : []; },
@@ -291,6 +294,76 @@ test('permission request fails closed when a future catalog row lacks required p
   assert.equal(elements.permissionChangeForm.dispatch('submit').prevented, true);
   assert.equal(window.knowledgeGovernancePrototypeState.permissionChangeEvents.length, 0);
   assert.match(elements.toast.textContent, /缺少稳定资源引用或权限来源/);
+});
+
+test('permission request exposes approved and failure states', () => {
+  for (const state of [
+    'draft', 'prechecking', 'approving', 'awaiting_execution', 'executing',
+    'verifying', 'propagating', 'completed', 'stale', 'reauth_required',
+    'blocked_by_feishu_policy', 'verification_failed', 'propagation_failed'
+  ]) {
+    assert.match(html, new RegExp(`['\"]${state}['\"]`));
+  }
+});
+
+test('permission tightening is visibly fail-closed', () => {
+  assert.match(html, /先暂停 MCP 访问/);
+  assert.match(html, /完成回读和派生数据校验后恢复/);
+});
+
+test('permission request state model rejects unsupported states and denies MCP before revoke execution', () => {
+  const { elements, sandbox, window } = createBrowserFreePrototype();
+  const request = window.knowledgeGovernancePermissionRequest;
+  request.action = 'revoke';
+  request.mcpState = 'active';
+  sandbox.transitionPermissionRequest('executing');
+  assert.equal(request.state, 'executing');
+  assert.equal(request.mcpState, 'denied_pending_verification');
+  assert.equal(elements.permissionRequestState.textContent, 'executing');
+  assert.equal(elements.permissionMcpState.textContent, 'denied_pending_verification');
+  assert.throws(() => sandbox.transitionPermissionRequest('not_a_real_state'), /Unsupported permission state/);
+});
+
+test('permission expansion remains unavailable until completion', () => {
+  const { sandbox, window } = createBrowserFreePrototype();
+  const request = window.knowledgeGovernancePermissionRequest;
+  request.action = 'grant';
+  request.mcpState = 'active';
+  sandbox.transitionPermissionRequest('executing');
+  assert.equal(request.mcpState, 'unavailable_pending_completion');
+  sandbox.transitionPermissionRequest('verifying');
+  assert.equal(request.mcpState, 'unavailable_pending_completion');
+  sandbox.transitionPermissionRequest('propagating');
+  assert.equal(request.mcpState, 'unavailable_pending_completion');
+  sandbox.transitionPermissionRequest('completed');
+  assert.equal(request.mcpState, 'active');
+});
+
+test('permission downgrade denies MCP before execution when adjustment direction is conservative', () => {
+  const { sandbox, window } = createBrowserFreePrototype();
+  const request = window.knowledgeGovernancePermissionRequest;
+  request.action = 'modify';
+  request.mcpState = 'active';
+  sandbox.transitionPermissionRequest('executing');
+  assert.equal(request.mcpState, 'denied_pending_verification');
+});
+
+test('prototype permission scenarios deterministically reach their expected terminal states', () => {
+  const { elements, window } = createBrowserFreePrototype();
+  const expected = {
+    success: 'completed',
+    acl_changed_during_approval: 'stale',
+    oauth_expired: 'reauth_required',
+    feishu_policy_blocked: 'blocked_by_feishu_policy',
+    readback_mismatch: 'verification_failed',
+    derivative_failure: 'propagation_failed',
+  };
+
+  for (const [scenario, state] of Object.entries(expected)) {
+    elements.permissionScenario.value = scenario;
+    elements.runPermissionScenario.dispatch('click');
+    assert.equal(window.knowledgeGovernancePermissionRequest.state, state, `${scenario} should finish in ${state}`);
+  }
 });
 
 test('browser-free lifecycle interactions open dialogs, retain local-only behavior, and require fresh confirmation', () => {
