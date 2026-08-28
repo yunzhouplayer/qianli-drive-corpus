@@ -428,6 +428,30 @@ test('a tightening failure safety hold survives new requests and only a later le
   assert.equal(window.knowledgeGovernancePermissionSafety.safetyHold, false);
 });
 
+test('blocked simulation keeps the native-Feishu gate and never loosens an existing safety hold', () => {
+  const { elements, window } = createBrowserFreePrototype();
+  elements.permissionAction.value = 'revoke';
+  elements.permissionScenario.value = 'readback_mismatch';
+  elements.runPermissionScenario.dispatch('click');
+  assert.equal(window.knowledgeGovernancePermissionSafety.safetyHold, true);
+
+  elements.permissionAction.value = 'grant';
+  elements.permissionExternal.checked = true;
+  elements.permissionPolicyBlocked.checked = true;
+  elements.permissionScenario.value = 'success';
+  elements.runPermissionScenario.dispatch('click');
+
+  const request = window.knowledgeGovernancePermissionRequest;
+  assert.equal(request.risk, 'blocked');
+  assert.equal(request.state, 'draft');
+  assert.deepEqual([...request.transitionHistory], ['draft']);
+  assert.equal(request.pendingScenario, null);
+  assert.equal(request.mcpState, 'denied_pending_verification');
+  assert.equal(window.knowledgeGovernancePermissionSafety.safetyHold, true);
+  assert.equal(elements.permissionAdminConfirmExecution.disabled, true);
+  assert.match(elements.toast.textContent, /必须在飞书原生权限页处理/);
+});
+
 test('high-risk simulation pauses for independent admin reconfirmation before execution', () => {
   const { elements, window } = createBrowserFreePrototype();
   elements.permissionAction.value = 'grant';

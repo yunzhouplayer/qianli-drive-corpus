@@ -1159,7 +1159,12 @@
     function runPermissionScenario() {
       const scenario = document.getElementById('permissionScenario')?.value || 'success';
       const change = readPermissionChange();
-      createPermissionRequest(change, classifyPermissionRisk(change));
+      const risk = classifyPermissionRisk(change);
+      createPermissionRequest(change, risk);
+      if (risk === 'blocked') {
+        showToast('该申请必须在飞书原生权限页处理（原型演示）');
+        return 'blocked';
+      }
       transitionPermissionRequest('prechecking');
       if (scenario === 'oauth_expired') return transitionPermissionRequest('reauth_required');
       if (scenario === 'feishu_policy_blocked') return transitionPermissionRequest('blocked_by_feishu_policy');
@@ -1374,8 +1379,7 @@
       showToast(`已记录 ${risk} 风险权限变更申请；真实执行需飞书审批与 ACL 回读（原型演示）`);
     });
     document.getElementById('runPermissionScenario')?.addEventListener('click', () => {
-      runPermissionScenario();
-      showToast('已完成本地状态模拟；未调用飞书接口（原型演示）');
+      if (runPermissionScenario() !== 'blocked') showToast('已完成本地状态模拟；未调用飞书接口（原型演示）');
     });
     document.getElementById('permissionAdminReverified')?.addEventListener('change', renderAdminReconfirmation);
     document.getElementById('permissionAdminConfirmExecution')?.addEventListener('click', () => {
