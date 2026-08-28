@@ -71,9 +71,10 @@ function createBrowserFreePrototype() {
   elements.permissionApprovalRoute.value = '知识空间管理员审批';
   elements.permissionReason.value = '无敏感测试用途';
 
-  const catalogRows = [new FakeElement(), new FakeElement()];
+  const catalogRows = [new FakeElement(), new FakeElement(), new FakeElement()];
   catalogRows[0].dataset = { title: '测试功能点提取准出标准', owner: '张伟', version: 'v3.2', state: '需重新校验', resourceRef: 'wiki-node:governance-validation-vv-001', permissionSource: '02-测试与质量 / Validation & Verification', permissionSourceRef: 'wiki-directory:validation-quality' };
   catalogRows[1].dataset = { title: '测试用例设计规范', owner: '王五', version: 'v4.1', state: '已通过', resourceRef: 'wiki-node:governance-validation-testcase-002', permissionSource: '02-测试与质量 / Validation & Verification', permissionSourceRef: 'wiki-directory:validation-quality' };
+  catalogRows[2].dataset = { title: '缺少权限元数据的测试夹具', owner: '系统', version: 'v0.0', state: '待补全' };
 
   const window = { location: { hash: '' } };
   const document = {
@@ -165,6 +166,17 @@ test('permission view preserves Feishu authority and inheritance', () => {
   assert.match(html, /最近校验时间/);
   assert.match(html, /id=["']permissionDocumentLevelEditing["'][^>]*disabled/);
   assert.match(html, /前往父目录授权来源/);
+});
+
+test('every actionable catalog row carries a complete anonymized permission target fixture', () => {
+  const catalogMarkup = html.match(/<tbody id="catalogRows">([\s\S]*?)<\/tbody>/)?.[1] ?? '';
+  const rows = catalogMarkup.match(/<tr\b[^>]*>/g) ?? [];
+  assert.equal(rows.length, 8);
+  for (const row of rows) {
+    assert.match(row, /data-resource-ref="wiki-node:governance-validation-[^"]+"/);
+    assert.match(row, /data-permission-source="[^"]+"/);
+    assert.match(row, /data-permission-source-ref="wiki-directory:[^"]+"/);
+  }
 });
 
 test('permission change flow includes approval, execution, and read-back states', () => {
@@ -262,6 +274,17 @@ test('permission requests bind to the selected catalog target and guard inherite
     risk: 'low',
   });
   assert.equal(elements.permissionChangeDrawer.closeCalls, 1);
+});
+
+test('permission request fails closed when a future catalog row lacks required permission metadata', () => {
+  const { catalogRows, elements, window } = createBrowserFreePrototype();
+  catalogRows[2].dispatch('click');
+  assert.equal(elements.requestPermissionChange.disabled, true);
+  elements.requestPermissionChange.dispatch('click');
+  assert.equal(elements.permissionChangeDrawer.showModalCalls, undefined);
+  assert.equal(elements.permissionChangeForm.dispatch('submit').prevented, true);
+  assert.equal(window.knowledgeGovernancePrototypeState.permissionChangeEvents.length, 0);
+  assert.match(elements.toast.textContent, /缺少稳定资源引用或权限来源/);
 });
 
 test('browser-free lifecycle interactions open dialogs, retain local-only behavior, and require fresh confirmation', () => {
