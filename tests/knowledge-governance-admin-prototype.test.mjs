@@ -277,11 +277,17 @@ test('permission requests bind to the selected catalog target and guard inherite
 });
 
 test('permission request fails closed when a future catalog row lacks required permission metadata', () => {
-  const { catalogRows, elements, window } = createBrowserFreePrototype();
+  const { catalogRows, elements, sandbox, window } = createBrowserFreePrototype();
   catalogRows[2].dispatch('click');
   assert.equal(elements.requestPermissionChange.disabled, true);
   elements.requestPermissionChange.dispatch('click');
   assert.equal(elements.permissionChangeDrawer.showModalCalls, undefined);
+  assert.equal(elements.permissionTargetLabel.textContent, '权限目标信息不完整');
+  elements.permissionSourceContext.dispatch('click');
+  assert.equal(elements.permissionTargetLabel.textContent, '权限目标信息不完整');
+  assert.equal(elements.permissionTargetRef.textContent, '缺少稳定资源引用');
+  assert.equal(sandbox.readPermissionChange().context, 'document');
+  assert.match(elements.toast.textContent, /不能切换授权来源/);
   assert.equal(elements.permissionChangeForm.dispatch('submit').prevented, true);
   assert.equal(window.knowledgeGovernancePrototypeState.permissionChangeEvents.length, 0);
   assert.match(elements.toast.textContent, /缺少稳定资源引用或权限来源/);
