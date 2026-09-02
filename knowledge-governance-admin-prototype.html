@@ -489,9 +489,11 @@
 
     .prototype-dialog {
       width: min(680px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
       border: 1px solid var(--gray-300);
       border-radius: 6px;
       padding: 0;
+      overflow-y: auto;
       color: var(--ink);
       background: var(--white);
       box-shadow: 0 18px 48px var(--gray-300);
