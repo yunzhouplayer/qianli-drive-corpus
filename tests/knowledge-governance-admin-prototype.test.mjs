@@ -27,10 +27,11 @@ function createBrowserFreePrototype() {
     }
 
     dispatch(type, initial = {}) {
+      if (type === 'click' && this.disabled) return { prevented: false, skipped: true };
       let prevented = false;
       const event = { ...initial, currentTarget: this, preventDefault: () => { prevented = true; } };
       for (const handler of this.listeners.get(type) ?? []) handler(event);
-      return { prevented };
+      return { prevented, skipped: false };
     }
 
     setAttribute(name, value) {
@@ -39,6 +40,10 @@ function createBrowserFreePrototype() {
 
     getAttribute(name) {
       return this.attributes.get(name) ?? null;
+    }
+
+    hasAttribute(name) {
+      return this.attributes.has(name);
     }
 
     focus() {
@@ -68,7 +73,7 @@ function createBrowserFreePrototype() {
     get(name) { return this.form.formData[name] ?? null; }
   }
 
-  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate', 'requestPermissionChange', 'permissionChangeForm', 'permissionSubjectType', 'permissionSubject', 'permissionSubjectRef', 'permissionAction', 'permissionRequested', 'permissionEffectiveAt', 'permissionExpiryAt', 'permissionApprovalRoute', 'permissionReason', 'permissionExternal', 'permissionPublicLink', 'permissionOwnerTransfer', 'permissionSpaceAdmin', 'permissionSecureLabel', 'permissionPolicyBlocked', 'permissionInheritanceUnknown', 'permissionRemovesLastAdmin', 'permissionSourceContext', 'permissionDocumentLevelEditing', 'permissionTargetLabel', 'permissionTargetRef', 'permissionInheritedSource', 'permissionAfterDiff', 'permissionImpactCopy', 'permissionScopeNotice', 'permissionRisk', 'permissionTreatment', 'permissionSubmit', 'permissionScenario', 'runPermissionScenario', 'permissionRequestState', 'permissionMcpState', 'permissionAdminReverified', 'permissionAdminConfirmExecution', 'permissionAclDetails', 'permissionTargetSection', 'permissionRequestDetails', 'permissionDeniedNotice', 'permissionExecutionDeniedNotice'];
+  const ids = ['toast', 'reviewNext', 'saveDraft', 'admissionForm', 'dashboardTab', 'wizardTab', 'catalogTab', 'dashboard', 'wizard', 'catalog', 'overviewDetailTab', 'permissionsDetailTab', 'changesDetailTab', 'auditDetailTab', 'overviewPanel', 'permissionPanel', 'changesPanel', 'auditPanel', 'catalogSpacePane', 'catalogResourcePane', 'inspectorTitle', 'revisionAlert', 'admissionState', 'sourceVersion', 'cacheVersion', 'catalogSearch', 'filterButton', 'createDocument', 'changeDocument', 'retireDocument', 'maintainDirectory', 'documentChangeForm', 'documentRetireForm', 'retireReason', 'retireEffectiveAt', 'directoryImpactConfirmed', 'directoryMaintenanceConfirm', 'directoryMaintenanceForm', 'openSource', 'revalidate', 'requestPermissionChange', 'permissionChangeForm', 'permissionSubjectType', 'permissionSubject', 'permissionSubjectRef', 'permissionAction', 'permissionRequested', 'permissionEffectiveAt', 'permissionExpiryAt', 'permissionApprovalRoute', 'permissionReason', 'permissionExternal', 'permissionPublicLink', 'permissionOwnerTransfer', 'permissionSpaceAdmin', 'permissionSecureLabel', 'permissionPolicyBlocked', 'permissionInheritanceUnknown', 'permissionRemovesLastAdmin', 'permissionSourceContext', 'permissionDocumentLevelEditing', 'permissionTargetLabel', 'permissionTargetRef', 'permissionInheritedSource', 'permissionAfterDiff', 'permissionImpactCopy', 'permissionScopeNotice', 'permissionRisk', 'permissionTreatment', 'permissionSubmit', 'permissionScenario', 'runPermissionScenario', 'permissionRequestState', 'permissionMcpState', 'permissionAdminReverified', 'permissionAdminConfirmExecution', 'permissionAclDetails', 'permissionTargetSection', 'permissionRequestDetails', 'permissionInheritanceDetails', 'permissionDeniedNotice', 'permissionExecutionDeniedNotice'];
   const elements = Object.fromEntries(ids.map(id => [id, new FakeElement()]));
   for (const id of ['documentChangeDialog', 'documentRetireDialog', 'directoryMaintenanceDialog', 'permissionChangeDrawer']) elements[id] = new FakeDialog();
   elements.documentChangeForm.dialog = elements.documentChangeDialog;
@@ -88,6 +93,13 @@ function createBrowserFreePrototype() {
   elements.permissionReason.value = '无敏感测试用途';
   elements.permissionScenario.value = 'success';
 
+  const screens = [elements.dashboard, elements.wizard, elements.catalog];
+  const topTabs = [elements.dashboardTab, elements.wizardTab, elements.catalogTab];
+  ['dashboard', 'wizard', 'catalog'].forEach((name, index) => { screens[index].id = name; topTabs[index].dataset.target = name; });
+  const detailTabs = [elements.overviewDetailTab, elements.permissionsDetailTab, elements.changesDetailTab, elements.auditDetailTab];
+  const detailPanels = [elements.overviewPanel, elements.permissionPanel, elements.changesPanel, elements.auditPanel];
+  ['overview', 'permissions', 'changes', 'audit'].forEach((name, index) => { detailTabs[index].dataset.detailTab = name; detailPanels[index].dataset.detailPanel = name; });
+
   const catalogRows = [new FakeElement(), new FakeElement(), new FakeElement()];
   catalogRows[0].dataset = { title: '测试功能点提取准出标准', owner: '张伟', version: 'v3.2', state: '需重新校验', resourceRef: 'wiki-node:governance-validation-vv-001', permissionSource: '02-测试与质量 / Validation & Verification', permissionSourceRef: 'wiki-directory:validation-quality' };
   catalogRows[1].dataset = { title: '测试用例设计规范', owner: '王五', version: 'v4.1', state: '已通过', resourceRef: 'wiki-node:governance-validation-testcase-002', permissionSource: '02-测试与质量 / Validation & Verification', permissionSourceRef: 'wiki-directory:validation-quality' };
@@ -105,8 +117,12 @@ function createBrowserFreePrototype() {
       return new FakeElement();
     },
     querySelectorAll(selector) {
+      if (selector === '.screen') return screens;
+      if (selector === '.view-tab') return topTabs;
+      if (selector === '[data-detail-tab]') return detailTabs;
+      if (selector === '[data-detail-panel]') return detailPanels;
       if (selector === '#catalogRows tr') return catalogRows;
-      if (selector === '[data-permission-sensitive]') return [elements.inspectorTitle, elements.permissionAclDetails, elements.permissionTargetSection, elements.permissionRequestDetails, ...catalogRows];
+      if (selector === '[data-permission-sensitive]') return [elements.catalogSpacePane, elements.catalogResourcePane, elements.inspectorTitle, elements.overviewDetailTab, elements.changesDetailTab, elements.auditDetailTab, elements.overviewPanel, elements.changesPanel, elements.auditPanel, elements.permissionAclDetails, elements.permissionTargetSection, elements.permissionRequestDetails, elements.permissionInheritanceDetails, ...catalogRows];
       return [];
     },
   };
@@ -140,12 +156,23 @@ test('catalog exposes governance detail tabs', () => {
 });
 
 test('top-level and detail tabs expose complete ARIA relationships and keyboard handling', () => {
-  assert.match(html, /class="prototype-switcher" role="tablist"/);
+  assert.match(html, /class="prototype-tablist" role="tablist"/);
   assert.match(html, /id="dashboardTab"[^>]*role="tab"[^>]*aria-controls="dashboard"[^>]*aria-selected="true"/);
   assert.match(html, /id="permissionsDetailTab"[^>]*role="tab"[^>]*aria-controls="permissionPanel"/);
   assert.match(html, /id="permissionPanel"[^>]*role="tabpanel"[^>]*aria-labelledby="permissionsDetailTab"/);
   assert.match(html, /function handleTablistKeydown\(event, tabList, activate\)/);
   for (const key of ['ArrowLeft', 'ArrowRight', 'Home', 'End']) assert.match(html, new RegExp(`'${key}'`));
+
+  const { elements, window } = createBrowserFreePrototype();
+  const topMove = elements.dashboardTab.dispatch('keydown', { key: 'ArrowRight' });
+  assert.equal(topMove.prevented, true);
+  assert.equal(elements.wizardTab.focusCalls, 1);
+  assert.equal(window.location.hash, 'wizard');
+  assert.equal(elements.wizardTab.getAttribute('aria-selected'), 'true');
+  const detailMove = elements.overviewDetailTab.dispatch('keydown', { key: 'End' });
+  assert.equal(detailMove.prevented, true);
+  assert.equal(elements.auditDetailTab.focusCalls, 1);
+  assert.equal(elements.auditPanel.hidden, false);
 });
 
 test('prototype uses only the approved Qianli palette', () => {
@@ -321,11 +348,10 @@ test('permission request fails closed when a future catalog row lacks required p
   elements.requestPermissionChange.dispatch('click');
   assert.equal(elements.permissionChangeDrawer.showModalCalls, undefined);
   assert.equal(elements.permissionTargetLabel.textContent, '权限目标信息不完整');
-  elements.permissionSourceContext.dispatch('click');
+  assert.equal(elements.permissionSourceContext.dispatch('click').skipped, true);
   assert.equal(elements.permissionTargetLabel.textContent, '权限目标信息不完整');
   assert.equal(elements.permissionTargetRef.textContent, '缺少稳定资源引用');
   assert.equal(sandbox.readPermissionChange().context, 'document');
-  assert.match(elements.toast.textContent, /不能切换授权来源/);
   assert.equal(elements.permissionChangeForm.dispatch('submit').prevented, true);
   assert.equal(window.knowledgeGovernancePrototypeState.permissionChangeEvents.length, 0);
   assert.match(elements.toast.textContent, /缺少稳定资源引用或权限来源/);
@@ -422,7 +448,7 @@ test('revoke and conservative adjustment failures retain denied MCP after execut
     assert.equal(request.mcpState, 'denied_pending_verification');
     transitionThrough(sandbox, failurePath);
     assert.equal(request.mcpState, 'denied_pending_verification');
-    assert.ok(window.knowledgeGovernancePermissionSafety.holdsByScope['wiki-node:governance-validation-vv-001']);
+    assert.ok(window.knowledgeGovernancePermissionSafety.holdsByScope['wiki-node:governance-validation-vv-001::wiki-directory:validation-quality']);
     sandbox.createPermissionRequest({
       action: 'grant',
       permission: 'read',
@@ -540,9 +566,66 @@ test('permission denied scenario stops before execution, fails closed, and hides
   assert.equal(elements.permissionAclDetails.hidden, true);
   assert.equal(elements.permissionTargetSection.hidden, true);
   assert.equal(elements.permissionRequestDetails.hidden, true);
+  assert.equal(elements.permissionInheritanceDetails.hidden, true);
+  assert.equal(elements.catalogSpacePane.hidden, true);
+  assert.equal(elements.catalogResourcePane.hidden, true);
   assert.equal(elements.inspectorTitle.hidden, true);
+  assert.equal(elements.overviewPanel.hidden, true);
+  assert.equal(elements.changesPanel.hidden, true);
+  assert.equal(elements.auditPanel.hidden, true);
+  assert.equal(elements.overviewDetailTab.hidden, true);
+  assert.equal(elements.changesDetailTab.hidden, true);
+  assert.equal(elements.auditDetailTab.hidden, true);
+  assert.equal(elements.permissionPanel.hidden, false);
+  assert.equal(elements.permissionsDetailTab.getAttribute('aria-selected'), 'true');
   assert.ok(catalogRows.every(row => row.hidden));
   assert.equal(elements.requestPermissionChange.disabled, true);
+
+  elements.overviewDetailTab.dispatch('click');
+  assert.equal(elements.overviewPanel.hidden, true);
+  assert.equal(elements.permissionPanel.hidden, false);
+});
+
+test('permission denied hold persists across a same-target success attempt until explicit legal repair', () => {
+  const { elements, sandbox, window } = createBrowserFreePrototype();
+  elements.permissionSourceContext.dispatch('click');
+  elements.permissionScenario.value = 'permission_denied';
+  elements.runPermissionScenario.dispatch('click');
+
+  const request = window.knowledgeGovernancePermissionRequest;
+  const scope = 'wiki-directory:validation-quality';
+  const deniedHold = window.knowledgeGovernancePermissionSafety.holdsByScope[scope];
+  assert.equal(deniedHold.reason, 'permission_denied');
+  assert.equal(deniedHold.resourceRef, 'wiki-directory:validation-quality');
+  assert.equal(deniedHold.permissionDomainRef, 'wiki-directory:validation-quality');
+
+  elements.permissionScenario.value = 'success';
+  elements.runPermissionScenario.dispatch('click');
+  assert.equal(request.state, 'draft');
+  assert.equal(request.transitionHistory.includes('executing'), false);
+  assert.equal(request.mcpState, 'denied_permission_unverified');
+  assert.equal(elements.permissionAclDetails.hidden, true);
+  assert.equal(window.knowledgeGovernancePermissionSafety.holdsByScope[scope], deniedHold);
+
+  sandbox.createPermissionRequest({
+    action: 'grant',
+    permission: 'read',
+    subjectType: 'user',
+    subjectRef: 'anonymous:user:sample-001',
+    targetLabel: '同权限域子资源',
+    targetRef: 'wiki-node:governance-validation-child-009',
+    permissionDomainRef: scope,
+  }, 'low');
+  assert.equal(request.state, 'draft');
+  assert.equal(request.mcpState, 'denied_permission_unverified');
+  assert.equal(elements.permissionAclDetails.hidden, true);
+
+  elements.permissionScenario.value = 'permission_reverified_repair';
+  elements.runPermissionScenario.dispatch('click');
+  assert.equal(request.state, 'completed');
+  assert.equal(request.mcpState, 'active');
+  assert.equal(window.knowledgeGovernancePermissionSafety.holdsByScope[scope], undefined);
+  assert.equal(elements.permissionAclDetails.hidden, false);
 });
 
 test('blocked simulation keeps the native-Feishu gate and never loosens an existing safety hold', () => {
@@ -621,8 +704,8 @@ test('high-risk confirmation is bound to the frozen target, subject, snapshot, a
   elements.permissionSubjectType.value = 'group';
   elements.permissionSubjectType.dispatch('change');
   assert.equal(elements.permissionAdminConfirmExecution.disabled, true);
-  elements.permissionAdminConfirmExecution.dispatch('click');
   assert.equal(request.state, 'stale');
+  assert.equal(elements.permissionAdminConfirmExecution.dispatch('click').skipped, true);
   assert.equal(request.transitionHistory.includes('executing'), false);
   assert.match(elements.toast.textContent, /目标资源或申请快照已变化/);
 });
@@ -640,8 +723,8 @@ test('high-risk confirmation rejects mutated frozen request and snapshot identif
   elements.permissionAdminReverified.checked = true;
   elements.permissionAdminReverified.dispatch('change');
   assert.equal(elements.permissionAdminConfirmExecution.disabled, true);
-  elements.permissionAdminConfirmExecution.dispatch('click');
   assert.equal(request.state, 'stale');
+  assert.equal(elements.permissionAdminConfirmExecution.dispatch('click').skipped, true);
   assert.equal(request.transitionHistory.includes('executing'), false);
 });
 

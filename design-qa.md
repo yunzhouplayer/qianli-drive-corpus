@@ -121,4 +121,12 @@
 - 顶层与详情页签补充完整 ARIA 关联和方向键导航。上述改动不改变五张既有截图的默认可见状态与品牌布局。
 - `node --test tests/knowledge-governance-admin-prototype.test.mjs`：34/34 通过。
 
+### 第二轮安全语义复验
+
+- `permission_denied` 会为 `resourceRef + permissionDomainRef` 建立持久安全锁；普通新申请和“成功”模拟都不能恢复详情或 MCP，只有同目标的“权限恢复回读与派生修复”完整通过后才能解除。
+- 无权态同时隐藏知识空间、资源列表、治理概览、版本、权限域、审批/变更/审计内容、ACL 成员和申请目标差异，并强制停留在不泄漏详情的飞书权限页签。
+- 高风险冻结绑定一旦漂移会在表单变化或重新核验时立即进入 `stale`；测试桩现按真实浏览器语义忽略 disabled 按钮点击。
+- 顶层 tablist 只包含 `tab`，辅助标签和原型状态已移出；方向键、Home/End 的焦点、选择态和面板切换均通过可执行测试。
+- `node --test tests/knowledge-governance-admin-prototype.test.mjs`：35/35 通过；`git diff --check` 通过。
+
 final result: passed

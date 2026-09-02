@@ -53,6 +53,7 @@
       color: var(--gray-500);
       margin-right: 5px;
     }
+    .prototype-tablist { display: flex; align-items: center; gap: 8px; }
     .view-tab {
       height: 30px;
       padding: 0 14px;
@@ -531,11 +532,13 @@
   </style>
 </head>
 <body>
-  <nav class="prototype-switcher" role="tablist" aria-label="原型视图切换">
+  <nav class="prototype-switcher" aria-label="原型视图切换">
     <span class="prototype-switcher__label">原型视图</span>
-    <button id="dashboardTab" class="view-tab active" role="tab" aria-controls="dashboard" aria-selected="true" data-target="dashboard">治理态势工作台</button>
-    <button id="wizardTab" class="view-tab" role="tab" aria-controls="wizard" aria-selected="false" tabindex="-1" data-target="wizard">入库申请向导</button>
-    <button id="catalogTab" class="view-tab" role="tab" aria-controls="catalog" aria-selected="false" tabindex="-1" data-target="catalog">知识目录控制台</button>
+    <div class="prototype-tablist" role="tablist" aria-label="原型页面">
+      <button id="dashboardTab" class="view-tab active" role="tab" aria-controls="dashboard" aria-selected="true" data-target="dashboard">治理态势工作台</button>
+      <button id="wizardTab" class="view-tab" role="tab" aria-controls="wizard" aria-selected="false" tabindex="-1" data-target="wizard">入库申请向导</button>
+      <button id="catalogTab" class="view-tab" role="tab" aria-controls="catalog" aria-selected="false" tabindex="-1" data-target="catalog">知识目录控制台</button>
+    </div>
     <span class="prototype-badge">静态交互原型 · 不连接真实飞书数据</span>
   </nav>
 
@@ -692,7 +695,7 @@
       </div>
     </header>
     <div class="catalog-workspace">
-      <aside class="catalog-pane">
+      <aside id="catalogSpacePane" class="catalog-pane" data-permission-sensitive>
         <div class="pane-header"><strong>知识空间</strong></div>
         <div class="space-tree">
           <div class="tree-group">
@@ -718,7 +721,7 @@
           </div>
         </div>
       </aside>
-      <main class="catalog-pane" style="display:flex;flex-direction:column">
+      <main id="catalogResourcePane" class="catalog-pane" style="display:flex;flex-direction:column" data-permission-sensitive>
         <div class="list-toolbar">
           <label class="search-wrap"><i class="ph ph-magnifying-glass"></i><input id="catalogSearch" aria-label="搜索文档" placeholder="搜索文档、空间或负责人"></label>
           <button id="filterButton" class="filter-btn"><i class="ph ph-funnel"></i>筛选</button>
@@ -749,12 +752,12 @@
       <aside class="catalog-pane inspector">
         <h2 id="inspectorTitle" data-permission-sensitive>测试功能点提取准出标准</h2>
         <div class="detail-tabs" role="tablist" aria-label="文档治理详情">
-          <button id="overviewDetailTab" class="detail-tab active" role="tab" aria-controls="overviewPanel" aria-selected="true" data-detail-tab="overview">治理概览</button>
+          <button id="overviewDetailTab" class="detail-tab active" role="tab" aria-controls="overviewPanel" aria-selected="true" data-detail-tab="overview" data-permission-sensitive>治理概览</button>
           <button id="permissionsDetailTab" class="detail-tab" role="tab" aria-controls="permissionPanel" aria-selected="false" tabindex="-1" data-detail-tab="permissions">飞书权限</button>
-          <button id="changesDetailTab" class="detail-tab" role="tab" aria-controls="changesPanel" aria-selected="false" tabindex="-1" data-detail-tab="changes">变更记录</button>
-          <button id="auditDetailTab" class="detail-tab" role="tab" aria-controls="auditPanel" aria-selected="false" tabindex="-1" data-detail-tab="audit">审计轨迹</button>
+          <button id="changesDetailTab" class="detail-tab" role="tab" aria-controls="changesPanel" aria-selected="false" tabindex="-1" data-detail-tab="changes" data-permission-sensitive>变更记录</button>
+          <button id="auditDetailTab" class="detail-tab" role="tab" aria-controls="auditPanel" aria-selected="false" tabindex="-1" data-detail-tab="audit" data-permission-sensitive>审计轨迹</button>
         </div>
-        <div id="overviewPanel" class="detail-panel" role="tabpanel" aria-labelledby="overviewDetailTab" data-detail-panel="overview">
+        <div id="overviewPanel" class="detail-panel" role="tabpanel" aria-labelledby="overviewDetailTab" data-detail-panel="overview" data-permission-sensitive>
           <div id="revisionAlert" class="revision-alert"><i class="ph ph-warning-circle"></i><span>源文档有新版本</span></div>
           <div class="inspector-actions"><button id="revalidate" class="primary-btn">重新校验</button><button id="openSource" class="text-btn">查看飞书原文</button></div>
           <p class="permission-caption">访问权限继承飞书源文档</p>
@@ -791,10 +794,10 @@
             <div class="inspector-actions"><button id="requestPermissionChange" class="primary-btn">发起权限变更</button></div>
           </section>
         </div>
-        <div id="changesPanel" class="detail-panel" role="tabpanel" aria-labelledby="changesDetailTab" data-detail-panel="changes" hidden>
+        <div id="changesPanel" class="detail-panel" role="tabpanel" aria-labelledby="changesDetailTab" data-detail-panel="changes" data-permission-sensitive hidden>
           <section class="detail-section"><h3>变更记录</h3><dl class="detail-grid"><dt>最近申请</dt><dd>无待执行权限申请</dd><dt>执行原则</dt><dd>审批通过后，按风险自动执行或管理员二次确认</dd><dt>完成条件</dt><dd>飞书 ACL 回读与派生数据处理均完成</dd></dl></section>
         </div>
-        <div id="auditPanel" class="detail-panel" role="tabpanel" aria-labelledby="auditDetailTab" data-detail-panel="audit" hidden>
+        <div id="auditPanel" class="detail-panel" role="tabpanel" aria-labelledby="auditDetailTab" data-detail-panel="audit" data-permission-sensitive hidden>
           <section class="detail-section">
             <h3>审计轨迹</h3>
             <div class="audit-list">
@@ -900,7 +903,7 @@
           <div class="dialog-field"><label for="permissionReason">变更理由</label><input id="permissionReason" name="reason" required placeholder="说明业务场景与最小必要范围"></div>
         </div>
       </section>
-      <section class="dialog-section">
+      <section id="permissionInheritanceDetails" class="dialog-section" data-permission-sensitive>
         <h3>继承来源与前后差异</h3>
         <div class="inheritance-guard"><strong id="permissionInheritedSource">当前授权来源：继承自父目录</strong><span id="permissionScopeNotice">继承权限不能在文档层伪造覆盖；当前文档级权限编辑与提交已禁用。</span><button id="permissionDocumentLevelEditing" type="button" class="secondary-btn" disabled>文档层直接修改不可用</button><button id="permissionSourceContext" type="button" class="text-btn">前往父目录授权来源</button></div>
         <dl class="impact-preview" style="margin-top:10px"><div><dt>变更前</dt><dd>继承自父目录 / 可编辑</dd></div><div><dt>变更后</dt><dd id="permissionAfterDiff">新增直接授权 / 可阅读</dd></div><div><dt>授权来源</dt><dd id="permissionImpactSource">02-测试与质量</dd></div><div><dt>AI 影响</dt><dd id="permissionImpactCopy">待规则预检</dd></div></dl>
@@ -928,7 +931,7 @@
         <dl class="permission-impact"><dt>申请状态</dt><dd id="permissionRequestState" data-permission-request-state>draft</dd><dt>MCP 访问</dt><dd id="permissionMcpState" data-mcp-state>active</dd></dl>
         <p class="permission-authority"><strong>权限收紧时，先暂停 MCP 访问。</strong> 完成回读和派生数据校验后恢复；权限扩大也会保持不可用，直至飞书 ACL 已回读且派生数据处理完成。</p>
         <p id="permissionExecutionDeniedNotice" class="permission-authority" hidden><strong>permission_denied</strong> 当前身份无法确认目标资源管理权；已隐藏资源及成员详情，MCP 保持拒绝。</p>
-        <div class="dialog-grid" style="margin-top:12px"><div class="dialog-field"><label for="permissionScenario">原型模拟场景</label><select id="permissionScenario"><option value="success">成功</option><option value="acl_changed_during_approval">审批期间 ACL 变化</option><option value="oauth_expired">OAuth 失效</option><option value="permission_denied">飞书权限不足</option><option value="feishu_policy_blocked">飞书策略阻止</option><option value="readback_mismatch">回读不一致</option><option value="derivative_failure">派生数据失败</option></select></div><div class="dialog-field dialog-field--action"><label>模拟控制</label><button id="runPermissionScenario" type="button" class="secondary-btn">运行本地模拟</button></div></div>
+        <div class="dialog-grid" style="margin-top:12px"><div class="dialog-field"><label for="permissionScenario">原型模拟场景</label><select id="permissionScenario"><option value="success">成功</option><option value="acl_changed_during_approval">审批期间 ACL 变化</option><option value="oauth_expired">OAuth 失效</option><option value="permission_denied">飞书权限不足</option><option value="permission_reverified_repair">权限恢复回读与派生修复</option><option value="feishu_policy_blocked">飞书策略阻止</option><option value="readback_mismatch">回读不一致</option><option value="derivative_failure">派生数据失败</option></select></div><div class="dialog-field dialog-field--action"><label>模拟控制</label><button id="runPermissionScenario" type="button" class="secondary-btn">运行本地模拟</button></div></div>
         <div class="inheritance-guard" style="margin-top:12px"><strong>高风险管理员二次确认</strong><label><input id="permissionAdminReverified" type="checkbox"> 已重新核验当前管理员飞书身份与目标资源管理权限（原型确认）</label><button id="permissionAdminConfirmExecution" type="button" class="secondary-btn" disabled>管理员确认后继续执行</button></div>
       </section>
       <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button type="submit" class="primary-btn" data-permission-submit>提交权限变更申请</button></div>
@@ -1042,15 +1045,17 @@
       ...selectedCatalogResource,
       permissionDomainRef: selectedCatalogResource.permissionSourceRef,
     };
+    let permissionDetailsDenied = false;
 
     function showDetailTab(tabName) {
+      const permittedTabName = permissionDetailsDenied ? 'permissions' : tabName;
       detailTabs.forEach(tab => {
-        const active = tab.dataset.detailTab === tabName;
+        const active = tab.dataset.detailTab === permittedTabName;
         tab.classList.toggle('active', active);
         tab.setAttribute('aria-selected', String(active));
         tab.tabIndex = active ? 0 : -1;
       });
-      detailPanels.forEach(panel => { panel.hidden = panel.dataset.detailPanel !== tabName; });
+      detailPanels.forEach(panel => { panel.hidden = panel.dataset.detailPanel !== permittedTabName; });
     }
 
     detailTabs.forEach(tab => {
@@ -1105,7 +1110,7 @@
       target: '测试平台组',
       resourceRef: 'wiki-node:governance-validation-vv-001',
       permissionDomainRef: 'wiki-directory:validation-quality',
-      safetyScopeRef: 'wiki-node:governance-validation-vv-001',
+      safetyScopeRef: 'wiki-node:governance-validation-vv-001::wiki-directory:validation-quality',
       subjectType: 'group',
       subjectRef: 'anonymous:group:sample-001',
       permission: 'edit',
@@ -1114,6 +1119,7 @@
       mcpState: 'active',
       transitionHistory: ['draft'],
       pendingScenario: null,
+      repairAuthorization: false,
     };
     const permissionRequestStates = new Set([
       'draft', 'prechecking', 'ready_for_approval', 'approving', 'approved',
@@ -1150,7 +1156,29 @@
       return scopeRef ? permissionSafety.holdsByScope[scopeRef] || null : null;
     }
 
+    function createPermissionSafetyScopeRef(resourceRef, permissionDomainRef) {
+      if (resourceRef && permissionDomainRef && resourceRef !== permissionDomainRef) return `${resourceRef}::${permissionDomainRef}`;
+      return resourceRef || permissionDomainRef || 'unresolved-permission-scope';
+    }
+
+    function getPermissionSafetyHoldForTarget(resourceRef, permissionDomainRef) {
+      return getPermissionSafetyHold(createPermissionSafetyScopeRef(resourceRef, permissionDomainRef))
+        || (permissionDomainRef ? getPermissionSafetyHold(permissionDomainRef) : null);
+    }
+
+    function isSamePermissionTarget(hold, request) {
+      return Boolean(hold)
+        && hold.resourceRef === request.resourceRef
+        && hold.permissionDomainRef === request.permissionDomainRef;
+    }
+
+    function permissionMcpStateForHold(hold) {
+      return hold?.reason === 'permission_denied' ? 'denied_permission_unverified' : 'denied_pending_verification';
+    }
+
     function setPermissionSensitiveVisibility(visible) {
+      const currentDetailTab = detailTabs.find(tab => tab.getAttribute('aria-selected') === 'true')?.dataset.detailTab || 'overview';
+      permissionDetailsDenied = !visible;
       document.querySelectorAll('[data-permission-sensitive]').forEach(element => { element.hidden = !visible; });
       const panelNotice = document.getElementById('permissionDeniedNotice');
       const executionNotice = document.getElementById('permissionExecutionDeniedNotice');
@@ -1158,6 +1186,7 @@
       if (panelNotice) panelNotice.hidden = visible;
       if (executionNotice) executionNotice.hidden = visible;
       if (requestButton) requestButton.disabled = !visible || !hasCompletePermissionMetadata();
+      showDetailTab(visible ? currentDetailTab : 'permissions');
     }
 
     function renderPermissionRequestState() {
@@ -1172,23 +1201,37 @@
       const allowedStates = permissionRequestTransitions.get(permissionRequest.state);
       if (!allowedStates?.has(nextState)) throw new Error(`Illegal permission transition: ${permissionRequest.state} -> ${nextState}`);
       const tightening = ['revoke', 'modify'].includes(permissionRequest.action);
+      const activeHold = getPermissionSafetyHold(permissionRequest.safetyScopeRef);
       if (nextState === 'permission_denied') {
-        permissionRequest.mcpState = 'denied_permission_unverified';
-      } else if (tightening && nextState === 'executing') {
         permissionSafety.holdsByScope[permissionRequest.safetyScopeRef] = {
+          reason: 'permission_denied',
           requestId: permissionRequest.id,
           snapshotId: permissionRequest.snapshotId,
           resourceRef: permissionRequest.resourceRef,
+          permissionDomainRef: permissionRequest.permissionDomainRef,
         };
-        permissionRequest.mcpState = 'denied_pending_verification';
-      } else if (getPermissionSafetyHold(permissionRequest.safetyScopeRef)) {
-        const activeHold = getPermissionSafetyHold(permissionRequest.safetyScopeRef);
-        if (nextState === 'completed' && permissionRequest.state === 'propagating' && tightening && activeHold.resourceRef === permissionRequest.resourceRef) {
+        permissionRequest.mcpState = 'denied_permission_unverified';
+        setPermissionSensitiveVisibility(false);
+      } else if (activeHold) {
+        const completedVerifiedFlow = nextState === 'completed' && permissionRequest.state === 'propagating';
+        const executionRepair = activeHold.reason === 'execution_verification_pending' && tightening;
+        const permissionRepair = activeHold.reason === 'permission_denied' && permissionRequest.repairAuthorization;
+        if (completedVerifiedFlow && isSamePermissionTarget(activeHold, permissionRequest) && (executionRepair || permissionRepair)) {
           delete permissionSafety.holdsByScope[permissionRequest.safetyScopeRef];
           permissionRequest.mcpState = 'active';
+          if (permissionRepair) setPermissionSensitiveVisibility(true);
         } else {
-          permissionRequest.mcpState = 'denied_pending_verification';
+          permissionRequest.mcpState = permissionMcpStateForHold(activeHold);
         }
+      } else if (tightening && nextState === 'executing') {
+        permissionSafety.holdsByScope[permissionRequest.safetyScopeRef] = {
+          reason: 'execution_verification_pending',
+          requestId: permissionRequest.id,
+          snapshotId: permissionRequest.snapshotId,
+          resourceRef: permissionRequest.resourceRef,
+          permissionDomainRef: permissionRequest.permissionDomainRef,
+        };
+        permissionRequest.mcpState = 'denied_pending_verification';
       } else if (permissionRequest.action === 'grant' && nextState !== 'completed') {
         permissionRequest.mcpState = 'unavailable_pending_completion';
       } else if (nextState === 'completed' && permissionRequest.state === 'propagating') {
@@ -1202,6 +1245,12 @@
     function renderAdminReconfirmation() {
       const reverified = document.getElementById('permissionAdminReverified');
       const confirm = document.getElementById('permissionAdminConfirmExecution');
+      if (permissionRequest.risk === 'high' && permissionRequest.state === 'awaiting_execution' && !isFrozenPermissionTargetCurrent()) {
+        permissionRequest.pendingScenario = null;
+        if (reverified) reverified.checked = false;
+        transitionPermissionRequest('stale');
+        showToast('目标资源或申请快照已变化，高风险申请已转为 stale，必须重新预检和审批（原型演示）');
+      }
       if (confirm) confirm.disabled = !(
         permissionRequest.risk === 'high'
         && permissionRequest.state === 'awaiting_execution'
@@ -1214,8 +1263,8 @@
       permissionRequestSequence += 1;
       const reverified = document.getElementById('permissionAdminReverified');
       if (reverified) reverified.checked = false;
-      setPermissionSensitiveVisibility(true);
-      const safetyScopeRef = change.targetRef || change.permissionDomainRef || 'unresolved-permission-scope';
+      const safetyScopeRef = createPermissionSafetyScopeRef(change.targetRef, change.permissionDomainRef);
+      const activeHold = getPermissionSafetyHoldForTarget(change.targetRef, change.permissionDomainRef);
       const id = `PCR-20260827-${String(permissionRequestSequence).padStart(4, '0')}`;
       const snapshotId = `ACL-SNAPSHOT-20260827-${String(permissionRequestSequence).padStart(4, '0')}`;
       const frozenBinding = Object.freeze({
@@ -1244,10 +1293,12 @@
         permission: change.permission,
         executionIdentity: permissionExecutionIdentity,
         frozenBinding,
-        mcpState: getPermissionSafetyHold(safetyScopeRef) ? 'denied_pending_verification' : 'active',
+        mcpState: activeHold ? permissionMcpStateForHold(activeHold) : 'active',
         transitionHistory: ['draft'],
         pendingScenario: null,
+        repairAuthorization: false,
       });
+      setPermissionSensitiveVisibility(activeHold?.reason !== 'permission_denied');
       renderPermissionRequestState();
       renderAdminReconfirmation();
     }
@@ -1259,7 +1310,7 @@
       transitionPermissionRequest('approving');
     }
 
-    function evaluatePermissionOperation(change, risk = classifyPermissionRisk(change)) {
+    function evaluatePermissionOperation(change, risk = classifyPermissionRisk(change), scenario = 'request') {
       if (!hasCompletePermissionMetadata()) {
         return { allowed: false, message: '当前选中文档缺少稳定资源引用或权限来源，已阻断权限申请（原型演示）' };
       }
@@ -1268,6 +1319,15 @@
       }
       if (risk === 'blocked') {
         return { allowed: false, message: '该申请必须在飞书原生权限页处理（原型演示）' };
+      }
+      const safetyScopeRef = createPermissionSafetyScopeRef(change.targetRef, change.permissionDomainRef);
+      const activeHold = getPermissionSafetyHoldForTarget(change.targetRef, change.permissionDomainRef);
+      if (scenario === 'permission_reverified_repair') {
+        if (activeHold?.reason !== 'permission_denied' || !isSamePermissionTarget(activeHold, { resourceRef: change.targetRef, permissionDomainRef: change.permissionDomainRef })) {
+          return { allowed: false, message: '当前目标没有可执行的权限恢复锁，不能伪造修复完成（原型演示）' };
+        }
+      } else if (activeHold?.reason === 'permission_denied') {
+        return { allowed: false, message: '当前目标仍处于 permission_denied；必须先完成同目标权限恢复、ACL 回读和派生验证（原型演示）' };
       }
       return { allowed: true, message: '' };
     }
@@ -1298,15 +1358,15 @@
       const change = readPermissionChange();
       const risk = classifyPermissionRisk(change);
       createPermissionRequest(change, risk);
-      const gate = evaluatePermissionOperation(change, risk);
+      const gate = evaluatePermissionOperation(change, risk, scenario);
       if (!gate.allowed) {
         showToast(gate.message);
         return 'blocked';
       }
+      permissionRequest.repairAuthorization = scenario === 'permission_reverified_repair';
       transitionPermissionRequest('prechecking');
       if (scenario === 'oauth_expired') return transitionPermissionRequest('reauth_required');
       if (scenario === 'permission_denied') {
-        setPermissionSensitiveVisibility(false);
         return transitionPermissionRequest('permission_denied');
       }
       if (scenario === 'feishu_policy_blocked') return transitionPermissionRequest('blocked_by_feishu_policy');
@@ -1402,7 +1462,7 @@
 
     function updatePermissionRequestAvailability() {
       const requestButton = document.getElementById('requestPermissionChange');
-      if (requestButton) requestButton.disabled = !hasCompletePermissionMetadata();
+      if (requestButton) requestButton.disabled = permissionDetailsDenied || !hasCompletePermissionMetadata();
     }
 
     function setPermissionTargetScope(scope) {
