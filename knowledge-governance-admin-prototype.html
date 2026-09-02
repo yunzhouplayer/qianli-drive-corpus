@@ -1,0 +1,1630 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>千里智行知识库管理后台原型</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+  <style>
+    :root {
+      --red: #db0052;
+      --red-soft: #f2f2f2;
+      --red-border: #bfbfbf;
+      --black: #000;
+      --ink: #404040;
+      --gray-900: #404040;
+      --gray-700: #7f7f7f;
+      --gray-500: #7f7f7f;
+      --gray-300: #bfbfbf;
+      --gray-200: #bfbfbf;
+      --gray-100: #f2f2f2;
+      --white: #fff;
+      --switcher-h: 46px;
+      --header-h: 68px;
+      --sidebar-w: 218px;
+      font-family: "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--white);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 2px;
+    }
+
+    .prototype-switcher {
+      height: var(--switcher-h);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+      position: relative;
+      z-index: 20;
+    }
+    .prototype-switcher__label {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin-right: 5px;
+    }
+    .prototype-tablist { display: flex; align-items: center; gap: 8px; }
+    .view-tab {
+      height: 30px;
+      padding: 0 14px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--gray-700);
+      background: transparent;
+      font-size: 13px;
+    }
+    .view-tab:hover { background: var(--gray-100); color: var(--black); }
+    .view-tab.active {
+      border-color: var(--red);
+      color: var(--red);
+      background: var(--red-soft);
+      font-weight: 700;
+    }
+    .prototype-badge {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .prototype-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: calc(100vh - var(--switcher-h));
+      background: var(--white);
+    }
+    .screen.active { display: block; }
+
+    .product-header {
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+    .brand {
+      width: var(--sidebar-w);
+      height: 100%;
+      padding: 8px 22px;
+      display: flex;
+      align-items: center;
+      border-right: 1px solid var(--gray-200);
+      flex: 0 0 auto;
+    }
+    .brand img { width: 136px; height: 50px; object-fit: contain; object-position: left center; }
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      padding-left: 22px;
+      color: var(--black);
+      white-space: nowrap;
+    }
+    .header-actions {
+      margin-left: auto;
+      padding-right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: var(--gray-700);
+      font-size: 13px;
+    }
+    .header-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .header-chip i { font-size: 19px; color: var(--black); }
+    .user-chip {
+      border-left: 1px solid var(--gray-200);
+      padding-left: 20px;
+      display: grid;
+      grid-template-columns: auto auto;
+      align-items: center;
+      gap: 2px 10px;
+    }
+    .user-chip strong { color: var(--black); font-size: 14px; }
+    .user-chip small { color: var(--gray-500); font-size: 11px; }
+
+    .workspace { height: calc(100% - var(--header-h)); display: flex; min-height: 0; }
+    .sidebar {
+      width: var(--sidebar-w);
+      flex: 0 0 auto;
+      border-right: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      background: var(--white);
+      overflow-y: auto;
+    }
+    .sidebar-section-title {
+      padding: 24px 24px 11px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .nav-item, .subnav-item {
+      position: relative;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--gray-900);
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-item { min-height: 52px; padding: 0 23px; font-size: 15px; }
+    .nav-item i { width: 20px; font-size: 20px; color: var(--gray-900); }
+    .nav-item:hover, .subnav-item:hover { background: var(--gray-100); }
+    .nav-item.active, .subnav-item.active { color: var(--red); font-weight: 700; }
+    .nav-item.active::before, .subnav-item.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 9px;
+      bottom: 9px;
+      width: 3px;
+      background: var(--red);
+    }
+    .nav-bottom { margin-top: auto; padding-bottom: 12px; }
+    .subnav { margin-left: 36px; border-left: 1px solid var(--gray-200); }
+    .subnav-item { height: 42px; padding-left: 27px; font-size: 14px; }
+
+    .content { flex: 1; min-width: 0; overflow: auto; padding: 20px; background: var(--gray-100); }
+    .panel { background: var(--white); border: 1px solid var(--gray-200); border-radius: 5px; }
+    .panel-title { font-size: 17px; font-weight: 700; color: var(--black); }
+    .primary-btn, .secondary-btn, .text-btn {
+      min-height: 38px;
+      border-radius: 4px;
+      padding: 0 20px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .primary-btn { color: var(--white); background: var(--red); border-color: var(--red); }
+    .primary-btn:hover { background: var(--red); }
+    .secondary-btn { color: var(--ink); background: var(--white); border-color: var(--gray-300); }
+    .secondary-btn:hover { background: var(--gray-100); }
+    .text-btn { color: var(--red); background: transparent; padding-left: 8px; padding-right: 8px; }
+    .text-btn:hover { background: var(--red-soft); }
+
+    /* Dashboard */
+    .dashboard-content { display: grid; grid-template-rows: auto minmax(330px, 1fr) auto; gap: 16px; }
+    .metric-panel { padding: 17px 20px 13px; }
+    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 14px; }
+    .metric {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 17px;
+      min-height: 74px;
+      border-right: 1px solid var(--gray-200);
+    }
+    .metric:last-child { border-right: 0; }
+    .metric i { font-size: 34px; color: var(--gray-900); }
+    .metric-label { color: var(--gray-700); font-size: 14px; }
+    .metric-value { color: var(--red); font-size: 28px; margin-top: 3px; line-height: 1; }
+    .queue-panel { overflow: hidden; display: flex; flex-direction: column; }
+    .panel-toolbar {
+      height: 57px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .panel-toolbar .primary-btn { margin-left: auto; }
+    .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+    .data-table th {
+      height: 40px;
+      color: var(--gray-700);
+      background: var(--gray-100);
+      text-align: left;
+      font-weight: 400;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 15px;
+    }
+    .data-table td {
+      height: 44px;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--gray-900);
+    }
+    .data-table tbody tr { cursor: pointer; }
+    .data-table tbody tr:hover { background: var(--gray-100); }
+    .data-table tbody tr.selected { background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); }
+    .status-attention { color: var(--red) !important; font-weight: 700; }
+    .status-normal { color: var(--gray-900); }
+    .table-footer {
+      margin-top: auto;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 20px;
+      gap: 12px;
+      color: var(--gray-700);
+      font-size: 13px;
+    }
+    .page-current { border: 1px solid var(--red); color: var(--red); border-radius: 3px; padding: 3px 8px; }
+    .pipeline-panel { padding: 17px 20px 15px; }
+    .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 17px; }
+    .pipeline-step { position: relative; display: flex; gap: 12px; min-height: 76px; align-items: flex-start; }
+    .pipeline-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 20px;
+      left: 74%;
+      right: 6%;
+      height: 2px;
+      background: var(--red);
+    }
+    .step-icon {
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--gray-200);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+    .step-icon i { font-size: 21px; }
+    .pipeline-copy strong { display: block; font-size: 14px; color: var(--gray-900); }
+    .pipeline-copy b { display: block; margin-top: 3px; font-size: 21px; color: var(--gray-900); }
+    .pipeline-copy small { display: block; margin-top: 5px; color: var(--gray-500); }
+
+    /* Wizard */
+    .wizard-workspace { flex-direction: column; }
+    .wizard-progress {
+      height: 94px;
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 0 34px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+    .wizard-step {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      color: var(--gray-500);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .wizard-step::after {
+      content: "";
+      position: absolute;
+      right: -30%;
+      width: 60%;
+      height: 1px;
+      top: 50%;
+      background: var(--gray-300);
+    }
+    .wizard-step:last-child::after { display: none; }
+    .wizard-step.done, .wizard-step.active { color: var(--black); }
+    .wizard-step.active::before {
+      content: "";
+      position: absolute;
+      left: 23%;
+      right: 23%;
+      bottom: 0;
+      height: 3px;
+      background: var(--red);
+    }
+    .step-number {
+      width: 35px;
+      height: 35px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--gray-300);
+      border-radius: 50%;
+      background: var(--white);
+      color: var(--gray-500);
+    }
+    .wizard-step.done .step-number { border-color: var(--black); color: var(--black); }
+    .wizard-step.active .step-number { border-color: var(--red); background: var(--red); color: var(--white); }
+    .wizard-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1.06fr; gap: 18px; padding: 18px 22px; overflow: auto; background: var(--gray-100); }
+    .wizard-card { padding: 20px; }
+    .wizard-card h2 { margin: 0 0 18px; font-size: 17px; }
+    .source-box { border: 1px solid var(--gray-200); padding: 18px; display: grid; grid-template-columns: 75px 1fr; gap: 16px; }
+    .source-icon { border-right: 1px solid var(--gray-200); display: grid; place-items: center; }
+    .source-icon i { font-size: 47px; color: var(--gray-900); }
+    .source-meta h3 { margin: 0 0 7px; font-size: 17px; color: var(--black); }
+    .source-meta p { margin: 5px 0; color: var(--gray-700); font-size: 12px; }
+    .source-meta .tag { display: inline-block; padding: 3px 7px; background: var(--gray-100); color: var(--gray-700); font-size: 11px; }
+    .check-title { margin: 20px 0 9px; font-weight: 700; }
+    .check-list { border: 1px solid var(--gray-200); }
+    .check-row { min-height: 62px; display: grid; grid-template-columns: 32px 125px 1fr; align-items: center; padding: 9px 15px; border-bottom: 1px solid var(--gray-200); }
+    .check-row:last-child { border-bottom: 0; }
+    .check-row i { font-size: 22px; color: var(--gray-900); }
+    .check-row.warning i, .check-row.warning strong { color: var(--red); }
+    .check-row strong { font-size: 13px; }
+    .check-row small { color: var(--gray-500); line-height: 1.55; }
+    .footnote { margin: 14px 0 0; font-size: 12px; color: var(--gray-500); }
+    .form-note { margin-left: 7px; color: var(--gray-500); font-size: 11px; font-weight: 400; }
+    .form-grid { display: grid; gap: 13px; }
+    .form-field { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 10px; }
+    .form-field label { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+    .required { color: var(--red); }
+    .form-field select, .form-field input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--gray-200);
+      border-radius: 3px;
+      color: var(--gray-700);
+      background: var(--white);
+      padding: 0 12px;
+    }
+    .form-field input[readonly] { background: var(--gray-100); }
+    .route-box { border: 1px solid var(--gray-200); padding: 13px; display: flex; align-items: center; gap: 11px; color: var(--gray-900); }
+    .route-box i { font-size: 23px; }
+    .permission-note { margin-top: 14px; border: 1px solid var(--gray-200); padding: 13px 15px; display: grid; grid-template-columns: 28px 1fr; gap: 10px; }
+    .permission-note i { font-size: 24px; }
+    .permission-note strong { display: block; font-size: 13px; }
+    .permission-note small { display: block; margin-top: 4px; color: var(--gray-500); }
+    .wizard-footer { height: 76px; flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 24px; border-top: 1px solid var(--gray-200); background: var(--white); }
+    .wizard-footer button { min-width: 140px; height: 44px; }
+
+    /* Catalog */
+    .catalog-workspace { display: grid; grid-template-columns: 310px minmax(500px, 1fr) 450px; height: calc(100% - var(--header-h)); }
+    .catalog-pane { min-width: 0; overflow: auto; border-right: 1px solid var(--gray-200); background: var(--white); }
+    .catalog-pane:last-child { border-right: 0; }
+    .pane-header { min-height: 66px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--gray-200); }
+    .pane-header strong { font-size: 14px; }
+    .space-tree { padding: 12px 0 40px; }
+    .tree-group { margin-bottom: 10px; }
+    .tree-space, .tree-child { display: flex; align-items: center; gap: 9px; width: 100%; border: 0; background: transparent; color: var(--gray-900); text-align: left; }
+    .tree-space { height: 42px; padding: 0 16px; font-size: 13px; font-weight: 700; }
+    .tree-child { min-height: 39px; padding: 0 12px 0 49px; font-size: 12px; }
+    .tree-space:hover, .tree-child:hover { background: var(--gray-100); }
+    .tree-child.active { color: var(--red); background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); font-weight: 700; }
+    .tree-space i, .tree-child i { font-size: 17px; }
+    .list-toolbar { height: 66px; display: flex; align-items: center; gap: 15px; padding: 0 18px; border-bottom: 1px solid var(--gray-200); }
+    .search-wrap { flex: 1; position: relative; }
+    .search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--gray-500); font-size: 18px; }
+    .search-wrap input { width: 100%; height: 40px; border: 1px solid var(--gray-200); border-radius: 3px; padding: 0 12px 0 39px; color: var(--gray-900); }
+    .filter-btn { border: 0; background: transparent; color: var(--gray-700); padding: 9px 4px; display: flex; gap: 6px; align-items: center; }
+    .filter-btn i { font-size: 19px; }
+    .lifecycle-actions { height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 18px; border-bottom: 1px solid var(--gray-200); }
+    .lifecycle-actions .primary-btn, .lifecycle-actions .secondary-btn { min-height: 32px; padding: 0 13px; font-size: 12px; }
+    .lifecycle-actions .primary-btn { display: inline-flex; align-items: center; gap: 5px; }
+    .danger-outline { color: var(--ink); border-color: var(--gray-300); }
+    .catalog-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+    .catalog-table th { height: 44px; text-align: left; font-weight: 400; color: var(--gray-700); padding: 0 11px; border-bottom: 1px solid var(--gray-200); }
+    .catalog-table td { height: 52px; padding: 0 11px; border-bottom: 1px solid var(--gray-200); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .catalog-table tbody tr { cursor: pointer; }
+    .catalog-table tbody tr:hover { background: var(--gray-100); }
+    .catalog-table tbody tr.selected { background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); }
+    .catalog-table td:first-child i { margin-right: 7px; color: var(--gray-700); }
+    .catalog-footer { height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-top: 1px solid var(--gray-200); color: var(--gray-700); font-size: 12px; }
+    .pages { display: flex; gap: 13px; align-items: center; }
+    .inspector { padding: 18px 22px 34px; }
+    .inspector h2 { margin: 0 0 16px; font-size: 20px; line-height: 1.35; color: var(--black); }
+    .detail-tabs { display: flex; align-items: center; gap: 16px; margin: 0 0 16px; border-bottom: 1px solid var(--gray-200); }
+    .detail-tab { min-height: 34px; padding: 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--gray-700); font-size: 12px; }
+    .detail-tab:hover { color: var(--black); }
+    .detail-tab.active { color: var(--red); border-bottom-color: var(--red); font-weight: 700; }
+    .revision-alert { border: 1px solid var(--red); background: var(--red-soft); color: var(--red); padding: 12px 14px; display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; }
+    .revision-alert i { font-size: 20px; }
+    .inspector-actions { margin: 12px 0 6px; display: flex; align-items: center; gap: 16px; }
+    .inspector-actions .primary-btn { min-width: 132px; }
+    .permission-caption { color: var(--gray-500); font-size: 11px; margin: 8px 0 16px; }
+    .detail-section { border-top: 1px solid var(--gray-200); padding-top: 15px; margin-top: 15px; }
+    .detail-section h3 { margin: 0 0 13px; font-size: 14px; }
+    .detail-grid { display: grid; grid-template-columns: 112px 1fr; row-gap: 10px; font-size: 12px; }
+    .detail-grid dt { color: var(--gray-700); }
+    .detail-grid dd { margin: 0; color: var(--gray-900); }
+    .audit-list { position: relative; display: grid; gap: 17px; }
+    .audit-list::before { content: ""; position: absolute; top: 5px; bottom: 8px; left: 4px; width: 1px; background: var(--gray-300); }
+    .audit-item { position: relative; display: grid; grid-template-columns: 112px 45px 1fr; gap: 8px; padding-left: 17px; font-size: 11px; line-height: 1.45; }
+    .audit-item::before { content: ""; position: absolute; left: 0; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--gray-500); }
+    .audit-item.urgent::before { background: var(--red); }
+    .audit-item time, .audit-item .actor { color: var(--gray-700); }
+    .audit-item strong { display: block; font-size: 11px; }
+    .audit-item small { color: var(--gray-500); }
+    .detail-panel[hidden] { display: none; }
+    .permission-summary { margin: 0 0 13px; color: var(--gray-700); font-size: 12px; line-height: 1.55; }
+    .acl-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 11px; }
+    .acl-table th, .acl-table td { padding: 9px 6px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--gray-200); line-height: 1.45; }
+    .acl-table th { color: var(--gray-700); font-weight: 400; background: var(--gray-100); }
+    .acl-table th:first-child, .acl-table td:first-child { padding-left: 0; }
+    .acl-table th:last-child, .acl-table td:last-child { padding-right: 0; }
+    .acl-grant { color: var(--gray-700); }
+    .permission-authority { margin: 14px 0 0; padding: 11px 12px; border-left: 3px solid var(--red); background: var(--gray-100); color: var(--gray-900); font-size: 12px; line-height: 1.55; }
+    .permission-authority strong { color: var(--black); }
+    .permission-workflow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
+    .permission-workflow li { min-height: 56px; padding: 8px; border: 1px solid var(--gray-200); background: var(--gray-100); color: var(--gray-700); font-size: 11px; line-height: 1.45; }
+    .permission-workflow b { display: block; color: var(--black); font-size: 11px; }
+    .permission-impact { margin: 0; display: grid; grid-template-columns: 116px 1fr; gap: 8px; font-size: 12px; }
+    .permission-impact dt { color: var(--gray-700); }
+    .permission-impact dd { margin: 0; color: var(--gray-900); font-weight: 700; }
+    .inheritance-guard { display: grid; gap: 9px; padding: 12px; border: 1px solid var(--gray-200); background: var(--gray-100); color: var(--gray-700); font-size: 12px; line-height: 1.55; }
+    .inheritance-guard strong { color: var(--black); }
+    .inheritance-guard .text-btn { justify-self: start; min-height: auto; }
+    .risk-flag-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .risk-flag-grid label { display: flex; align-items: center; gap: 7px; color: var(--gray-700); font-size: 12px; }
+    .risk-flag-grid input { accent-color: var(--red); }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 16px);
+      min-width: 280px;
+      max-width: 560px;
+      padding: 12px 16px;
+      border: 1px solid var(--gray-300);
+      background: var(--black);
+      color: var(--white);
+      font-size: 13px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: 180ms ease;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .prototype-dialog {
+      width: min(680px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      padding: 0;
+      overflow-y: auto;
+      color: var(--ink);
+      background: var(--white);
+      box-shadow: 0 18px 48px var(--gray-300);
+    }
+    .prototype-dialog::backdrop { background: var(--gray-300); }
+    .dialog-form { padding: 24px; }
+    .dialog-form h2 { margin: 0; color: var(--black); font-size: 19px; }
+    .dialog-form > p { margin: 9px 0 0; color: var(--gray-700); font-size: 13px; line-height: 1.6; }
+    .dialog-section { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--gray-200); }
+    .dialog-section h3 { margin: 0 0 10px; color: var(--gray-900); font-size: 14px; }
+    .dialog-options { display: grid; gap: 10px; }
+    .dialog-options label, .confirmation-check { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 1.45; }
+    .dialog-options input, .confirmation-check input { accent-color: var(--red); }
+    .impact-list { margin: 0; padding-left: 20px; color: var(--gray-700); font-size: 13px; line-height: 1.8; }
+    .dialog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .dialog-field { display: grid; gap: 7px; }
+    .dialog-field label { color: var(--gray-900); font-size: 13px; font-weight: 700; }
+    .dialog-field input, .dialog-field select { min-height: 38px; border: 1px solid var(--gray-300); border-radius: 4px; padding: 0 10px; color: var(--ink); background: var(--white); }
+    .safety-copy { margin: 0; padding: 12px; border-left: 3px solid var(--red); background: var(--red-soft); color: var(--ink) !important; }
+    .impact-preview { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0; }
+    .impact-preview div { padding: 10px; border: 1px solid var(--gray-200); background: var(--gray-100); }
+    .impact-preview dt { color: var(--gray-700); font-size: 11px; }
+    .impact-preview dd { margin: 4px 0 0; color: var(--gray-900); font-size: 13px; font-weight: 700; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    .dialog-actions button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+    @media (max-width: 1180px) {
+      :root { --sidebar-w: 182px; }
+      .brand { padding-left: 16px; padding-right: 16px; }
+      .brand img { width: 120px; }
+      .catalog-workspace { grid-template-columns: 240px minmax(430px, 1fr) 370px; }
+      .metric { gap: 10px; }
+      .wizard-body { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="prototype-switcher" aria-label="原型视图切换">
+    <span class="prototype-switcher__label">原型视图</span>
+    <div class="prototype-tablist" role="tablist" aria-label="原型页面">
+      <button id="dashboardTab" class="view-tab active" role="tab" aria-controls="dashboard" aria-selected="true" data-target="dashboard">治理态势工作台</button>
+      <button id="wizardTab" class="view-tab" role="tab" aria-controls="wizard" aria-selected="false" tabindex="-1" data-target="wizard">入库申请向导</button>
+      <button id="catalogTab" class="view-tab" role="tab" aria-controls="catalog" aria-selected="false" tabindex="-1" data-target="catalog">知识目录控制台</button>
+    </div>
+    <span class="prototype-badge">静态交互原型 · 不连接真实飞书数据</span>
+  </nav>
+
+  <section id="dashboard" class="screen active" role="tabpanel" aria-labelledby="dashboardTab">
+    <header class="product-header">
+      <div class="brand"><img src="prototype-assets/qianli-logo.png" alt="千里科技 AFARI"></div>
+      <div class="header-title">知识库治理工作台</div>
+      <div class="header-actions">
+        <span class="header-chip">governance_validation <i class="ph ph-caret-down"></i></span>
+        <span class="header-chip"><i class="ph ph-user-circle"></i>郎文 <i class="ph ph-caret-down"></i></span>
+      </div>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar">
+        <button class="nav-item active"><i class="ph ph-squares-four"></i>总览</button>
+        <button class="nav-item" data-jump="wizard"><i class="ph ph-file-plus"></i>入库申请</button>
+        <button class="nav-item" data-jump="catalog"><i class="ph ph-shield-check"></i>文档治理</button>
+        <button class="nav-item"><i class="ph ph-git-branch"></i>审批跟踪</button>
+        <button class="nav-item"><i class="ph ph-database"></i>编译与索引</button>
+        <button class="nav-item"><i class="ph ph-clipboard-text"></i>审计记录</button>
+        <div class="nav-bottom">
+          <button class="nav-item"><i class="ph ph-gear"></i>系统设置</button>
+          <button class="nav-item"><i class="ph ph-sign-out"></i>退出登录</button>
+        </div>
+      </aside>
+      <main class="content dashboard-content">
+        <section class="panel metric-panel">
+          <div class="panel-title">今日待处理</div>
+          <div class="metric-grid">
+            <div class="metric"><i class="ph ph-file-text"></i><div><div class="metric-label">待审批</div><div class="metric-value">12</div></div></div>
+            <div class="metric"><i class="ph ph-warning-octagon"></i><div><div class="metric-label">规则异常</div><div class="metric-value">3</div></div></div>
+            <div class="metric"><i class="ph ph-cube"></i><div><div class="metric-label">待编译</div><div class="metric-value">5</div></div></div>
+            <div class="metric"><i class="ph ph-lock-key"></i><div><div class="metric-label">权限失效</div><div class="metric-value">1</div></div></div>
+          </div>
+        </section>
+
+        <section class="panel queue-panel">
+          <div class="panel-toolbar">
+            <div class="panel-title">入库申请待审批（12）</div>
+            <button id="reviewNext" class="primary-btn">审查下一份</button>
+          </div>
+          <table class="data-table" aria-label="入库申请待审批列表">
+            <thead><tr><th style="width:27%">文档名称</th><th style="width:24%">来源空间</th><th style="width:10%">申请人</th><th style="width:17%">变更时间</th><th style="width:14%">治理状态</th><th>风险</th></tr></thead>
+            <tbody>
+              <tr class="selected"><td>测试功能点提取准出标准</td><td>产品与技术管理中心/测试平台组</td><td>张伟</td><td>2026-08-27 09:41</td><td class="status-attention">待审批</td><td class="status-attention">高</td></tr>
+              <tr><td>接口自动化测试规范说明书</td><td>产品与技术管理中心/测试平台组</td><td>李四</td><td>2026-08-27 09:16</td><td class="status-attention">待审批</td><td>中</td></tr>
+              <tr><td>QRoad 自动驾驶数据标注规范 v1.2</td><td>数据智能中心/数据平台组</td><td>王五</td><td>2026-08-27 08:52</td><td class="status-attention">规则异常</td><td class="status-attention">高</td></tr>
+              <tr><td>数据脱敏与隐私保护指引</td><td>信息安全中心/合规组</td><td>赵六</td><td>2026-08-27 08:21</td><td class="status-attention">待审批</td><td>中</td></tr>
+              <tr><td>仿真平台场景库管理规范</td><td>智能驾驶中心/仿真平台组</td><td>孙七</td><td>2026-08-27 08:03</td><td class="status-attention">待编译</td><td>中</td></tr>
+              <tr><td>代码提交与评审规范</td><td>研发效能中心/研发工具组</td><td>周八</td><td>2026-08-27 07:44</td><td class="status-attention">待审批</td><td>低</td></tr>
+            </tbody>
+          </table>
+          <div class="table-footer"><span>共 12 条</span><span class="page-current">1</span><span>2</span><i class="ph ph-caret-right"></i></div>
+        </section>
+
+        <section class="panel pipeline-panel">
+          <div class="panel-title">治理流程进展（最近 7 天）</div>
+          <div class="pipeline">
+            <div class="pipeline-step"><span class="step-icon"><i class="ph ph-file-text"></i></span><span class="pipeline-copy"><strong>来源空间修订</strong><b>48</b><small>较上周 ↑ 12</small></span></div>
+            <div class="pipeline-step"><span class="step-icon"><i class="ph ph-shield-warning"></i></span><span class="pipeline-copy"><strong>自动化检查</strong><b>48</b><small>较上周 ↑ 10</small></span></div>
+            <div class="pipeline-step"><span class="step-icon"><i class="ph ph-user-circle-check"></i></span><span class="pipeline-copy"><strong>飞书审批</strong><b>26</b><small>较上周 ↑ 6</small></span></div>
+            <div class="pipeline-step"><span class="step-icon"><i class="ph ph-cube"></i></span><span class="pipeline-copy"><strong>快照编译入库</strong><b>21</b><small>较上周 ↑ 5</small></span></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <section id="wizard" class="screen" role="tabpanel" aria-labelledby="wizardTab">
+    <header class="product-header">
+      <div class="brand"><img src="prototype-assets/qianli-logo.png" alt="千里科技 AFARI"></div>
+      <div class="header-title">知识入库申请</div>
+      <div class="header-actions">
+        <span class="header-chip"><i class="ph ph-bell"></i>消息</span>
+        <span class="user-chip"><strong>张伟</strong><i class="ph ph-caret-down"></i><small>文档所有者｜产品部</small></span>
+      </div>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-section-title">知识治理</div>
+        <button class="nav-item" data-jump="dashboard"><i class="ph ph-squares-four"></i>总览</button>
+        <button class="nav-item active"><i class="ph ph-tray-arrow-down"></i>入库管理</button>
+        <div class="subnav">
+          <button class="subnav-item active">入库申请</button>
+          <button class="subnav-item">我的申请</button>
+          <button class="subnav-item">待我处理</button>
+          <button class="subnav-item">已处理</button>
+        </div>
+        <button class="nav-item" data-jump="catalog"><i class="ph ph-notebook"></i>知识资产</button>
+        <button class="nav-item"><i class="ph ph-book-open-text"></i>标准与规范</button>
+        <button class="nav-item"><i class="ph ph-list-bullets"></i>受控字典</button>
+        <button class="nav-item"><i class="ph ph-file-search"></i>审计日志</button>
+        <button class="nav-item"><i class="ph ph-gear"></i>设置</button>
+      </aside>
+      <div class="workspace wizard-workspace">
+        <div class="wizard-progress">
+          <div class="wizard-step done"><span class="step-number">1</span><span>选择飞书文档</span></div>
+          <div class="wizard-step done"><span class="step-number">2</span><span>自动检查</span></div>
+          <div class="wizard-step active"><span class="step-number">3</span><span>填写元数据</span></div>
+          <div class="wizard-step"><span class="step-number">4</span><span>发起审批</span></div>
+        </div>
+        <form id="admissionForm" class="workspace wizard-workspace">
+          <div class="wizard-body">
+            <section class="panel wizard-card">
+              <h2>文档来源</h2>
+              <div class="source-box">
+                <div class="source-icon"><i class="ph ph-file-text"></i></div>
+                <div class="source-meta">
+                  <h3>Validation &amp; Verification</h3>
+                  <span class="tag">飞书知识库</span>
+                  <p><i class="ph ph-link"></i> https://qianli-drive.feishu.cn/wiki/DFJawf…</p>
+                  <p>版本：v12　　最后更新：2026-08-27 09:32</p>
+                </div>
+              </div>
+              <div class="check-title">检查摘要</div>
+              <div class="check-list">
+                <div class="check-row"><i class="ph ph-check-circle"></i><strong>命名规范<br>通过</strong><small>符合知识库命名规则</small></div>
+                <div class="check-row"><i class="ph ph-check-circle"></i><strong>正文结构<br>通过</strong><small>正文结构完整</small></div>
+                <div class="check-row"><i class="ph ph-check-circle"></i><strong>敏感信息<br>通过</strong><small>未检测到敏感信息</small></div>
+                <div class="check-row warning"><i class="ph ph-warning-circle"></i><strong>受控字典<br>需确认</strong><small>检测到 3 处未命中受控字典项，请在右侧确认业务域和系统平台</small></div>
+              </div>
+              <p class="footnote">以上为自动检查结果，提交后将由人工进一步审核。</p>
+            </section>
+            <section class="panel wizard-card">
+              <h2>填写元数据 <span class="form-note"><span class="required">*</span> 为必填项</span></h2>
+              <div class="form-grid">
+                <div class="form-field"><label for="businessDomain">业务域 <span class="required">*</span></label><select id="businessDomain" required><option value="">请选择业务域</option><option>测试与质量</option><option>产品研发</option><option>数据智能</option></select></div>
+                <div class="form-field"><label for="platform">系统与平台 <span class="required">*</span></label><select id="platform" required><option value="">请选择系统与平台</option><option>Validation &amp; Verification</option><option>运营管理系统</option><option>移动出行客户端</option></select></div>
+                <div class="form-field"><label for="retention">保留期限 <span class="required">*</span></label><select id="retention" required><option value="">请选择保留期限</option><option>有效期内持续保留</option><option>三年</option><option>永久</option></select></div>
+                <div class="form-field"><label for="aiScope">AI 使用范围 <span class="required">*</span></label><select id="aiScope" required><option value="">请选择 AI 使用范围</option><option>继承飞书权限后可用于检索</option><option>仅人工检索</option><option>禁止用于 AI</option></select></div>
+                <div class="form-field"><label for="owner">文档所有者 <span class="required">*</span></label><input id="owner" value="张伟（产品部）" required></div>
+                <div class="form-field"><label>权限来源 <span class="required">*</span></label><input value="访问权限以飞书源文档为准" readonly></div>
+                <div class="form-field"><label>审批人 <span class="required">*</span></label><div class="route-box"><i class="ph ph-user"></i>空间管理员 <i class="ph ph-arrow-right"></i><i class="ph ph-user"></i>知识治理负责人</div></div>
+              </div>
+              <div class="permission-note"><i class="ph ph-shield-check"></i><div><strong>访问权限以飞书源文档为准</strong><small>入库后不会改变源文档的可见范围与协作权限。</small></div></div>
+            </section>
+          </div>
+          <footer class="wizard-footer">
+            <button id="saveDraft" type="button" class="secondary-btn">保存草稿</button>
+            <button type="submit" class="primary-btn">下一步</button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="catalog" class="screen" role="tabpanel" aria-labelledby="catalogTab">
+    <header class="product-header">
+      <div class="brand" style="width:310px"><img src="prototype-assets/qianli-logo.png" alt="千里科技 AFARI"></div>
+      <div class="header-title">知识目录控制台</div>
+      <div class="header-actions">
+        <span class="header-chip">governance_validation <i class="ph ph-caret-down"></i></span>
+        <span class="header-chip">知识空间管理员 <i class="ph ph-caret-down"></i></span>
+      </div>
+    </header>
+    <div class="catalog-workspace">
+      <aside id="catalogSpacePane" class="catalog-pane" data-permission-sensitive>
+        <div class="pane-header"><strong>知识空间</strong></div>
+        <div class="space-tree">
+          <div class="tree-group">
+            <button class="tree-space"><i class="ph ph-folder"></i>00-知识库治理与索引</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>00-治理制度与规范</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>01-索引与元数据规范</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>02-质量评估与校验规范</button>
+          </div>
+          <div class="tree-group">
+            <button class="tree-space"><i class="ph ph-folder"></i>01-公司公共知识库</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>00-公司介绍</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>01-制度流程</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>02-人力资源</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>03-财务与法务</button>
+          </div>
+          <div class="tree-group">
+            <button class="tree-space"><i class="ph ph-folder-open"></i>02-产品与技术管理中心知识库</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>00-产品管理</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>01-需求管理</button>
+            <button class="tree-child active"><i class="ph ph-folder-open"></i>02-测试与质量 / Validation &amp; Verification</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>03-技术与架构</button>
+            <button class="tree-child"><i class="ph ph-folder"></i>04-研发效能</button>
+          </div>
+        </div>
+      </aside>
+      <main id="catalogResourcePane" class="catalog-pane" style="display:flex;flex-direction:column" data-permission-sensitive>
+        <div class="list-toolbar">
+          <label class="search-wrap"><i class="ph ph-magnifying-glass"></i><input id="catalogSearch" aria-label="搜索文档" placeholder="搜索文档、空间或负责人"></label>
+          <button id="filterButton" class="filter-btn"><i class="ph ph-funnel"></i>筛选</button>
+        </div>
+        <div class="lifecycle-actions" aria-label="文档生命周期操作">
+          <button id="createDocument" class="primary-btn"><i class="ph ph-plus"></i>新增</button>
+          <button id="changeDocument" class="secondary-btn">变更</button>
+          <button id="retireDocument" class="secondary-btn danger-outline">退役</button>
+          <button id="maintainDirectory" class="secondary-btn">目录维护</button>
+        </div>
+        <div style="flex:1;overflow:auto">
+          <table class="catalog-table" aria-label="知识文档列表">
+            <thead><tr><th style="width:34%">文档名称</th><th style="width:13%">负责人</th><th style="width:13%">源版本</th><th style="width:22%">最近校验</th><th>治理状态</th></tr></thead>
+            <tbody id="catalogRows" data-permission-sensitive>
+              <tr class="selected" data-title="测试功能点提取准出标准" data-owner="张伟" data-version="v3.2" data-state="需重新校验" data-resource-ref="wiki-node:governance-validation-vv-001" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>测试功能点提取准出标准</td><td>张伟</td><td>v3.2</td><td>2026-08-26 11:23</td><td class="status-attention">需重新校验</td></tr>
+              <tr data-title="需求评审与跟踪规范" data-owner="李四" data-version="v2.5" data-state="已通过" data-resource-ref="wiki-node:governance-validation-requirement-002" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>需求评审与跟踪规范</td><td>李四</td><td>v2.5</td><td>2026-08-25 16:40</td><td>已通过</td></tr>
+              <tr data-title="测试用例设计规范" data-owner="王五" data-version="v4.1" data-state="已通过" data-resource-ref="wiki-node:governance-validation-testcase-002" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>测试用例设计规范</td><td>王五</td><td>v4.1</td><td>2026-08-24 15:18</td><td>已通过</td></tr>
+              <tr data-title="缺陷管理流程" data-owner="赵六" data-version="v1.8" data-state="已通过" data-resource-ref="wiki-node:governance-validation-defect-004" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>缺陷管理流程</td><td>赵六</td><td>v1.8</td><td>2026-08-23 10:05</td><td>已通过</td></tr>
+              <tr data-title="发布管理规范" data-owner="孙七" data-version="v2.2" data-state="已通过" data-resource-ref="wiki-node:governance-validation-release-005" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>发布管理规范</td><td>孙七</td><td>v2.2</td><td>2026-08-22 09:30</td><td>已通过</td></tr>
+              <tr data-title="接口变更管理规范" data-owner="周八" data-version="v1.6" data-state="已通过" data-resource-ref="wiki-node:governance-validation-api-006" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>接口变更管理规范</td><td>周八</td><td>v1.6</td><td>2026-08-21 14:12</td><td>已通过</td></tr>
+              <tr data-title="性能测试规范" data-owner="吴九" data-version="v2.0" data-state="已通过" data-resource-ref="wiki-node:governance-validation-performance-007" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>性能测试规范</td><td>吴九</td><td>v2.0</td><td>2026-08-20 17:45</td><td>已通过</td></tr>
+              <tr data-title="自动化测试规范" data-owner="郑十" data-version="v3.0" data-state="已通过" data-resource-ref="wiki-node:governance-validation-automation-008" data-permission-source="02-测试与质量 / Validation &amp; Verification" data-permission-source-ref="wiki-directory:validation-quality"><td><i class="ph ph-file-text"></i>自动化测试规范</td><td>郑十</td><td>v3.0</td><td>2026-08-19 11:02</td><td>已通过</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="catalog-footer"><span>共 128 条</span><span class="pages"><span>10 条/页</span><i class="ph ph-caret-left"></i><span class="page-current">1</span><span>2</span><span>3</span><span>…</span><span>13</span><i class="ph ph-caret-right"></i></span></div>
+      </main>
+      <aside class="catalog-pane inspector">
+        <h2 id="inspectorTitle" data-permission-sensitive>测试功能点提取准出标准</h2>
+        <div class="detail-tabs" role="tablist" aria-label="文档治理详情">
+          <button id="overviewDetailTab" class="detail-tab active" role="tab" aria-controls="overviewPanel" aria-selected="true" data-detail-tab="overview" data-permission-sensitive>治理概览</button>
+          <button id="permissionsDetailTab" class="detail-tab" role="tab" aria-controls="permissionPanel" aria-selected="false" tabindex="-1" data-detail-tab="permissions">飞书权限</button>
+          <button id="changesDetailTab" class="detail-tab" role="tab" aria-controls="changesPanel" aria-selected="false" tabindex="-1" data-detail-tab="changes" data-permission-sensitive>变更记录</button>
+          <button id="auditDetailTab" class="detail-tab" role="tab" aria-controls="auditPanel" aria-selected="false" tabindex="-1" data-detail-tab="audit" data-permission-sensitive>审计轨迹</button>
+        </div>
+        <div id="overviewPanel" class="detail-panel" role="tabpanel" aria-labelledby="overviewDetailTab" data-detail-panel="overview" data-permission-sensitive>
+          <div id="revisionAlert" class="revision-alert"><i class="ph ph-warning-circle"></i><span>源文档有新版本</span></div>
+          <div class="inspector-actions"><button id="revalidate" class="primary-btn">重新校验</button><button id="openSource" class="text-btn">查看飞书原文</button></div>
+          <p class="permission-caption">访问权限继承飞书源文档</p>
+          <section class="detail-section">
+            <h3>治理概览</h3>
+            <dl class="detail-grid">
+              <dt>权威来源</dt><dd>飞书知识库</dd>
+              <dt>来源版本</dt><dd id="sourceVersion">v3.2（最新：v3.3）</dd>
+              <dt>缓存版本</dt><dd id="cacheVersion">v3.2</dd>
+              <dt>飞书权限域</dt><dd>千里智行 / 产品与技术管理中心</dd>
+              <dt>准入状态</dt><dd id="admissionState">需重新校验</dd>
+              <dt>审批记录</dt><dd>AP-20260820-0017</dd>
+              <dt>元数据完整度</dt><dd>92%（23/25）</dd>
+              <dt>快照状态</dt><dd>已生成（2026-08-26 11:23）</dd>
+              <dt>LLM Wiki 编译</dt><dd>已完成（2026-08-26 11:30）</dd>
+              <dt>MCP 可用性</dt><dd>不可用（因源文档版本变更）</dd>
+            </dl>
+          </section>
+        </div>
+        <div id="permissionPanel" class="detail-panel" role="tabpanel" aria-labelledby="permissionsDetailTab" data-detail-panel="permissions" hidden>
+          <section class="detail-section">
+            <h3>飞书权限</h3>
+            <p class="permission-summary">以下为匿名化的最小展示样例，仅用于说明读取、继承识别和变更编排；不保存完整成员表。</p>
+            <div id="permissionAclDetails" data-permission-sensitive>
+              <table class="acl-table" aria-label="匿名化飞书 ACL 摘要"><thead><tr><th>授权对象</th><th>类型</th><th>权限</th><th>来源</th><th>有效期</th></tr></thead><tbody>
+                <tr><td>产品与技术管理中心</td><td>部门</td><td>可阅读</td><td class="acl-grant">继承自知识空间</td><td>长期有效</td></tr>
+                <tr><td>测试平台组</td><td>群组</td><td>可编辑</td><td class="acl-grant">继承自父目录</td><td>长期有效</td></tr>
+                <tr><td>文档负责人</td><td>角色</td><td>可管理</td><td class="acl-grant">直接授权</td><td>长期有效</td></tr>
+              </tbody></table>
+              <dl class="detail-grid"><dt>最近校验时间</dt><dd>2026-08-27 14:20</dd><dt>读取身份</dt><dd>当前登录人（匿名化展示）</dd></dl>
+            </div>
+            <p id="permissionDeniedNotice" class="permission-authority" hidden><strong>当前身份无权读取该资源。</strong> 原型已隐藏资源与成员详情，并停止权限执行。</p>
+            <p class="permission-authority"><strong>访问权限以飞书实时 ACL 为准。</strong> 本地快照只用于预检、差异展示和审计，不能独立授予访问权。</p>
+            <div class="inspector-actions"><button id="requestPermissionChange" class="primary-btn">发起权限变更</button></div>
+          </section>
+        </div>
+        <div id="changesPanel" class="detail-panel" role="tabpanel" aria-labelledby="changesDetailTab" data-detail-panel="changes" data-permission-sensitive hidden>
+          <section class="detail-section"><h3>变更记录</h3><dl class="detail-grid"><dt>最近申请</dt><dd>无待执行权限申请</dd><dt>执行原则</dt><dd>审批通过后，按风险自动执行或管理员二次确认</dd><dt>完成条件</dt><dd>飞书 ACL 回读与派生数据处理均完成</dd></dl></section>
+        </div>
+        <div id="auditPanel" class="detail-panel" role="tabpanel" aria-labelledby="auditDetailTab" data-detail-panel="audit" data-permission-sensitive hidden>
+          <section class="detail-section">
+            <h3>审计轨迹</h3>
+            <div class="audit-list">
+              <div class="audit-item urgent"><time>2026-08-26 11:30</time><span class="actor">系统</span><div><strong class="status-attention">检测到源文档有新版本（v3.3）</strong><small>触发重新校验</small></div></div>
+              <div class="audit-item"><time>2026-08-26 11:23</time><span class="actor">系统</span><div><strong>完成校验：需重新校验</strong><small>缓存版本 v3.2</small></div></div>
+              <div class="audit-item"><time>2026-08-20 14:10</time><span class="actor">张伟</span><div><strong>审批通过</strong><small>审批单号：AP-20260820-0017</small></div></div>
+              <div class="audit-item"><time>2026-08-20 13:55</time><span class="actor">系统</span><div><strong>提交审批</strong><small>发起人：张伟</small></div></div>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <dialog id="documentChangeDialog" class="prototype-dialog" aria-labelledby="documentChangeTitle">
+    <form id="documentChangeForm" class="dialog-form">
+      <h2 id="documentChangeTitle">登记文档变更</h2>
+      <p>将为当前选中文档创建本地治理变更记录，不修改飞书原文。</p>
+      <section class="dialog-section">
+        <h3>变更类型</h3>
+        <div class="dialog-options">
+          <label><input type="radio" name="changeType" value="source_revision" checked>飞书正文版本变化</label>
+          <label><input type="radio" name="changeType" value="metadata">治理元数据变更</label>
+          <label><input type="radio" name="changeType" value="directory_move">目录位置变更</label>
+        </div>
+      </section>
+      <section class="dialog-section">
+        <h3>影响预览</h3>
+        <ul class="impact-list">
+          <li>源版本重新校验</li>
+          <li>审批状态过期</li>
+          <li>原始缓存失效</li>
+          <li>LLM Wiki 重新编译</li>
+          <li>MCP 可用性更新</li>
+        </ul>
+      </section>
+      <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button type="submit" class="primary-btn">保存变更</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="documentRetireDialog" class="prototype-dialog" aria-labelledby="documentRetireTitle">
+    <form id="documentRetireForm" class="dialog-form">
+      <h2 id="documentRetireTitle">受控退役</h2>
+      <p>为当前选中文档登记受控退役，并保留可审计的治理记录。</p>
+      <section class="dialog-section">
+        <div class="dialog-grid">
+          <div class="dialog-field"><label for="retireReason">退役原因</label><input id="retireReason" required placeholder="请说明退役原因"></div>
+          <div class="dialog-field"><label for="retireEffectiveAt">生效时间</label><input id="retireEffectiveAt" type="datetime-local" required></div>
+        </div>
+      </section>
+      <section class="dialog-section"><p class="safety-copy">退役将停止准入状态、快照、索引与 MCP 使用，不会删除飞书原文；飞书原文删除需在其权威来源中另行确认。</p></section>
+      <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button type="submit" class="primary-btn">确认受控退役</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="directoryMaintenanceDialog" class="prototype-dialog" aria-labelledby="directoryMaintenanceTitle">
+    <form id="directoryMaintenanceForm" class="dialog-form">
+      <h2 id="directoryMaintenanceTitle">目录维护</h2>
+      <p>目录操作仅更新本地原型状态；权限域仍以飞书权威来源为准。</p>
+      <section class="dialog-section">
+        <h3>操作</h3>
+        <div class="dialog-options">
+          <label><input type="radio" name="directoryOperation" value="create" checked>新建目录</label>
+          <label><input type="radio" name="directoryOperation" value="rename">重命名目录</label>
+          <label><input type="radio" name="directoryOperation" value="move">移动目录</label>
+          <label><input type="radio" name="directoryOperation" value="disable">停用目录</label>
+        </div>
+      </section>
+      <section class="dialog-section">
+        <h3>影响预览</h3>
+        <dl class="impact-preview">
+          <div><dt>受影响文档数</dt><dd>18 份</dd></div>
+          <div><dt>继承权限域</dt><dd>产品与技术管理中心</dd></div>
+          <div><dt>待准入记录</dt><dd>3 条</dd></div>
+          <div><dt>已编译代际</dt><dd>2 个</dd></div>
+          <div><dt>MCP 来源</dt><dd>18 个</dd></div>
+        </dl>
+      </section>
+      <section class="dialog-section"><label class="confirmation-check"><input id="directoryImpactConfirmed" type="checkbox">我已确认权限继承影响</label></section>
+      <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button id="directoryMaintenanceConfirm" type="submit" class="primary-btn" disabled>确认目录维护</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="permissionChangeDrawer" class="prototype-dialog" aria-labelledby="permissionChangeTitle">
+    <form id="permissionChangeForm" class="dialog-form">
+      <h2 id="permissionChangeTitle">发起飞书权限变更</h2>
+      <p>此处只创建本地原型申请与影响预览；真实权限仍由飞书保存和执行，当前原型不会发送任何网络写入。</p>
+      <section id="permissionTargetSection" class="dialog-section" data-permission-sensitive>
+        <h3>当前目标</h3>
+        <dl class="detail-grid"><dt>资源</dt><dd id="permissionTargetLabel">测试功能点提取准出标准</dd><dt>稳定引用</dt><dd id="permissionTargetRef">wiki-node:governance-validation-vv-001</dd></dl>
+      </section>
+      <section id="permissionRequestDetails" class="dialog-section" data-permission-sensitive>
+        <h3>目标与申请内容</h3>
+        <div class="dialog-grid">
+          <div class="dialog-field"><label for="permissionSubjectType">授权对象类型</label><select id="permissionSubjectType" name="subjectType"><option value="user">人员</option><option value="group">群组</option><option value="department">部门</option><option value="role">角色</option></select></div>
+          <div class="dialog-field"><label for="permissionSubject">匿名化对象</label><input id="permissionSubject" name="subject" value="测试平台组（示例）" aria-label="匿名化对象"></div>
+          <input id="permissionSubjectRef" name="subjectRef" type="hidden" value="anonymous:user:sample-001">
+          <div class="dialog-field"><label for="permissionAction">变更动作</label><select id="permissionAction" name="action"><option value="grant">新增</option><option value="modify">调整</option><option value="revoke">撤销</option></select></div>
+          <div class="dialog-field"><label for="permissionRequested">请求权限</label><select id="permissionRequested" name="permission"><option value="read">可阅读</option><option value="edit">可编辑</option><option value="manage">可管理</option></select></div>
+          <div class="dialog-field"><label for="permissionEffectiveAt">生效时间</label><input id="permissionEffectiveAt" name="effectiveAt" type="datetime-local"></div>
+          <div class="dialog-field"><label for="permissionExpiryAt">失效时间</label><input id="permissionExpiryAt" name="expiryAt" type="datetime-local"></div>
+          <div class="dialog-field"><label for="permissionApprovalRoute">审批路线</label><select id="permissionApprovalRoute" name="approvalRoute"><option>知识空间管理员审批</option><option>安全审核人 + 空间管理员审批</option><option>飞书原生权限页处理</option></select></div>
+          <div class="dialog-field"><label for="permissionReason">变更理由</label><input id="permissionReason" name="reason" required placeholder="说明业务场景与最小必要范围"></div>
+        </div>
+      </section>
+      <section id="permissionInheritanceDetails" class="dialog-section" data-permission-sensitive>
+        <h3>继承来源与前后差异</h3>
+        <div class="inheritance-guard"><strong id="permissionInheritedSource">当前授权来源：继承自父目录</strong><span id="permissionScopeNotice">继承权限不能在文档层伪造覆盖；当前文档级权限编辑与提交已禁用。</span><button id="permissionDocumentLevelEditing" type="button" class="secondary-btn" disabled>文档层直接修改不可用</button><button id="permissionSourceContext" type="button" class="text-btn">前往父目录授权来源</button></div>
+        <dl class="impact-preview" style="margin-top:10px"><div><dt>变更前</dt><dd>继承自父目录 / 可编辑</dd></div><div><dt>变更后</dt><dd id="permissionAfterDiff">新增直接授权 / 可阅读</dd></div><div><dt>授权来源</dt><dd id="permissionImpactSource">02-测试与质量</dd></div><div><dt>AI 影响</dt><dd id="permissionImpactCopy">待规则预检</dd></div></dl>
+      </section>
+      <section class="dialog-section">
+        <h3>风险预检（原型条件）</h3>
+        <div class="risk-flag-grid">
+          <label><input id="permissionExternal" type="checkbox">外部协作</label>
+          <label><input id="permissionPublicLink" type="checkbox">公开链接</label>
+          <label><input id="permissionOwnerTransfer" type="checkbox">所有者转移</label>
+          <label><input id="permissionSpaceAdmin" type="checkbox">空间管理员</label>
+          <label><input id="permissionSecureLabel" type="checkbox">涉及密级策略</label>
+          <label><input id="permissionPolicyBlocked" type="checkbox">飞书策略阻止</label>
+          <label><input id="permissionInheritanceUnknown" type="checkbox">继承来源不明</label>
+          <label><input id="permissionRemovesLastAdmin" type="checkbox">移除最后管理员</label>
+        </div>
+      </section>
+      <section class="dialog-section">
+        <h3>执行编排</h3>
+        <ol class="permission-workflow" aria-label="权限变更工作流"><li><b>1</b>规则预检</li><li><b>2</b>飞书审批</li><li><b>3</b>执行权限变更</li><li><b>4</b>回读飞书 ACL</li><li><b>5</b>派生数据处理</li></ol>
+        <dl class="permission-impact" style="margin-top:14px"><dt>风险等级</dt><dd data-permission-risk>low</dd><dt>执行策略</dt><dd data-permission-treatment>审批通过后自动执行</dd><dt>派生数据</dt><dd>按权限变化使 MCP、raw、Wiki 与索引失效或重建</dd></dl>
+      </section>
+      <section class="dialog-section">
+        <h3>原型执行状态</h3>
+        <dl class="permission-impact"><dt>申请状态</dt><dd id="permissionRequestState" data-permission-request-state>draft</dd><dt>MCP 访问</dt><dd id="permissionMcpState" data-mcp-state>active</dd></dl>
+        <p class="permission-authority"><strong>权限收紧时，先暂停 MCP 访问。</strong> 完成回读和派生数据校验后恢复；权限扩大也会保持不可用，直至飞书 ACL 已回读且派生数据处理完成。</p>
+        <p id="permissionExecutionDeniedNotice" class="permission-authority" hidden><strong>permission_denied</strong> 当前身份无法确认目标资源管理权；已隐藏资源及成员详情，MCP 保持拒绝。</p>
+        <div class="dialog-grid" style="margin-top:12px"><div class="dialog-field"><label for="permissionScenario">原型模拟场景</label><select id="permissionScenario"><option value="success">成功</option><option value="acl_changed_during_approval">审批期间 ACL 变化</option><option value="oauth_expired">OAuth 失效</option><option value="permission_denied">飞书权限不足</option><option value="permission_reverified_repair">权限恢复回读与派生修复</option><option value="feishu_policy_blocked">飞书策略阻止</option><option value="readback_mismatch">回读不一致</option><option value="derivative_failure">派生数据失败</option></select></div><div class="dialog-field dialog-field--action"><label>模拟控制</label><button id="runPermissionScenario" type="button" class="secondary-btn">运行本地模拟</button></div></div>
+        <div class="inheritance-guard" style="margin-top:12px"><strong>高风险管理员二次确认</strong><label><input id="permissionAdminReverified" type="checkbox"> 已重新核验当前管理员飞书身份与目标资源管理权限（原型确认）</label><button id="permissionAdminConfirmExecution" type="button" class="secondary-btn" disabled>管理员确认后继续执行</button></div>
+      </section>
+      <div class="dialog-actions"><button type="button" class="secondary-btn" data-close-dialog>取消</button><button type="submit" class="primary-btn" data-permission-submit>提交权限变更申请</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const screens = [...document.querySelectorAll('.screen')];
+    const tabs = [...document.querySelectorAll('.view-tab')];
+    const toast = document.getElementById('toast');
+    let toastTimer;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2300);
+    }
+
+    function showScreen(id) {
+      screens.forEach(screen => {
+        const active = screen.id === id;
+        screen.classList.toggle('active', active);
+        screen.hidden = !active;
+      });
+      tabs.forEach(tab => {
+        const active = tab.dataset.target === id;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+      });
+      window.location.hash = id;
+    }
+
+    function handleTablistKeydown(event, tabList, activate) {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const currentIndex = Math.max(0, tabList.indexOf(event.currentTarget));
+      const nextIndex = event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+        ? tabList.length - 1
+        : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + tabList.length) % tabList.length;
+      const nextTab = tabList[nextIndex];
+      nextTab.focus();
+      activate(nextTab);
+    }
+
+    function openPrototypeDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      if (dialog instanceof HTMLDialogElement) {
+        if (dialogId === 'directoryMaintenanceDialog') resetDirectoryMaintenanceConfirmation();
+        dialog.showModal();
+      }
+    }
+
+    function closePrototypeDialog(dialog) {
+      if (dialog instanceof HTMLDialogElement) dialog.close();
+    }
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => showScreen(tab.dataset.target));
+      tab.addEventListener('keydown', event => handleTablistKeydown(event, tabs, nextTab => showScreen(nextTab.dataset.target)));
+    });
+    document.querySelectorAll('[data-jump]').forEach(button => button.addEventListener('click', () => showScreen(button.dataset.jump)));
+    const initial = window.location.hash.slice(1);
+    showScreen(screens.some(screen => screen.id === initial) ? initial : 'dashboard');
+
+    document.querySelectorAll('#dashboard tbody tr').forEach(row => {
+      row.addEventListener('click', () => {
+        document.querySelectorAll('#dashboard tbody tr').forEach(item => item.classList.remove('selected'));
+        row.classList.add('selected');
+      });
+    });
+    document.getElementById('reviewNext').addEventListener('click', () => {
+      const selected = document.querySelector('#dashboard tbody tr.selected');
+      const title = selected?.cells[0]?.textContent || '下一份文档';
+      showToast(`已打开“${title}”的准入审查工作区（原型演示）`);
+    });
+
+    document.getElementById('saveDraft').addEventListener('click', () => showToast('草稿已保存到本地原型状态'));
+    document.getElementById('admissionForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      const steps = document.querySelectorAll('#wizard .wizard-step');
+      steps[2].classList.remove('active');
+      steps[2].classList.add('done');
+      steps[3].classList.add('active');
+      showToast('元数据校验通过，可以发起飞书审批（原型演示）');
+    });
+
+    const catalogRows = [...document.querySelectorAll('#catalogRows tr')];
+    const inspectorTitle = document.getElementById('inspectorTitle');
+    const revisionAlert = document.getElementById('revisionAlert');
+    const admissionState = document.getElementById('admissionState');
+    const sourceVersion = document.getElementById('sourceVersion');
+    const cacheVersion = document.getElementById('cacheVersion');
+    const detailTabs = [...document.querySelectorAll('[data-detail-tab]')];
+    const detailPanels = [...document.querySelectorAll('[data-detail-panel]')];
+    const initialCatalogRow = catalogRows[0];
+    let selectedCatalogResource = {
+      label: initialCatalogRow?.dataset.title || inspectorTitle.textContent,
+      ref: initialCatalogRow?.dataset.resourceRef || 'wiki-node:governance-validation-vv-001',
+      permissionSource: initialCatalogRow?.dataset.permissionSource || '02-测试与质量 / Validation & Verification',
+      permissionSourceRef: initialCatalogRow?.dataset.permissionSourceRef || 'wiki-directory:validation-quality',
+    };
+    let permissionTargetContext = {
+      scope: 'document',
+      ...selectedCatalogResource,
+      permissionDomainRef: selectedCatalogResource.permissionSourceRef,
+    };
+    let permissionDetailsDenied = false;
+
+    function showDetailTab(tabName) {
+      const permittedTabName = permissionDetailsDenied ? 'permissions' : tabName;
+      detailTabs.forEach(tab => {
+        const active = tab.dataset.detailTab === permittedTabName;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+      });
+      detailPanels.forEach(panel => { panel.hidden = panel.dataset.detailPanel !== permittedTabName; });
+    }
+
+    detailTabs.forEach(tab => {
+      tab.addEventListener('click', () => showDetailTab(tab.dataset.detailTab));
+      tab.addEventListener('keydown', event => handleTablistKeydown(event, detailTabs, nextTab => showDetailTab(nextTab.dataset.detailTab)));
+    });
+
+    catalogRows.forEach(row => row.addEventListener('click', () => {
+      catalogRows.forEach(item => item.classList.remove('selected'));
+      row.classList.add('selected');
+      inspectorTitle.textContent = row.dataset.title;
+      admissionState.textContent = row.dataset.state;
+      sourceVersion.textContent = row.dataset.state === '需重新校验' ? `${row.dataset.version}（最新：v3.3）` : row.dataset.version;
+      cacheVersion.textContent = row.dataset.version;
+      revisionAlert.style.display = row.dataset.state === '需重新校验' ? 'flex' : 'none';
+      selectedCatalogResource = {
+        label: row.dataset.title,
+        ref: row.dataset.resourceRef,
+        permissionSource: row.dataset.permissionSource,
+        permissionSourceRef: row.dataset.permissionSourceRef,
+      };
+      setPermissionTargetScope('document');
+      updatePermissionRequestAvailability();
+    }));
+
+    document.getElementById('catalogSearch').addEventListener('input', event => {
+      const query = event.target.value.trim().toLowerCase();
+      catalogRows.forEach(row => {
+        const haystack = `${row.dataset.title} ${row.dataset.owner}`.toLowerCase();
+        row.style.display = haystack.includes(query) ? '' : 'none';
+      });
+    });
+    document.getElementById('filterButton').addEventListener('click', () => showToast('筛选条件：当前目录 · 全部治理状态'));
+    document.getElementById('createDocument').addEventListener('click', () => showScreen('wizard'));
+    document.getElementById('changeDocument').addEventListener('click', () => openPrototypeDialog('documentChangeDialog'));
+    document.getElementById('retireDocument').addEventListener('click', () => openPrototypeDialog('documentRetireDialog'));
+    document.getElementById('maintainDirectory').addEventListener('click', () => openPrototypeDialog('directoryMaintenanceDialog'));
+
+    const localPrototypeState = { lifecycleEvents: [], permissionChangeEvents: [] };
+    window.knowledgeGovernancePrototypeState = localPrototypeState;
+    let permissionRequestSequence = 0;
+    const permissionExecutionIdentity = 'feishu_oauth_user:current-login-anonymized';
+    const permissionSafety = {
+      holdsByScope: {},
+    };
+    const permissionRequest = {
+      id: 'PCR-20260827-0000',
+      snapshotId: 'ACL-SNAPSHOT-20260827-0000',
+      state: 'draft',
+      risk: 'medium',
+      action: 'revoke',
+      target: '测试平台组',
+      resourceRef: 'wiki-node:governance-validation-vv-001',
+      permissionDomainRef: 'wiki-directory:validation-quality',
+      safetyScopeRef: 'wiki-node:governance-validation-vv-001::wiki-directory:validation-quality',
+      subjectType: 'group',
+      subjectRef: 'anonymous:group:sample-001',
+      permission: 'edit',
+      executionIdentity: permissionExecutionIdentity,
+      frozenBinding: null,
+      mcpState: 'active',
+      transitionHistory: ['draft'],
+      pendingScenario: null,
+      repairAuthorization: false,
+    };
+    const permissionRequestStates = new Set([
+      'draft', 'prechecking', 'ready_for_approval', 'approving', 'approved',
+      'rejected', 'stale', 'awaiting_execution', 'executing', 'verifying',
+      'propagating', 'completed', 'reauth_required', 'blocked_by_feishu_policy',
+      'permission_denied', 'partial_failure', 'verification_failed',
+      'propagation_failed', 'cancelled',
+    ]);
+    const permissionRequestTransitions = new Map([
+      ['draft', new Set(['prechecking', 'cancelled'])],
+      ['prechecking', new Set(['ready_for_approval', 'stale', 'reauth_required', 'blocked_by_feishu_policy', 'permission_denied', 'cancelled'])],
+      ['ready_for_approval', new Set(['approving', 'stale', 'cancelled'])],
+      ['approving', new Set(['approved', 'rejected', 'stale', 'reauth_required', 'cancelled'])],
+      ['approved', new Set(['awaiting_execution', 'stale', 'cancelled'])],
+      ['awaiting_execution', new Set(['executing', 'stale', 'reauth_required', 'permission_denied', 'cancelled'])],
+      ['executing', new Set(['verifying', 'reauth_required', 'blocked_by_feishu_policy', 'permission_denied', 'partial_failure'])],
+      ['verifying', new Set(['propagating', 'reauth_required', 'verification_failed'])],
+      ['propagating', new Set(['completed', 'propagation_failed'])],
+      ['stale', new Set(['prechecking'])],
+      ['reauth_required', new Set(['prechecking'])],
+      ['partial_failure', new Set(['prechecking'])],
+      ['verification_failed', new Set(['prechecking'])],
+      ['propagation_failed', new Set(['prechecking'])],
+      ['rejected', new Set()],
+      ['blocked_by_feishu_policy', new Set()],
+      ['permission_denied', new Set()],
+      ['cancelled', new Set()],
+      ['completed', new Set()],
+    ]);
+    window.knowledgeGovernancePermissionRequest = permissionRequest;
+    window.knowledgeGovernancePermissionSafety = permissionSafety;
+
+    function getPermissionSafetyHold(scopeRef) {
+      return scopeRef ? permissionSafety.holdsByScope[scopeRef] || null : null;
+    }
+
+    function createPermissionSafetyScopeRef(resourceRef, permissionDomainRef) {
+      if (resourceRef && permissionDomainRef && resourceRef !== permissionDomainRef) return `${resourceRef}::${permissionDomainRef}`;
+      return resourceRef || permissionDomainRef || 'unresolved-permission-scope';
+    }
+
+    function getPermissionSafetyHoldForTarget(resourceRef, permissionDomainRef) {
+      return getPermissionSafetyHold(createPermissionSafetyScopeRef(resourceRef, permissionDomainRef))
+        || (permissionDomainRef ? getPermissionSafetyHold(permissionDomainRef) : null);
+    }
+
+    function isSamePermissionTarget(hold, request) {
+      return Boolean(hold)
+        && hold.resourceRef === request.resourceRef
+        && hold.permissionDomainRef === request.permissionDomainRef;
+    }
+
+    function permissionMcpStateForHold(hold) {
+      return hold?.reason === 'permission_denied' ? 'denied_permission_unverified' : 'denied_pending_verification';
+    }
+
+    function setPermissionSensitiveVisibility(visible) {
+      const currentDetailTab = detailTabs.find(tab => tab.getAttribute('aria-selected') === 'true')?.dataset.detailTab || 'overview';
+      permissionDetailsDenied = !visible;
+      document.querySelectorAll('[data-permission-sensitive]').forEach(element => { element.hidden = !visible; });
+      const panelNotice = document.getElementById('permissionDeniedNotice');
+      const executionNotice = document.getElementById('permissionExecutionDeniedNotice');
+      const requestButton = document.getElementById('requestPermissionChange');
+      if (panelNotice) panelNotice.hidden = visible;
+      if (executionNotice) executionNotice.hidden = visible;
+      if (requestButton) requestButton.disabled = !visible || !hasCompletePermissionMetadata();
+      showDetailTab(visible ? currentDetailTab : 'permissions');
+    }
+
+    function renderPermissionRequestState() {
+      const requestState = document.querySelector('[data-permission-request-state]');
+      const mcpState = document.querySelector('[data-mcp-state]');
+      if (requestState) requestState.textContent = permissionRequest.state;
+      if (mcpState) mcpState.textContent = permissionRequest.mcpState;
+    }
+
+    function transitionPermissionRequest(nextState) {
+      if (!permissionRequestStates.has(nextState)) throw new Error(`Unsupported permission state: ${nextState}`);
+      const allowedStates = permissionRequestTransitions.get(permissionRequest.state);
+      if (!allowedStates?.has(nextState)) throw new Error(`Illegal permission transition: ${permissionRequest.state} -> ${nextState}`);
+      const tightening = ['revoke', 'modify'].includes(permissionRequest.action);
+      const activeHold = getPermissionSafetyHold(permissionRequest.safetyScopeRef);
+      if (nextState === 'permission_denied') {
+        permissionSafety.holdsByScope[permissionRequest.safetyScopeRef] = {
+          reason: 'permission_denied',
+          requestId: permissionRequest.id,
+          snapshotId: permissionRequest.snapshotId,
+          resourceRef: permissionRequest.resourceRef,
+          permissionDomainRef: permissionRequest.permissionDomainRef,
+        };
+        permissionRequest.mcpState = 'denied_permission_unverified';
+        setPermissionSensitiveVisibility(false);
+      } else if (activeHold) {
+        const completedVerifiedFlow = nextState === 'completed' && permissionRequest.state === 'propagating';
+        const executionRepair = activeHold.reason === 'execution_verification_pending' && tightening;
+        const permissionRepair = activeHold.reason === 'permission_denied' && permissionRequest.repairAuthorization;
+        if (completedVerifiedFlow && isSamePermissionTarget(activeHold, permissionRequest) && (executionRepair || permissionRepair)) {
+          delete permissionSafety.holdsByScope[permissionRequest.safetyScopeRef];
+          permissionRequest.mcpState = 'active';
+          if (permissionRepair) setPermissionSensitiveVisibility(true);
+        } else {
+          permissionRequest.mcpState = permissionMcpStateForHold(activeHold);
+        }
+      } else if (tightening && nextState === 'executing') {
+        permissionSafety.holdsByScope[permissionRequest.safetyScopeRef] = {
+          reason: 'execution_verification_pending',
+          requestId: permissionRequest.id,
+          snapshotId: permissionRequest.snapshotId,
+          resourceRef: permissionRequest.resourceRef,
+          permissionDomainRef: permissionRequest.permissionDomainRef,
+        };
+        permissionRequest.mcpState = 'denied_pending_verification';
+      } else if (permissionRequest.action === 'grant' && nextState !== 'completed') {
+        permissionRequest.mcpState = 'unavailable_pending_completion';
+      } else if (nextState === 'completed' && permissionRequest.state === 'propagating') {
+        permissionRequest.mcpState = 'active';
+      }
+      permissionRequest.state = nextState;
+      permissionRequest.transitionHistory.push(nextState);
+      renderPermissionRequestState();
+    }
+
+    function renderAdminReconfirmation() {
+      const reverified = document.getElementById('permissionAdminReverified');
+      const confirm = document.getElementById('permissionAdminConfirmExecution');
+      if (permissionRequest.risk === 'high' && permissionRequest.state === 'awaiting_execution' && !isFrozenPermissionTargetCurrent()) {
+        permissionRequest.pendingScenario = null;
+        if (reverified) reverified.checked = false;
+        transitionPermissionRequest('stale');
+        showToast('目标资源或申请快照已变化，高风险申请已转为 stale，必须重新预检和审批（原型演示）');
+      }
+      if (confirm) confirm.disabled = !(
+        permissionRequest.risk === 'high'
+        && permissionRequest.state === 'awaiting_execution'
+        && reverified?.checked
+        && isFrozenPermissionTargetCurrent()
+      );
+    }
+
+    function createPermissionRequest(change, risk) {
+      permissionRequestSequence += 1;
+      const reverified = document.getElementById('permissionAdminReverified');
+      if (reverified) reverified.checked = false;
+      const safetyScopeRef = createPermissionSafetyScopeRef(change.targetRef, change.permissionDomainRef);
+      const activeHold = getPermissionSafetyHoldForTarget(change.targetRef, change.permissionDomainRef);
+      const id = `PCR-20260827-${String(permissionRequestSequence).padStart(4, '0')}`;
+      const snapshotId = `ACL-SNAPSHOT-20260827-${String(permissionRequestSequence).padStart(4, '0')}`;
+      const frozenBinding = Object.freeze({
+        id,
+        snapshotId,
+        resourceRef: change.targetRef,
+        permissionDomainRef: change.permissionDomainRef,
+        subjectType: change.subjectType,
+        subjectRef: change.subjectRef,
+        action: change.action,
+        permission: change.permission,
+        executionIdentity: permissionExecutionIdentity,
+      });
+      Object.assign(permissionRequest, {
+        id,
+        snapshotId,
+        state: 'draft',
+        risk,
+        action: change.action,
+        target: change.targetLabel,
+        resourceRef: change.targetRef,
+        permissionDomainRef: change.permissionDomainRef,
+        safetyScopeRef,
+        subjectType: change.subjectType,
+        subjectRef: change.subjectRef,
+        permission: change.permission,
+        executionIdentity: permissionExecutionIdentity,
+        frozenBinding,
+        mcpState: activeHold ? permissionMcpStateForHold(activeHold) : 'active',
+        transitionHistory: ['draft'],
+        pendingScenario: null,
+        repairAuthorization: false,
+      });
+      setPermissionSensitiveVisibility(activeHold?.reason !== 'permission_denied');
+      renderPermissionRequestState();
+      renderAdminReconfirmation();
+    }
+
+    function startPermissionRequest(change, risk) {
+      createPermissionRequest(change, risk);
+      transitionPermissionRequest('prechecking');
+      transitionPermissionRequest('ready_for_approval');
+      transitionPermissionRequest('approving');
+    }
+
+    function evaluatePermissionOperation(change, risk = classifyPermissionRisk(change), scenario = 'request') {
+      if (!hasCompletePermissionMetadata()) {
+        return { allowed: false, message: '当前选中文档缺少稳定资源引用或权限来源，已阻断权限申请（原型演示）' };
+      }
+      if (isInheritedDocumentContext()) {
+        return { allowed: false, message: '当前权限继承自父目录，不能在文档层提交；请先切换授权来源（原型演示）' };
+      }
+      if (risk === 'blocked') {
+        return { allowed: false, message: '该申请必须在飞书原生权限页处理（原型演示）' };
+      }
+      const safetyScopeRef = createPermissionSafetyScopeRef(change.targetRef, change.permissionDomainRef);
+      const activeHold = getPermissionSafetyHoldForTarget(change.targetRef, change.permissionDomainRef);
+      if (scenario === 'permission_reverified_repair') {
+        if (activeHold?.reason !== 'permission_denied' || !isSamePermissionTarget(activeHold, { resourceRef: change.targetRef, permissionDomainRef: change.permissionDomainRef })) {
+          return { allowed: false, message: '当前目标没有可执行的权限恢复锁，不能伪造修复完成（原型演示）' };
+        }
+      } else if (activeHold?.reason === 'permission_denied') {
+        return { allowed: false, message: '当前目标仍处于 permission_denied；必须先完成同目标权限恢复、ACL 回读和派生验证（原型演示）' };
+      }
+      return { allowed: true, message: '' };
+    }
+
+    function isFrozenPermissionTargetCurrent() {
+      const current = readPermissionChange();
+      const frozen = permissionRequest.frozenBinding;
+      return Boolean(frozen)
+        && permissionRequest.id === frozen.id
+        && permissionRequest.snapshotId === frozen.snapshotId
+        && permissionRequest.resourceRef === frozen.resourceRef
+        && permissionRequest.permissionDomainRef === frozen.permissionDomainRef
+        && permissionRequest.subjectType === frozen.subjectType
+        && permissionRequest.subjectRef === frozen.subjectRef
+        && permissionRequest.action === frozen.action
+        && permissionRequest.permission === frozen.permission
+        && permissionRequest.executionIdentity === frozen.executionIdentity
+        && current.targetRef === frozen.resourceRef
+        && current.permissionDomainRef === frozen.permissionDomainRef
+        && current.subjectType === frozen.subjectType
+        && current.subjectRef === frozen.subjectRef
+        && current.action === frozen.action
+        && current.permission === frozen.permission;
+    }
+
+    function runPermissionScenario() {
+      const scenario = document.getElementById('permissionScenario')?.value || 'success';
+      const change = readPermissionChange();
+      const risk = classifyPermissionRisk(change);
+      createPermissionRequest(change, risk);
+      const gate = evaluatePermissionOperation(change, risk, scenario);
+      if (!gate.allowed) {
+        showToast(gate.message);
+        return 'blocked';
+      }
+      permissionRequest.repairAuthorization = scenario === 'permission_reverified_repair';
+      transitionPermissionRequest('prechecking');
+      if (scenario === 'oauth_expired') return transitionPermissionRequest('reauth_required');
+      if (scenario === 'permission_denied') {
+        return transitionPermissionRequest('permission_denied');
+      }
+      if (scenario === 'feishu_policy_blocked') return transitionPermissionRequest('blocked_by_feishu_policy');
+      transitionPermissionRequest('ready_for_approval');
+      transitionPermissionRequest('approving');
+      if (scenario === 'acl_changed_during_approval') return transitionPermissionRequest('stale');
+      transitionPermissionRequest('approved');
+      transitionPermissionRequest('awaiting_execution');
+      if (permissionRequest.risk === 'high') {
+        permissionRequest.pendingScenario = scenario;
+        renderAdminReconfirmation();
+        return;
+      }
+      continuePermissionScenario(scenario);
+    }
+
+    function continuePermissionScenario(scenario) {
+      transitionPermissionRequest('executing');
+      transitionPermissionRequest('verifying');
+      if (scenario === 'readback_mismatch') return transitionPermissionRequest('verification_failed');
+      transitionPermissionRequest('propagating');
+      if (scenario === 'derivative_failure') return transitionPermissionRequest('propagation_failed');
+      transitionPermissionRequest('completed');
+    }
+    renderPermissionRequestState();
+    document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => closePrototypeDialog(button.closest('dialog'))));
+    document.getElementById('documentChangeForm').addEventListener('submit', event => {
+      event.preventDefault();
+      localPrototypeState.lifecycleEvents.push({ type: 'document-change', changeType: new FormData(event.currentTarget).get('changeType') });
+      closePrototypeDialog(event.currentTarget.closest('dialog'));
+      showToast('文档变更已记录到本地原型状态（原型演示）');
+    });
+    document.getElementById('documentRetireForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      localPrototypeState.lifecycleEvents.push({ type: 'document-retire', reason: document.getElementById('retireReason').value, effectiveAt: document.getElementById('retireEffectiveAt').value });
+      closePrototypeDialog(event.currentTarget.closest('dialog'));
+      showToast('受控退役已记录到本地原型状态（原型演示）');
+    });
+    const directoryImpactConfirmed = document.getElementById('directoryImpactConfirmed');
+    const directoryMaintenanceConfirm = document.getElementById('directoryMaintenanceConfirm');
+    const directoryMaintenanceDialog = document.getElementById('directoryMaintenanceDialog');
+    function resetDirectoryMaintenanceConfirmation() {
+      directoryImpactConfirmed.checked = false;
+      directoryMaintenanceConfirm.disabled = true;
+    }
+    directoryMaintenanceDialog.addEventListener('close', resetDirectoryMaintenanceConfirmation);
+    directoryImpactConfirmed.addEventListener('change', () => {
+      directoryMaintenanceConfirm.disabled = !directoryImpactConfirmed.checked;
+    });
+    document.getElementById('directoryMaintenanceForm').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!directoryImpactConfirmed.checked) return;
+      localPrototypeState.lifecycleEvents.push({ type: 'directory-maintenance', operation: new FormData(event.currentTarget).get('directoryOperation') });
+      closePrototypeDialog(event.currentTarget.closest('dialog'));
+      showToast('目录维护已记录到本地原型状态（原型演示）');
+    });
+
+    function classifyPermissionRisk(change) {
+      if (change.removesLastAdmin || change.inheritanceUnknown || change.policyBlocked) return 'blocked';
+      if (change.external || change.publicLink || change.ownerTransfer || change.spaceAdmin || change.secureLabel) return 'high';
+      if (change.permission === 'edit' || change.action === 'revoke' || change.subjectType === 'group') return 'medium';
+      return 'low';
+    }
+
+    function renderPermissionImpact(change) {
+      const risk = classifyPermissionRisk(change);
+      const treatment = {
+        low: '审批通过后自动执行',
+        medium: '审批通过后自动执行',
+        high: '审批通过后需管理员二次确认',
+        blocked: '必须在飞书原生权限页处理',
+      }[risk];
+      document.querySelector('[data-permission-risk]').textContent = risk;
+      document.querySelector('[data-permission-treatment]').textContent = treatment;
+      document.querySelector('[data-permission-submit]').disabled = risk === 'blocked' || isInheritedDocumentContext() || !hasCompletePermissionMetadata();
+      const afterDiff = document.getElementById('permissionAfterDiff');
+      const impactCopy = document.getElementById('permissionImpactCopy');
+      if (afterDiff) afterDiff.textContent = `${change.action === 'revoke' ? '撤销' : '申请'} ${change.permission === 'edit' ? '可编辑' : change.permission === 'manage' ? '可管理' : '可阅读'} 权限`;
+      if (impactCopy) impactCopy.textContent = risk === 'blocked' ? '保持拒绝，等待飞书原生处理' : '审批后按飞书 ACL 回读结果失效或重建';
+    }
+
+    function isInheritedDocumentContext() {
+      return permissionTargetContext.scope === 'document';
+    }
+
+    function hasCompletePermissionMetadata() {
+      return ['label', 'ref', 'permissionSource', 'permissionSourceRef'].every(key => {
+        const value = selectedCatalogResource[key];
+        return typeof value === 'string' && value.trim().length > 0;
+      });
+    }
+
+    function updatePermissionRequestAvailability() {
+      const requestButton = document.getElementById('requestPermissionChange');
+      if (requestButton) requestButton.disabled = permissionDetailsDenied || !hasCompletePermissionMetadata();
+    }
+
+    function setPermissionTargetScope(scope) {
+      permissionTargetContext = scope === 'source-directory'
+        ? {
+            scope,
+            label: selectedCatalogResource.permissionSource,
+            ref: selectedCatalogResource.permissionSourceRef,
+            inheritedSource: selectedCatalogResource.permissionSource,
+            permissionDomainRef: selectedCatalogResource.permissionSourceRef,
+          }
+        : {
+            scope: 'document',
+            label: selectedCatalogResource.label,
+            ref: selectedCatalogResource.ref,
+            inheritedSource: selectedCatalogResource.permissionSource,
+            permissionDomainRef: selectedCatalogResource.permissionSourceRef,
+          };
+      const inheritedDocument = isInheritedDocumentContext();
+      const metadataComplete = hasCompletePermissionMetadata();
+      const targetLabel = document.getElementById('permissionTargetLabel');
+      const targetRef = document.getElementById('permissionTargetRef');
+      const inheritedSource = document.getElementById('permissionInheritedSource');
+      const scopeNotice = document.getElementById('permissionScopeNotice');
+      const impactSource = document.getElementById('permissionImpactSource');
+      const sourceContextButton = document.getElementById('permissionSourceContext');
+      const documentLevelEditing = document.getElementById('permissionDocumentLevelEditing');
+      const action = document.getElementById('permissionAction');
+      const requestedPermission = document.getElementById('permissionRequested');
+      if (targetLabel) targetLabel.textContent = metadataComplete ? permissionTargetContext.label : '权限目标信息不完整';
+      if (targetRef) targetRef.textContent = metadataComplete ? permissionTargetContext.ref : '缺少稳定资源引用';
+      if (inheritedSource) inheritedSource.textContent = metadataComplete && inheritedDocument ? '当前授权来源：继承自父目录' : metadataComplete ? `当前变更上下文：${permissionTargetContext.label}` : '当前授权来源：无法确认';
+      if (scopeNotice) scopeNotice.textContent = !metadataComplete
+        ? '当前选中文档缺少稳定资源引用或权限来源，已阻断权限申请；请先完成飞书只读校验。'
+        : inheritedDocument
+        ? '继承权限不能在文档层伪造覆盖；当前文档级权限编辑与提交已禁用。'
+        : '已切换至父目录授权来源；申请将针对该目录创建，真实执行仍以飞书 ACL 回读为准。';
+      if (impactSource) impactSource.textContent = metadataComplete ? permissionTargetContext.inheritedSource : '未确认';
+      if (documentLevelEditing) documentLevelEditing.disabled = true;
+      if (action) action.disabled = inheritedDocument || !metadataComplete;
+      if (requestedPermission) requestedPermission.disabled = inheritedDocument || !metadataComplete;
+      if (sourceContextButton) {
+        sourceContextButton.disabled = !metadataComplete;
+        sourceContextButton.textContent = inheritedDocument ? '前往父目录授权来源' : '已在父目录授权来源';
+      }
+      renderPermissionImpact(readPermissionChange());
+      renderAdminReconfirmation();
+    }
+
+    function updateAnonymousSubjectRef() {
+      const subjectType = document.getElementById('permissionSubjectType')?.value || 'user';
+      const subjectRef = document.getElementById('permissionSubjectRef');
+      if (subjectRef) subjectRef.value = `anonymous:${subjectType}:sample-001`;
+    }
+
+    function readPermissionChange() {
+      return {
+        removesLastAdmin: document.getElementById('permissionRemovesLastAdmin')?.checked,
+        inheritanceUnknown: document.getElementById('permissionInheritanceUnknown')?.checked,
+        policyBlocked: document.getElementById('permissionPolicyBlocked')?.checked,
+        external: document.getElementById('permissionExternal')?.checked,
+        publicLink: document.getElementById('permissionPublicLink')?.checked,
+        ownerTransfer: document.getElementById('permissionOwnerTransfer')?.checked,
+        spaceAdmin: document.getElementById('permissionSpaceAdmin')?.checked,
+        secureLabel: document.getElementById('permissionSecureLabel')?.checked,
+        permission: document.getElementById('permissionRequested')?.value || 'read',
+        action: document.getElementById('permissionAction')?.value || 'grant',
+        subjectType: document.getElementById('permissionSubjectType')?.value || 'user',
+        subject: document.getElementById('permissionSubject')?.value || '匿名化对象（示例）',
+        subjectRef: document.getElementById('permissionSubjectRef')?.value || 'anonymous:user:sample-001',
+        effectiveAt: document.getElementById('permissionEffectiveAt')?.value || '',
+        expiryAt: document.getElementById('permissionExpiryAt')?.value || '',
+        reason: document.getElementById('permissionReason')?.value || '',
+        approvalRoute: document.getElementById('permissionApprovalRoute')?.value || '',
+        targetLabel: permissionTargetContext.label,
+        targetRef: permissionTargetContext.ref,
+        inheritedSource: permissionTargetContext.inheritedSource,
+        permissionDomainRef: permissionTargetContext.permissionDomainRef,
+        context: permissionTargetContext.scope,
+      };
+    }
+
+    const permissionChangeDrawer = document.getElementById('permissionChangeDrawer');
+    const permissionChangeForm = document.getElementById('permissionChangeForm');
+    const requestPermissionChange = document.getElementById('requestPermissionChange');
+    updatePermissionRequestAvailability();
+    requestPermissionChange?.addEventListener('click', () => {
+      if (!hasCompletePermissionMetadata()) {
+        showToast('当前选中文档缺少稳定资源引用或权限来源，已阻断权限申请（原型演示）');
+        return;
+      }
+      setPermissionTargetScope('document');
+      renderPermissionImpact(readPermissionChange());
+      openPrototypeDialog('permissionChangeDrawer');
+    });
+    ['permissionSubjectType', 'permissionAction', 'permissionRequested', 'permissionExternal', 'permissionPublicLink', 'permissionOwnerTransfer', 'permissionSpaceAdmin', 'permissionSecureLabel', 'permissionPolicyBlocked', 'permissionInheritanceUnknown', 'permissionRemovesLastAdmin'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+        if (id === 'permissionSubjectType') updateAnonymousSubjectRef();
+        renderPermissionImpact(readPermissionChange());
+        renderAdminReconfirmation();
+      });
+    });
+    document.getElementById('permissionSourceContext')?.addEventListener('click', () => {
+      if (!hasCompletePermissionMetadata()) {
+        showToast('当前选中文档缺少稳定资源引用或权限来源，不能切换授权来源（原型演示）');
+        return;
+      }
+      setPermissionTargetScope('source-directory');
+      showToast('已切换至父目录授权来源；现在可为该目录提交申请（原型演示）');
+    });
+    permissionChangeForm?.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      const change = readPermissionChange();
+      const risk = classifyPermissionRisk(change);
+      const gate = evaluatePermissionOperation(change, risk);
+      if (!gate.allowed) {
+        showToast(gate.message);
+        return;
+      }
+      localPrototypeState.permissionChangeEvents.push({ type: 'permission-change-request', ...change, risk });
+      startPermissionRequest(change, risk);
+      closePrototypeDialog(permissionChangeDrawer);
+      showToast(`已记录 ${risk} 风险权限变更申请；真实执行需飞书审批与 ACL 回读（原型演示）`);
+    });
+    document.getElementById('runPermissionScenario')?.addEventListener('click', () => {
+      if (runPermissionScenario() !== 'blocked') showToast('已完成本地状态模拟；未调用飞书接口（原型演示）');
+    });
+    document.getElementById('permissionAdminReverified')?.addEventListener('change', renderAdminReconfirmation);
+    document.getElementById('permissionAdminConfirmExecution')?.addEventListener('click', () => {
+      if (permissionRequest.risk === 'high' && permissionRequest.state === 'awaiting_execution' && !isFrozenPermissionTargetCurrent()) {
+        permissionRequest.pendingScenario = null;
+        transitionPermissionRequest('stale');
+        renderAdminReconfirmation();
+        showToast('目标资源或申请快照已变化，高风险申请已转为 stale，必须重新预检和审批（原型演示）');
+        return;
+      }
+      if (permissionRequest.risk !== 'high' || permissionRequest.state !== 'awaiting_execution' || !document.getElementById('permissionAdminReverified')?.checked) {
+        showToast('请先完成管理员身份重新核验，且仅能确认待执行的高风险申请（原型演示）');
+        return;
+      }
+      const scenario = permissionRequest.pendingScenario;
+      if (!scenario) {
+        showToast('当前没有可继续执行的高风险原型申请');
+        return;
+      }
+      permissionRequest.pendingScenario = null;
+      continuePermissionScenario(scenario);
+      renderAdminReconfirmation();
+      showToast('管理员二次确认完成，已继续本地状态模拟（原型演示）');
+    });
+    document.getElementById('openSource').addEventListener('click', () => showToast('真实系统将在权限校验后打开飞书原文'));
+    document.getElementById('revalidate').addEventListener('click', event => {
+      event.currentTarget.disabled = true;
+      event.currentTarget.textContent = '校验中…';
+      revisionAlert.querySelector('span').textContent = '校验任务已启动';
+      showToast('已创建只读重新校验任务（原型演示）');
+      setTimeout(() => {
+        event.currentTarget.disabled = false;
+        event.currentTarget.textContent = '重新校验';
+      }, 1800);
+    });
+  </script>
+</body>
+</html>
